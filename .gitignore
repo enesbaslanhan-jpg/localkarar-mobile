@@ -4,6 +4,7 @@
 /.idea
 .DS_Store
 build/
+**/build/
 /captures
 .externalNativeBuild
 .cxx
@@ -13,3 +14,9 @@ iosApp/iosApp.xcworkspace/*
 iosApp/iosApp.xcodeproj/*
 !iosApp/iosApp.xcodeproj/project.pbxproj
 shared/shared.podspec
+.kotlin/
+*.log
+logcat*.txt
+raw_json*.txt
+*.keystore
+*.jks

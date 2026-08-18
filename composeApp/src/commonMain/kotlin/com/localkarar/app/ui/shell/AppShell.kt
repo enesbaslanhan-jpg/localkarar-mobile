@@ -1,13 +1,16 @@
-﻿package com.localkarar.app.ui.shell
+package com.localkarar.app.ui.shell
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.localkarar.app.navigation.Destination
 import com.localkarar.app.navigation.NavController
@@ -55,11 +58,12 @@ fun AppShell(
     val bottomSheetState = rememberModalBottomSheetState(ModalBottomSheetValue.Hidden)
     val coroutineScope = rememberCoroutineScope()
 
-    val openMenü = {
+    // Clean ASCII identifiers for code symbols; user-facing strings remain Turkish.
+    val openMenu = {
         coroutineScope.launch { bottomSheetState.show() }
     }
-    
-    val closeMenüAndNavigate = { dest: Destination ->
+
+    val closeMenuAndNavigate = { dest: Destination ->
         coroutineScope.launch {
             bottomSheetState.hide()
             navController.navigateTo(dest)
@@ -73,19 +77,18 @@ fun AppShell(
         sheetContent = {
             MenuBottomSheet(
                 firstName = firstName,
-                onNavigate = { closeMenüAndNavigate(it) },
+                onNavigate = { closeMenuAndNavigate(it) },
                 onLogout = onLogout
             )
         }
     ) {
-        // We use Scaffold to properly handle window insets automatically
         Scaffold(
             bottomBar = {
                 if (currentDestination !is Destination.LessonReader) {
                     LkBottomNavigation(
                         currentDestination = currentDestination,
                         onNavigate = { navController.navigateTo(it) },
-                        onMenüClick = { openMenü() }
+                        onMenuClick = { openMenu() }
                     )
                 }
             },
@@ -98,8 +101,8 @@ fun AppShell(
                     .padding(paddingValues)
             ) {
                 ScreenContent(
-                    destination = currentDestination, 
-                    navController = navController, 
+                    destination = currentDestination,
+                    navController = navController,
                     firstName = firstName,
                     homeViewModel = homeViewModel,
                     courseRepository = courseRepository,
@@ -120,7 +123,7 @@ private fun ScreenContent(
     decisionRepository: DecisionRepository
 ) {
     val onBack = { navController.popBackStack(); Unit }
-    
+
     when (destination) {
         Destination.Login -> { /* Handled at app root */ }
         Destination.Home -> HomeScreen(
@@ -145,8 +148,8 @@ private fun ScreenContent(
             )
         }
         is Destination.LessonReader -> {
-            val viewModel = remember(destination.courseId, destination.lessonId) { 
-                LessonReaderViewModel(courseRepository, destination.courseId, destination.lessonId) 
+            val viewModel = remember(destination.courseId, destination.lessonId) {
+                LessonReaderViewModel(courseRepository, destination.courseId, destination.lessonId)
             }
             LessonReaderScreen(
                 viewModel = viewModel,
@@ -169,89 +172,74 @@ private fun ScreenContent(
                 onBack = onBack
             )
         }
-        Destination.AiMentor -> AiMentorScreen()
+        Destination.AiMentor     -> AiMentorScreen()
         Destination.Calculations -> CalculationsScreen(onBack)
-        Destination.News -> NewsScreen(onBack)
-        Destination.Updates -> UpdatesScreen(onBack)
-        Destination.Saved -> SavedScreen(onBack)
-        Destination.Progress -> ProgressScreen(onBack)
-        Destination.Profile -> ProfileScreen(onBack, firstName)
+        Destination.News         -> NewsScreen(onBack)
+        Destination.Updates      -> UpdatesScreen(onBack)
+        Destination.Saved        -> SavedScreen(onBack)
+        Destination.Progress     -> ProgressScreen(onBack)
+        Destination.Profile      -> ProfileScreen(onBack, firstName)
     }
 }
+
+// ──────────────────────────────────────────────────────────────────
+// Bottom Navigation
+// ──────────────────────────────────────────────────────────────────
+
+private data class NavItem(
+    val label: String,
+    val icon: ImageVector,
+    val destination: Destination?,     // null = menu trigger
+)
+
+private val NAV_ITEMS = listOf(
+    NavItem("Ana Sayfa", Icons.Default.Home,           Destination.Home),
+    NavItem("Kurslar",   Icons.Default.School,         Destination.Courses),
+    NavItem("Karar",     Icons.Default.AccountBalance,  Destination.DecisionTools),
+    NavItem("Mentor",    Icons.Default.Psychology,      Destination.AiMentor),
+    NavItem("Menü",      Icons.Default.Menu,            null),  // opens drawer
+)
 
 @Composable
 private fun LkBottomNavigation(
     currentDestination: Destination,
     onNavigate: (Destination) -> Unit,
-    onMenüClick: () -> Unit
+    onMenuClick: () -> Unit
 ) {
     BottomNavigation(
         backgroundColor = LkSurfacePanel,
-        contentColor = LkTextSecondary,
-        elevation = 0.dp,
-        modifier = Modifier.border(width = 1.dp, color = LkLineStrong)
+        contentColor    = LkTextSecondary,
+        elevation       = 0.dp,
+        modifier        = Modifier
+            .border(width = 1.dp, color = LkLineStrong)
     ) {
-        BottomNavItem(
-            label = "Ana Sayfa", 
-            selected = currentDestination == Destination.Home,
-            onClick = { onNavigate(Destination.Home) }
-        )
-        BottomNavItem(
-            label = "Kurslar", 
-            selected = currentDestination == Destination.Courses,
-            onClick = { onNavigate(Destination.Courses) }
-        )
-        BottomNavItem(
-            label = "Karar", 
-            selected = currentDestination == Destination.DecisionTools,
-            onClick = { onNavigate(Destination.DecisionTools) }
-        )
-        BottomNavItem(
-            label = "Menüor", 
-            selected = currentDestination == Destination.AiMentor,
-            onClick = { onNavigate(Destination.AiMentor) }
-        )
-        BottomNavItem(
-            label = "Menü", 
-            selected = false,
-            onClick = onMenüClick
-        )
+        NAV_ITEMS.forEach { item ->
+            val selected = item.destination != null && currentDestination == item.destination
+            BottomNavigationItem(
+                selected             = selected,
+                onClick              = {
+                    if (item.destination != null) onNavigate(item.destination)
+                    else onMenuClick()
+                },
+                icon                 = {
+                    Icon(
+                        imageVector  = item.icon,
+                        contentDescription = item.label,
+                        modifier     = Modifier.size(22.dp),
+                        tint         = if (selected) LkPrimary else LkTextSecondary
+                    )
+                },
+                label                = {
+                    Text(
+                        text      = item.label,
+                        style     = LkTypography.getMicro(),
+                        color     = if (selected) LkPrimary else LkTextSecondary,
+                        maxLines  = 1
+                    )
+                },
+                selectedContentColor   = LkPrimary,
+                unselectedContentColor = LkTextSecondary
+            )
+        }
     }
 }
-
-@Composable
-private fun RowScope.BottomNavItem(
-    label: String,
-    selected: Boolean,
-    onClick: () -> Unit
-) {
-    BottomNavigationItem(
-        selected = selected,
-        onClick = onClick,
-        icon = { 
-            Box(
-                modifier = Modifier
-                    .size(24.dp)
-                    .background(
-                        if (selected) LkPrimary.copy(alpha = 0.1f) else Color.Transparent,
-                        shape = LkShapes.SM
-                    )
-            )
-        },
-        label = { 
-            Text(
-                text = label, 
-                style = LkTypography.getMicro(),
-                color = if (selected) LkPrimary else LkTextSecondary,
-                maxLines = 1
-            ) 
-        },
-        selectedContentColor = LkPrimary,
-        unselectedContentColor = LkTextSecondary
-    )
-}
-
-
-
-
-

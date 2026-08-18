@@ -82,8 +82,12 @@ android {
         }
     }
     buildTypes {
+        getByName("debug") {
+            buildConfigField("Boolean", "IS_RELEASE", "false")
+        }
         getByName("release") {
             isMinifyEnabled = false
+            buildConfigField("Boolean", "IS_RELEASE", "true")
         }
     }
     compileOptions {
@@ -92,6 +96,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     dependencies {
         debugImplementation(compose.uiTooling)

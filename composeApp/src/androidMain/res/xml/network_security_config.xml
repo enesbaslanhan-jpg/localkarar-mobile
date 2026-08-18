@@ -1,5 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android Network Security Configuration
+  =======================================
+  Base config: cleartext HTTP is BLOCKED (Android 9+ default, explicitly enforced here).
+
+  Domain-specific override:
+    10.0.2.2 — Android emulator loopback to host machine.
+    Cleartext is permitted HERE ONLY for local development.
+    This domain is never reachable in a production environment.
+
+  Release builds must use HTTPS (api.localkarar.com or equivalent).
+  The domain-config below does NOT affect release builds because
+  release builds never resolve to 10.0.2.2 (see ApiConfig / AppEnvironmentProvider).
+-->
 <network-security-config>
+    <!-- Explicit base: block cleartext globally in all builds -->
+    <base-config cleartextTrafficPermitted="false" />
+
+    <!-- Development exception: emulator loopback only -->
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="true">10.0.2.2</domain>
     </domain-config>

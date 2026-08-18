@@ -41,7 +41,7 @@ fun MenuBottomSheet(
         Divider(color = LkLineSoft, modifier = Modifier.padding(vertical = LkSpacing.Space2))
         
         MenuItem("Kaydedilenler") { onNavigate(Destination.Saved) }
-        MenuItem("ÖÖğrenme İlerlemesi") { onNavigate(Destination.Progress) }
+        MenuItem("Öğrenme İlerlemesi") { onNavigate(Destination.Progress) }
         MenuItem("Profil") { onNavigate(Destination.Profile) }
         
         Divider(color = LkLineSoft, modifier = Modifier.padding(vertical = LkSpacing.Space2))
@@ -69,5 +69,6 @@ private fun MenuItem(label: String, onClick: () -> Unit) {
         Text(text = label, style = LkTypography.getBody(), color = LkTextPrimary)
     }
 }
+
 
 

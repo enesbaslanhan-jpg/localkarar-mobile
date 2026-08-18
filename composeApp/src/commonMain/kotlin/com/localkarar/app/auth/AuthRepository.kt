@@ -22,6 +22,19 @@ class AuthRepository(
     private val _sessionState = MutableStateFlow<SessionState>(SessionState.CheckingSession)
     val sessionState: StateFlow<SessionState> = _sessionState.asStateFlow()
 
+    /**
+     * Restores session on app start.
+     *
+     * Semantics:
+     *  - No token stored → Unauthenticated (never had a session)
+     *  - Token present + GET /auth/me returns 200 → Authenticated
+     *  - Token present + 401/403 (invalid/expired token) → clear token → Unauthenticated
+     *  - Token present + network error / timeout / backend unreachable → keep token →
+     *    Unauthenticated with preserved token so retry on next launch is possible.
+     *    The user can log in again; the token is NOT wiped just because the network is down.
+     *
+     * This prevents offline startup from silently destroying valid sessions.
+     */
     suspend fun restoreSession() {
         val token = secureStorage.readToken()
         if (token.isNullOrBlank()) {
@@ -30,19 +43,37 @@ class AuthRepository(
         }
 
         try {
-            // Verify token using /auth/me
             val response = httpClient.get("/auth/me")
-            if (response.status == HttpStatusCode.OK) {
-                val user = response.body<UserDto>()
-                _sessionState.value = SessionState.Authenticated(user)
-            } else {
-                logout()
+            when (response.status) {
+                HttpStatusCode.OK -> {
+                    val user = response.body<UserDto>()
+                    _sessionState.value = SessionState.Authenticated(user)
+                }
+                HttpStatusCode.Unauthorized,
+                HttpStatusCode.Forbidden -> {
+                    // Explicit auth failure — token is invalid/expired. Wipe it.
+                    secureStorage.clearToken()
+                    _sessionState.value = SessionState.Unauthenticated
+                }
+                else -> {
+                    // Unexpected server error — do NOT wipe token; treat as recoverable.
+                    _sessionState.value = SessionState.Unauthenticated
+                }
             }
+        } catch (e: ApiError.Unauthorized) {
+            // Thrown by HttpResponseValidator on 401 — explicit auth rejection.
+            secureStorage.clearToken()
+            _sessionState.value = SessionState.Unauthenticated
+        } catch (e: ApiError.NetworkUnavailable) {
+            // Offline — DO NOT erase the token. User can retry next launch.
+            _sessionState.value = SessionState.Unauthenticated
+        } catch (e: ApiError.Timeout) {
+            // Backend unreachable — same as offline. Preserve token.
+            _sessionState.value = SessionState.Unauthenticated
         } catch (e: Exception) {
-            // If offline, might want to assume unauthenticated for now or keep authenticated.
-            // According to spec: If valid -> Authenticated, if invalid/expired -> Unauthenticated.
-            // Network errors might cause this to fail, but for now we clear token on any exception to be safe as requested.
-            logout()
+            // Any other unexpected error (serialization, etc.) — preserve token,
+            // but mark as unauthenticated so the user can attempt login again.
+            _sessionState.value = SessionState.Unauthenticated
         }
     }
 
@@ -52,7 +83,7 @@ class AuthRepository(
                 contentType(ContentType.Application.Json)
                 setBody(request)
             }
-            
+
             val loginResponse = response.body<LoginResponse>()
             secureStorage.saveToken(loginResponse.token)
             _sessionState.value = SessionState.Authenticated(loginResponse.user)
