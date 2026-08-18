@@ -25,11 +25,11 @@ This document maps the Fastify REST endpoints in the existing backend (`LocalAka
 - `GET /api/v1/decision-checks/sessions/me`: Get user's recent sessions.
 - `GET /api/v1/decision-checks`: Get published decision tools.
 - `GET /api/v1/decision-checks/:code`: Fetch definition of a decision check.
-- `POST /api/v1/decision-checks/:code/start`: Start a new session.
-- `GET /api/v1/decision-check-sessions/:id`: Get session state.
-- `PATCH /api/v1/decision-check-sessions/:id/answers`: Update answers for a session.
-- `POST /api/v1/decision-check-sessions/:id/complete`: Complete session and execute rules.
-- `GET /api/v1/decision-check-sessions/:id/result`: Retrieve calculation/result output.
+- `POST /api/v1/decision-checks/:code/start`: Start (or resume) a session; returns `{ sessionId, status }`.
+- `GET /api/v1/decision-checks/sessions/:id`: Get session state (definition, toolMeta, answers).
+- `PATCH /api/v1/decision-checks/sessions/:id/answers`: Update answers for a session.
+- `POST /api/v1/decision-checks/sessions/:id/complete`: Complete session and execute rules.
+- `GET /api/v1/decision-checks/sessions/:id/result`: Retrieve calculation/result output.
 
 ## 5. Financial Models (Model Lab) (`/financial-models`, `/workspaces/:workspaceId/financial-model-runs`)
 - `GET /financial-models`: List available calculation models.
