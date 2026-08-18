@@ -21,7 +21,11 @@ fun ProfileScreen(
     user: UserDto?,
     onNewSession: (String, UserDto) -> Unit
 ) {
-    var pickFile by remember { mutableStateOf<(() -> Unit)?>(null) }
+    val launchFilePicker = com.localkarar.app.core.rememberFilePicker { file ->
+        if (file != null) {
+            viewModel.uploadAvatar(file.name, file.bytes, onNewSession)
+        }
+    }
 
     LkPageLayout(title = "Profil", onBack = null) {
         Column(
@@ -53,14 +57,7 @@ fun ProfileScreen(
                     CircularProgressIndicator(color = LkPrimary)
                 } else {
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        OutlinedButton(onClick = {
-                            pickFile = rememberFilePicker { file ->
-                                pickFile = null
-                                if (file != null) {
-                                    viewModel.uploadAvatar(file.name, file.bytes, onNewSession)
-                                }
-                            }
-                        }) {
+                        OutlinedButton(onClick = { launchFilePicker() }) {
                             Text("Fotoğraf Yükle")
                         }
                         if (user.avatarUrl != null) {
@@ -89,12 +86,6 @@ fun ProfileScreen(
                 Spacer(Modifier.height(4.dp))
                 TextButton(onClick = { viewModel.clearNotice() }) { Text("Kapat", color = LkTextSecondary) }
             }
-        }
-    }
-
-    pickFile?.let { launch ->
-        androidx.compose.runtime.LaunchedEffect(launch) {
-            launch()
         }
     }
 }

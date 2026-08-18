@@ -1,6 +1,9 @@
 package com.localkarar.app.ui.screens.workspaces
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -20,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import com.localkarar.app.network.dto.BusinessContactDto
 import com.localkarar.app.network.dto.ContactInputDto
 import com.localkarar.app.ui.components.LkButton
+import com.localkarar.app.ui.components.LkButtonVariant
 import com.localkarar.app.ui.components.LkChip
 import com.localkarar.app.ui.components.LkEmptyState
 import com.localkarar.app.ui.components.LkErrorState

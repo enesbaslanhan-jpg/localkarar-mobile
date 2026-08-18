@@ -11,6 +11,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.localkarar.app.settings.SettingsViewModel
 import com.localkarar.app.ui.components.LkButton
+import com.localkarar.app.ui.components.LkButtonVariant
 import com.localkarar.app.ui.components.LkPageLayout
 import com.localkarar.app.ui.theme.*
 

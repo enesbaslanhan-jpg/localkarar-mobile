@@ -81,7 +81,7 @@ class CalendarViewModel(
             if (result.isSuccess) {
                 val response = result.getOrThrow()
                 val byDate = mutableMapOf<LocalDate, List<BusinessRecordDto>>()
-                response.dayOfMonths.forEach { (dayString, records) ->
+                response.days.forEach { (dayString, records) ->
                     val parsed = parseLocalDate(dayString) ?: return@forEach
                     byDate[parsed] = records
                 }

@@ -1,5 +1,7 @@
 package com.localkarar.app.community
 
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.jsonObject
 import com.localkarar.app.network.ApiConfig
 import com.localkarar.app.network.dto.CommunityFeedResponseDto
 import com.localkarar.app.network.dto.CommunityPostDto
@@ -19,7 +21,7 @@ import kotlinx.serialization.json.Json
 
 class CommunityRepository(
     private val client: HttpClient,
-    private val baseUrl: String = ApiConfig.PRODUCTION_API_URL
+    private val baseUrl: String = ApiConfig.baseUrl
 ) {
     private val json = Json { ignoreUnknownKeys = true }
 

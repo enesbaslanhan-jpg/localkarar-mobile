@@ -6,6 +6,7 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import kotlinx.datetime.plus
 import kotlinx.datetime.todayIn
 
 object LkDateUtils {
@@ -125,7 +126,7 @@ object LkDateUtils {
     }
 
     fun dateAt(offsetDays: Int): LocalDate {
-        return today().plus(offsetDays, kotlinx.datetime.DateTimeUnit.DAY)
+        return today().plus(kotlinx.datetime.DatePeriod(days = offsetDays))
     }
 
     data class CalendarMonth(

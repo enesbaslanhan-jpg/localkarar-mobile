@@ -50,9 +50,9 @@ class SettingsViewModel(
     fun refresh(onNewSession: ((String, UserDto) -> Unit)? = null) {
         loading = true
         viewModelScope.launch {
-            repository.getMe().onSuccess {
-                user = it
-                onNewSession?.invoke("", it)
+            repository.getMe().onSuccess { userDto ->
+                user = userDto
+                onNewSession?.invoke("", userDto)
             }.onFailure { e ->
                 setNotice(e.message ?: "Profil yüklenemedi", isError = true)
             }

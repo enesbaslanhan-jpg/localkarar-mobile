@@ -20,6 +20,7 @@ import com.localkarar.app.core.displayValue
 import com.localkarar.app.network.dto.CalculationStepDto
 import com.localkarar.app.network.dto.ValidationCheckDto
 import com.localkarar.app.ui.components.LkButton
+import com.localkarar.app.ui.components.LkButtonVariant
 import com.localkarar.app.ui.components.LkChip
 import com.localkarar.app.ui.components.LkErrorState
 import com.localkarar.app.ui.components.LkInfoPanel

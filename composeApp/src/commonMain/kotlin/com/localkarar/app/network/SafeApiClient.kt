@@ -76,7 +76,8 @@ class SafeApiClient(
         }
     }
 
-    private fun mapException(e: Exception): ApiError {
+    @PublishedApi
+    internal fun mapException(e: Exception): ApiError {
         return when (e) {
             is ApiError -> e
             else -> {

@@ -135,7 +135,7 @@ fun RecordCard(
     onClick: () -> Unit
 ) {
     val dueDate = LkDateUtils.parseDate(record.dueAt)
-    val overdue = dueDate?.let { LkDateUtils.daysUntil(it) } ?: 0L
+    val overdue = dueDate?.let { LkDateUtils.daysUntil(it) } ?: 0
     val isActive = record.status == "open" || record.status == "in_progress"
 
     Column(

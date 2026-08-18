@@ -10,15 +10,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 
 object AppContextHolder {
-    lateinit var appContext: Context
+    var appContext: Context? = null
 }
 
 actual fun openExternalUrl(url: String) {
-    if (!AppContextHolder::appContext.isInitialized) return
+    val ctx = AppContextHolder.appContext ?: return
     try {
         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        AppContextHolder.appContext.startActivity(intent)
+        ctx.startActivity(intent)
     } catch (e: Exception) {
         println("openExternalUrl failed: ${e.message}")
     }

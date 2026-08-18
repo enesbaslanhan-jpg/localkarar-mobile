@@ -1,6 +1,7 @@
 package com.localkarar.app.ui.screens.workspaces
 
 import androidx.compose.foundation.background
+import androidx.compose.material.IconButton
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -20,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.localkarar.app.network.dto.WorkspaceSummaryDto
 import com.localkarar.app.ui.components.LkButton
+import com.localkarar.app.ui.components.LkButtonVariant
 import com.localkarar.app.ui.components.LkEmptyState
 import com.localkarar.app.ui.components.LkErrorState
 import com.localkarar.app.ui.components.LkLoadingState

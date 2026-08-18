@@ -1,6 +1,7 @@
 package com.localkarar.app.ui.screens.workspaces
 
 import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -188,7 +189,7 @@ private fun MonthGrid(
                                 verticalArrangement = Arrangement.Center
                             ) {
                                 Text(
-                                    text = date.day.toString(),
+                                    text = date.dayOfMonth.toString(),
                                     style = LkTypography.getBodySmall(),
                                     color = if (isSelected) LkOnPrimary else LkTextPrimary
                                 )

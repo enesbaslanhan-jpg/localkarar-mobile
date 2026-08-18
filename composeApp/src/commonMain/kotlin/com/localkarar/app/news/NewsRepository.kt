@@ -10,7 +10,7 @@ import io.ktor.http.isSuccess
 
 class NewsRepository(
     private val client: HttpClient,
-    private val baseUrl: String = ApiConfig.PRODUCTION_API_URL
+    private val baseUrl: String = ApiConfig.baseUrl
 ) {
     suspend fun getFeed(category: String?, cursor: String?, limit: Int = 20): Result<NewsFeedResponseDto> {
         return try {

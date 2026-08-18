@@ -1,6 +1,8 @@
 package com.localkarar.app.ui.screens.calculations
 
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.background
+import androidx.compose.material.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*

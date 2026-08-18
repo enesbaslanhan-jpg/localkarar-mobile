@@ -176,7 +176,7 @@ fun LkDateField(
         trailingContent = {
             IconButton(onClick = { showPicker = true }) {
                 Icon(
-                    imageVector = androidx.compose.material.icons.Icons.Default.Event,
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                     contentDescription = "Tarih seç",
                     tint = com.localkarar.app.ui.theme.LkTextSecondary
                 )

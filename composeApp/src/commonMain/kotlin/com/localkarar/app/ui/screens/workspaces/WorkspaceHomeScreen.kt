@@ -1,5 +1,6 @@
 package com.localkarar.app.ui.screens.workspaces
 
+import com.localkarar.app.ui.components.LkButton
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -213,7 +214,7 @@ private fun UpcomingRecordRow(
     onOpen: () -> Unit
 ) {
     val dueDate = LkDateUtils.parseDate(record.dueAt)
-    val overdue = dueDate?.let { LkDateUtils.daysUntil(it) } ?: 0L
+    val overdue = dueDate?.let { LkDateUtils.daysUntil(it) } ?: 0
     Row(
         modifier = Modifier
             .fillMaxWidth()

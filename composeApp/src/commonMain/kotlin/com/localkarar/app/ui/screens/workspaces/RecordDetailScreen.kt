@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import com.localkarar.app.core.LkDateUtils
 import com.localkarar.app.core.LkFormatting
 import com.localkarar.app.ui.components.LkButton
+import com.localkarar.app.ui.components.LkButtonVariant
 import com.localkarar.app.ui.components.LkErrorState
 import com.localkarar.app.ui.components.LkInfoPanel
 import com.localkarar.app.ui.components.LkLoadingState
@@ -234,7 +235,7 @@ private fun DeferRecordDialog(
     onDismiss: () -> Unit,
     onDefer: (LocalDate, String) -> Unit
 ) {
-    var dueDate by remember { mutableStateOf(LkDateUtils.today().plus(1, kotlinx.datetime.DateTimeUnit.DAY)) }
+    var dueDate by remember { mutableStateOf(LkDateUtils.dateAt(1)) }
     var reason by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
 

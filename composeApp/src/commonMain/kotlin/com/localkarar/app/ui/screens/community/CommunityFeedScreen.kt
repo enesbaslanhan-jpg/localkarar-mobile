@@ -17,6 +17,7 @@ import com.localkarar.app.community.CommunityViewModel
 import com.localkarar.app.core.LkDateUtils
 import com.localkarar.app.network.dto.CommunityPostDto
 import com.localkarar.app.ui.components.LkButton
+import com.localkarar.app.ui.components.LkButtonVariant
 import com.localkarar.app.ui.components.LkPageLayout
 import com.localkarar.app.ui.theme.*
 

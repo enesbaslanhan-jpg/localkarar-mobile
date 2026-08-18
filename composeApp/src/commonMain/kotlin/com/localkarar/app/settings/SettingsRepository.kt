@@ -1,5 +1,7 @@
 package com.localkarar.app.settings
 
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.jsonObject
 import com.localkarar.app.auth.UserDto
 import com.localkarar.app.network.ApiConfig
 import io.ktor.client.HttpClient
@@ -45,7 +47,7 @@ data class ChangeEmailResponse(
 
 class SettingsRepository(
     private val client: HttpClient,
-    private val baseUrl: String = ApiConfig.PRODUCTION_API_URL
+    private val baseUrl: String = ApiConfig.baseUrl
 ) {
     private val json = Json { ignoreUnknownKeys = true }
 

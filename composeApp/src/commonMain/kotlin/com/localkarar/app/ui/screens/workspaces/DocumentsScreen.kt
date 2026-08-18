@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import com.localkarar.app.core.LkDateUtils
 import com.localkarar.app.network.dto.WorkspaceDocumentDto
 import com.localkarar.app.ui.components.LkButton
+import com.localkarar.app.ui.components.LkButtonVariant
 import com.localkarar.app.ui.components.LkChip
 import com.localkarar.app.ui.components.LkEmptyState
 import com.localkarar.app.ui.components.LkErrorState

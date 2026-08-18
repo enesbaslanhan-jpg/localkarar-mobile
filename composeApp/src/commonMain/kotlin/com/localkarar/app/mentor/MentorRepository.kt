@@ -1,6 +1,8 @@
 package com.localkarar.app.mentor
 
+import kotlinx.coroutines.launch
 import com.localkarar.app.network.ApiConfig
+import com.localkarar.app.network.dto.ConversationListItemDto
 import com.localkarar.app.network.dto.ConversationDetailDto
 import com.localkarar.app.network.dto.ConversationDetailResponseDto
 import com.localkarar.app.network.dto.ConversationListResponseDto
@@ -35,7 +37,7 @@ import kotlinx.serialization.json.jsonPrimitive
 
 class MentorRepository(
     private val client: HttpClient,
-    private val baseUrl: String = ApiConfig.PRODUCTION_API_URL
+    private val baseUrl: String = ApiConfig.baseUrl
 ) {
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -54,7 +56,7 @@ class MentorRepository(
         }
     }
 
-    suspend fun listConversations(): Result<List<ConversationDto>> {
+    suspend fun listConversations(): Result<List<ConversationListItemDto>> {
         return try {
             val response = client.get("$base/conversations")
             if (response.status.isSuccess()) {
@@ -143,7 +145,7 @@ class MentorRepository(
     }
 
     fun streamMessage(conversationId: Int, message: String): Flow<MentorStreamEvent> = callbackFlow {
-        val job = kotlinx.coroutines.launch {
+        val job = launch {
             try {
                 val response = client.post("$base/conversations/$conversationId/messages/stream") {
                     contentType(ContentType.Application.Json)

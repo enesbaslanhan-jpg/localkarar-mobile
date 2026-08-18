@@ -1,6 +1,7 @@
 package com.localkarar.app.ui.screens.mentor
 
 import androidx.compose.foundation.background
+import androidx.compose.material.IconButton
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -19,6 +20,7 @@ import com.localkarar.app.mentor.MentorViewModel
 import com.localkarar.app.mentor.MemoryViewModel
 import com.localkarar.app.network.dto.ConversationListItemDto
 import com.localkarar.app.ui.components.LkButton
+import com.localkarar.app.ui.components.LkButtonVariant
 import com.localkarar.app.ui.components.LkInfoPanel
 import com.localkarar.app.ui.components.LkPageLayout
 import com.localkarar.app.ui.theme.*

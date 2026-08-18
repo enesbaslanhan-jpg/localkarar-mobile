@@ -14,6 +14,7 @@ data class UserDto(
     val email: String,
     val name: String,
     val role: String,
+    val avatarUrl: String? = null,
     val onboardingCompleted: Boolean = false
 )
 

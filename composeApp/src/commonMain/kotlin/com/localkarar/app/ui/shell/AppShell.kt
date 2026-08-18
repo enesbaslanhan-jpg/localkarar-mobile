@@ -179,7 +179,8 @@ fun AppShell(
                     newsRepository = newsRepository,
                     communityRepository = communityRepository,
                     settingsRepository = settingsRepository,
-                    onNewSession = onNewSession
+                    onNewSession = onNewSession,
+                    onLogout = onLogout
                 )
             }
         }
@@ -201,7 +202,8 @@ private fun ScreenContent(
     newsRepository: NewsRepository,
     communityRepository: CommunityRepository,
     settingsRepository: SettingsRepository,
-    onNewSession: (String, UserDto) -> Unit
+    onNewSession: (String, UserDto) -> Unit,
+    onLogout: () -> Unit
 ) {
     val onBack = { navController.popBackStack(); Unit }
     val activeWorkspaceId by activeWorkspaceStore.activeWorkspaceId.collectAsState()

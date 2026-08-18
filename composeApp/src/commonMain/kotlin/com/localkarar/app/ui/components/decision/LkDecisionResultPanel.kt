@@ -1,6 +1,7 @@
-﻿package com.localkarar.app.ui.components.decision
+package com.localkarar.app.ui.components.decision
 
 import androidx.compose.foundation.background
+import kotlinx.serialization.json.jsonPrimitive
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Icon
