@@ -97,4 +97,15 @@ class AuthRepository(
         secureStorage.clearToken()
         _sessionState.value = SessionState.Unauthenticated
     }
+
+    /**
+     * Applies a freshly issued token + user (e.g. after email change) without
+     * re-authenticating or clearing any state.
+     */
+    fun applyNewSession(token: String, user: UserDto) {
+        if (token.isNotBlank()) {
+            secureStorage.saveToken(token)
+        }
+        _sessionState.value = SessionState.Authenticated(user)
+    }
 }

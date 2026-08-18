@@ -33,18 +33,16 @@ fun MenuBottomSheet(
         
         Divider(color = LkLineSoft, modifier = Modifier.padding(vertical = LkSpacing.Space2))
         
-        // Navigation Options
+// Navigation Options
         MenuItem("Hesaplamalar") { onNavigate(Destination.Calculations) }
+        MenuItem("İşletme Takibi") { onNavigate(Destination.Workspaces) }
         MenuItem("Haberler") { onNavigate(Destination.News) }
-        MenuItem("Güncellemeler") { onNavigate(Destination.Updates) }
-        
+        MenuItem("Topluluk") { onNavigate(Destination.Community) }
+
         Divider(color = LkLineSoft, modifier = Modifier.padding(vertical = LkSpacing.Space2))
-        
-        MenuItem("Kaydedilenler") { onNavigate(Destination.Saved) }
-        MenuItem("Öğrenme İlerlemesi") { onNavigate(Destination.Progress) }
-        MenuItem("Profil") { onNavigate(Destination.Profile) }
-        
-        Divider(color = LkLineSoft, modifier = Modifier.padding(vertical = LkSpacing.Space2))
+
+        MenuItem("Karar Geçmişi") { onNavigate(Destination.DecisionHistory) }
+        MenuItem("Ayarlar") { onNavigate(Destination.Settings) }
         
         // Logout
         Box(
