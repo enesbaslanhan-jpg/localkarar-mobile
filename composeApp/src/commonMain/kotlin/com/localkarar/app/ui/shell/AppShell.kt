@@ -2,6 +2,7 @@ package com.localkarar.app.ui.shell
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -59,6 +60,9 @@ import com.localkarar.app.workspaces.ActivityViewModel
 import com.localkarar.app.workspaces.WorkspaceSettingsViewModel
 import com.localkarar.app.ui.screens.workspaces.WorkspacesScreen
 import com.localkarar.app.ui.screens.workspaces.WorkspaceHomeScreen
+import com.localkarar.app.ui.screens.workspaces.WorkspaceSectionSheet
+import com.localkarar.app.ui.screens.workspaces.OrdersScreen
+import com.localkarar.app.ui.screens.workspaces.ProductsScreen
 import com.localkarar.app.ui.screens.workspaces.RecordsScreen
 import com.localkarar.app.ui.screens.workspaces.RecordDetailScreen
 import com.localkarar.app.ui.screens.workspaces.RecordEditScreen
@@ -92,6 +96,12 @@ import com.localkarar.app.ui.screens.settings.EmailChangeScreen
 import com.localkarar.app.ui.screens.settings.DeleteAccountScreen
 import com.localkarar.app.auth.UserDto
 
+private sealed interface ShellSheetState {
+    object Closed : ShellSheetState
+    object ProductCenter : ShellSheetState
+    data class WorkspaceSections(val workspaceId: String, val currentSectionId: String) : ShellSheetState
+}
+
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun AppShell(
@@ -113,6 +123,7 @@ fun AppShell(
     val navController = remember { NavController(Destination.Home) }
     val backStack by navController.backStack.collectAsState()
     val currentDestination = backStack.last()
+    val activeWorkspaceId by activeWorkspaceStore.activeWorkspaceId.collectAsState()
 
     val homeUiState by homeViewModel.uiState.collectAsState()
     LaunchedEffect(homeUiState) {
@@ -121,17 +132,35 @@ fun AppShell(
         }
     }
 
-    val bottomSheetState = rememberModalBottomSheetState(ModalBottomSheetValue.Hidden)
+    val bottomSheetState = rememberModalBottomSheetState(
+        initialValue = ModalBottomSheetValue.Hidden,
+        skipHalfExpanded = true
+    )
     val coroutineScope = rememberCoroutineScope()
+    var sheetState by remember { mutableStateOf<ShellSheetState>(ShellSheetState.Closed) }
 
-    val openMenu = {
+    val openProductCenter = {
+        sheetState = ShellSheetState.ProductCenter
         coroutineScope.launch { bottomSheetState.show() }
     }
 
-    val closeMenuAndNavigate = { dest: Destination ->
+    val openWorkspaceSections = { wsId: String, sectionId: String ->
+        sheetState = ShellSheetState.WorkspaceSections(wsId, sectionId)
+        coroutineScope.launch { bottomSheetState.show() }
+    }
+
+    val closeSheetAndNavigate = { dest: Destination ->
         coroutineScope.launch {
             bottomSheetState.hide()
+            sheetState = ShellSheetState.Closed
             navController.navigateTo(dest)
+        }
+    }
+
+    val closeSheet = {
+        coroutineScope.launch {
+            bottomSheetState.hide()
+            sheetState = ShellSheetState.Closed
         }
     }
 
@@ -140,11 +169,28 @@ fun AppShell(
         sheetBackgroundColor = Color.Transparent,
         sheetElevation = 0.dp,
         sheetContent = {
-            MenuBottomSheet(
-                firstName = user.name,
-                onNavigate = { closeMenuAndNavigate(it) },
-                onLogout = onLogout
-            )
+            when (val state = sheetState) {
+                is ShellSheetState.ProductCenter -> {
+                    ProductCenterSheet(
+                        activeWorkspaceId = activeWorkspaceId,
+                        onNavigate = { closeSheetAndNavigate(it) },
+                        onClose = { closeSheet() }
+                    )
+                }
+                is ShellSheetState.WorkspaceSections -> {
+                    WorkspaceSectionSheet(
+                        workspaceId = state.workspaceId,
+                        workspaceName = null,
+                        currentSectionId = state.currentSectionId,
+                        onNavigate = { closeSheetAndNavigate(it) },
+                        onOpenAllWorkspaces = { closeSheetAndNavigate(Destination.Workspaces) },
+                        onClose = { closeSheet() }
+                    )
+                }
+                ShellSheetState.Closed -> {
+                    Spacer(modifier = Modifier.height(1.dp))
+                }
+            }
         }
     ) {
         Scaffold(
@@ -152,8 +198,8 @@ fun AppShell(
                 if (currentDestination !is Destination.LessonReader) {
                     LkBottomNavigation(
                         currentDestination = currentDestination,
-                        onNavigate = { navController.navigateTo(it) },
-                        onMenuClick = { openMenu() }
+                        activeWorkspaceId = activeWorkspaceId,
+                        onNavigate = { navController.navigateTo(it) }
                     )
                 }
             },
@@ -180,6 +226,8 @@ fun AppShell(
                     newsRepository = newsRepository,
                     communityRepository = communityRepository,
                     settingsRepository = settingsRepository,
+                    onOpenProductCenter = { openProductCenter() },
+                    onOpenWorkspaceSections = { wsId, secId -> openWorkspaceSections(wsId, secId) },
                     onNewSession = onNewSession,
                     onLogout = onLogout
                 )
@@ -204,6 +252,8 @@ private fun ScreenContent(
     newsRepository: NewsRepository,
     communityRepository: CommunityRepository,
     settingsRepository: SettingsRepository,
+    onOpenProductCenter: () -> Unit,
+    onOpenWorkspaceSections: (String, String) -> Unit,
     onNewSession: (String, UserDto) -> Unit,
     onLogout: () -> Unit
 ) {
@@ -219,7 +269,7 @@ private fun ScreenContent(
             onNavigateToCalculations = { navController.navigateTo(Destination.Calculations) },
             onNavigateToMentor = { navController.navigateTo(Destination.AiMentor) },
             onNavigateToDecisions = { navController.navigateTo(Destination.DecisionTools()) },
-            onNavigateToDecisionDetail = { code -> navController.navigateTo(Destination.DecisionSession(code)) }, // The web app navigates to check, but let's pass code
+            onNavigateToDecisionDetail = { code -> navController.navigateTo(Destination.DecisionSession(code)) },
             onNavigateToWorkspaces = { navController.navigateTo(Destination.Workspaces) },
             onNavigateToTracker = { workspaceId -> navController.navigateTo(Destination.Records(workspaceId)) },
             onNavigateToEnrollments = { navController.navigateTo(Destination.Courses) }
@@ -252,12 +302,10 @@ private fun ScreenContent(
         }
         is Destination.DecisionTools -> {
             val viewModel = remember { DecisionToolsViewModel(decisionRepository) }
-            // Apply the filter passed from navigation to the viewmodel state initially
             LaunchedEffect(destination.initialFilter) {
                 if (viewModel.uiState.value is com.localkarar.app.decision.DecisionToolsUiState.Content) {
                     viewModel.updateStatusFilter(destination.initialFilter)
                 } else {
-                    // if loading, we might need to pass it to loadTools, but since loadTools loads all tools, we just need to set the filter in ViewModel.
                     viewModel.updateStatusFilter(destination.initialFilter)
                 }
             }
@@ -299,7 +347,6 @@ private fun ScreenContent(
             CalculationsScreen(
                 viewModel = viewModel,
                 onCalculationSelected = { item ->
-                    // Route to the appropriate detail screen based on mode
                     if (item.supportsQuickCalculation && item.formula != null) {
                         navController.navigateTo(Destination.FormulaDetail(item.formula!!))
                     } else if (item.supportsDetailedAnalysis && item.definition.modelCode != null) {
@@ -366,6 +413,8 @@ private fun ScreenContent(
             WorkspaceHomeScreen(
                 viewModel = viewModel,
                 onOpenRecords = { navController.navigateTo(Destination.Records(destination.workspaceId)) },
+                onOpenOrders = { navController.navigateTo(Destination.Orders(destination.workspaceId)) },
+                onOpenProducts = { navController.navigateTo(Destination.Products(destination.workspaceId)) },
                 onOpenCalendar = { navController.navigateTo(Destination.Calendar(destination.workspaceId)) },
                 onOpenDocuments = { navController.navigateTo(Destination.Documents(destination.workspaceId)) },
                 onOpenTeam = { navController.navigateTo(Destination.Team(destination.workspaceId)) },
@@ -375,6 +424,21 @@ private fun ScreenContent(
                 onOpenSettings = { navController.navigateTo(Destination.WorkspaceSettings(destination.workspaceId)) },
                 onOpenRecord = { recordId -> navController.navigateTo(Destination.RecordDetail(destination.workspaceId, recordId)) },
                 onAddRecord = { navController.navigateTo(Destination.RecordEdit(destination.workspaceId, null)) },
+                onOpenSectionSelector = { onOpenWorkspaceSections(destination.workspaceId, "overview") },
+                onBack = onBack
+            )
+        }
+        is Destination.Orders -> {
+            OrdersScreen(
+                workspaceId = destination.workspaceId,
+                onOpenSectionSelector = { onOpenWorkspaceSections(destination.workspaceId, "orders") },
+                onBack = onBack
+            )
+        }
+        is Destination.Products -> {
+            ProductsScreen(
+                workspaceId = destination.workspaceId,
+                onOpenSectionSelector = { onOpenWorkspaceSections(destination.workspaceId, "products") },
                 onBack = onBack
             )
         }
@@ -471,7 +535,8 @@ private fun ScreenContent(
             val viewModel = remember { CommunityViewModel(communityRepository) }
             CommunityFeedScreen(
                 viewModel = viewModel,
-                onOpenPost = { postId -> navController.navigateTo(Destination.CommunityPost(postId)) }
+                onOpenPost = { postId -> navController.navigateTo(Destination.CommunityPost(postId)) },
+                onOpenProductCenter = onOpenProductCenter
             )
         }
         is Destination.CommunityPost -> {
@@ -484,6 +549,7 @@ private fun ScreenContent(
                 userName = user.name,
                 userEmail = user.email,
                 onOpenProfile = { navController.navigateTo(Destination.Profile) },
+                onOpenWorkspaces = { navController.navigateTo(Destination.Workspaces) },
                 onOpenPassword = { navController.navigateTo(Destination.PasswordChange) },
                 onOpenEmail = { navController.navigateTo(Destination.EmailChange) },
                 onOpenDeleteAccount = { navController.navigateTo(Destination.DeleteAccount) },
@@ -514,63 +580,112 @@ private fun ScreenContent(
 }
 
 // ──────────────────────────────────────────────────────────────────
-// Bottom Navigation
+// LOCKED Primary Bottom Navigation (V1)
+// 1. Ana Sayfa
+// 2. İşletme Takibi
+// 3. Topluluk
+// 4. Hesaplamalar
+// 5. Ayarlar
 // ──────────────────────────────────────────────────────────────────
 
 private data class NavItem(
     val label: String,
     val icon: ImageVector,
-    val destination: Destination?,     // null = menu trigger
+    val getTargetDestination: (activeWorkspaceId: String?) -> Destination
 )
 
-private val NAV_ITEMS = listOf(
-    NavItem("Ana Sayfa", Icons.Default.Home,           Destination.Home),
-    NavItem("Kurslar",   Icons.Default.School,         Destination.Courses),
-    NavItem("Karar",     Icons.Default.AccountBalance,  Destination.DecisionTools()),
-    NavItem("Mentor",    Icons.Default.Psychology,      Destination.AiMentor),
-    NavItem("Menü",      Icons.Default.Menu,            null),  // opens drawer
+private val PRIMARY_NAV_ITEMS = listOf(
+    NavItem("Ana Sayfa", Icons.Default.Home) { Destination.Home },
+    NavItem("İşletme", Icons.Default.Business) { activeId ->
+        if (activeId != null) Destination.WorkspaceHome(activeId) else Destination.Workspaces
+    },
+    NavItem("Topluluk", Icons.Default.Groups) { Destination.Community },
+    NavItem("Hesapla", Icons.Default.Calculate) { Destination.Calculations },
+    NavItem("Ayarlar", Icons.Default.Settings) { Destination.Settings }
 )
 
 @Composable
 private fun LkBottomNavigation(
     currentDestination: Destination,
-    onNavigate: (Destination) -> Unit,
-    onMenuClick: () -> Unit
+    activeWorkspaceId: String?,
+    onNavigate: (Destination) -> Unit
 ) {
     BottomNavigation(
         backgroundColor = LkSurfacePanel,
-        contentColor    = LkTextSecondary,
-        elevation       = 0.dp,
-        modifier        = Modifier
+        contentColor = LkTextSecondary,
+        elevation = 0.dp,
+        modifier = Modifier
+            .fillMaxWidth()
             .border(width = 1.dp, color = LkLineStrong)
     ) {
-        NAV_ITEMS.forEach { item ->
-            val selected = item.destination != null && currentDestination == item.destination
+        PRIMARY_NAV_ITEMS.forEach { item ->
+            val target = item.getTargetDestination(activeWorkspaceId)
+            val selected = isTabSelected(currentDestination, target)
+
             BottomNavigationItem(
-                selected             = selected,
-                onClick              = {
-                    if (item.destination != null) onNavigate(item.destination)
-                    else onMenuClick()
+                selected = selected,
+                onClick = {
+                    onNavigate(target)
                 },
-                icon                 = {
+                icon = {
                     Icon(
-                        imageVector  = item.icon,
+                        imageVector = item.icon,
                         contentDescription = item.label,
-                        modifier     = Modifier.size(22.dp),
-                        tint         = if (selected) LkPrimary else LkTextSecondary
+                        modifier = Modifier.size(22.dp),
+                        tint = if (selected) LkPrimary else LkTextSecondary
                     )
                 },
-                label                = {
+                label = {
                     Text(
-                        text      = item.label,
-                        style     = LkTypography.getMicro(),
-                        color     = if (selected) LkPrimary else LkTextSecondary,
-                        maxLines  = 1
+                        text = item.label,
+                        style = LkTypography.getMicro(),
+                        color = if (selected) LkPrimary else LkTextSecondary,
+                        maxLines = 1
                     )
                 },
-                selectedContentColor   = LkPrimary,
+                selectedContentColor = LkPrimary,
                 unselectedContentColor = LkTextSecondary
             )
         }
+    }
+}
+
+private fun isTabSelected(current: Destination, tabTarget: Destination): Boolean {
+    return when (tabTarget) {
+        is Destination.Home -> current is Destination.Home
+        is Destination.WorkspaceHome, Destination.Workspaces -> {
+            current is Destination.Workspaces ||
+            current is Destination.WorkspaceHome ||
+            current is Destination.Records ||
+            current is Destination.RecordDetail ||
+            current is Destination.RecordEdit ||
+            current is Destination.Orders ||
+            current is Destination.Products ||
+            current is Destination.Documents ||
+            current is Destination.Calendar ||
+            current is Destination.Team ||
+            current is Destination.Contacts ||
+            current is Destination.Notifications ||
+            current is Destination.Activity ||
+            current is Destination.WorkspaceSettings
+        }
+        is Destination.Community -> {
+            current is Destination.Community || current is Destination.CommunityPost
+        }
+        is Destination.Calculations -> {
+            current is Destination.Calculations ||
+            current is Destination.FormulaDetail ||
+            current is Destination.FinancialModelDetail ||
+            current is Destination.ModelRuns ||
+            current is Destination.RunDetail
+        }
+        is Destination.Settings -> {
+            current is Destination.Settings ||
+            current is Destination.Profile ||
+            current is Destination.PasswordChange ||
+            current is Destination.EmailChange ||
+            current is Destination.DeleteAccount
+        }
+        else -> false
     }
 }

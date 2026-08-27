@@ -31,11 +31,13 @@ sealed interface Destination {
     data class Records(val workspaceId: String) : Destination
     data class RecordDetail(val workspaceId: String, val recordId: String) : Destination
     data class RecordEdit(val workspaceId: String, val recordId: String?) : Destination
-    data class Calendar(val workspaceId: String) : Destination
+    data class Orders(val workspaceId: String) : Destination
+    data class Products(val workspaceId: String) : Destination
     data class Documents(val workspaceId: String) : Destination
+    data class Notifications(val workspaceId: String) : Destination
+    data class Calendar(val workspaceId: String) : Destination
     data class Team(val workspaceId: String) : Destination
     data class Contacts(val workspaceId: String) : Destination
-    data class Notifications(val workspaceId: String) : Destination
     data class Activity(val workspaceId: String) : Destination
     data class WorkspaceSettings(val workspaceId: String) : Destination
 

@@ -18,9 +18,11 @@ import androidx.compose.material.icons.filled.Contacts
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.EventNote
 import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Today
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -44,6 +46,8 @@ import com.localkarar.app.workspaces.WorkspaceHomeViewModel
 fun WorkspaceHomeScreen(
     viewModel: WorkspaceHomeViewModel,
     onOpenRecords: () -> Unit,
+    onOpenOrders: () -> Unit,
+    onOpenProducts: () -> Unit,
     onOpenCalendar: () -> Unit,
     onOpenDocuments: () -> Unit,
     onOpenTeam: () -> Unit,
@@ -53,11 +57,22 @@ fun WorkspaceHomeScreen(
     onOpenSettings: () -> Unit,
     onOpenRecord: (String) -> Unit,
     onAddRecord: () -> Unit,
+    onOpenSectionSelector: () -> Unit,
     onBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    LkPageLayout(title = "İşletme", onBack = onBack) {
+    LkPageLayout(
+        title = "İşletme Takibi",
+        onBack = onBack,
+        actions = {
+            WorkspaceSectionPill(
+                sectionName = "Genel Bakış",
+                onClick = onOpenSectionSelector,
+                modifier = Modifier.padding(end = 12.dp)
+            )
+        }
+    ) {
         when (val state = uiState) {
             is WorkspaceHomeUiState.Loading -> LkLoadingState()
             is WorkspaceHomeUiState.Error -> LkErrorState(
@@ -132,17 +147,31 @@ fun WorkspaceHomeScreen(
                     }
 
                     item {
-                        LkSectionHeader(title = "Menü")
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            LkSectionHeader(title = "İşletme Bölümleri")
+                            Text(
+                                text = "Tümünü Seç",
+                                style = LkTypography.getMicro(),
+                                color = LkPrimary,
+                                modifier = Modifier.clickable(onClick = onOpenSectionSelector)
+                            )
+                        }
                         Spacer(modifier = Modifier.height(LkSpacing.Space3))
                         SectionNavRow(
                             items = listOf(
-                                SectionNavItem("Takip", Icons.Default.ReceiptLong, onOpenRecords),
-                                SectionNavItem("Takvim", Icons.Default.CalendarMonth, onOpenCalendar),
+                                SectionNavItem("Kayıtlar", Icons.Default.ReceiptLong, onOpenRecords),
+                                SectionNavItem("Siparişler", Icons.Default.ShoppingCart, onOpenOrders),
+                                SectionNavItem("Ürünler", Icons.Default.Inventory2, onOpenProducts),
                                 SectionNavItem("Belgeler", Icons.Default.AttachFile, onOpenDocuments),
+                                SectionNavItem("Takvim", Icons.Default.CalendarMonth, onOpenCalendar),
+                                SectionNavItem("Bildirimler", Icons.Default.Notifications, onOpenNotifications),
                                 SectionNavItem("Ekip", Icons.Default.Group, onOpenTeam),
                                 SectionNavItem("Kişiler", Icons.Default.Contacts, onOpenContacts),
-                                SectionNavItem("Bildirimler", Icons.Default.Notifications, onOpenNotifications),
-                                SectionNavItem("Etkinlik", Icons.Default.Construction, onOpenActivity),
+                                SectionNavItem("Aktiviteler", Icons.Default.Construction, onOpenActivity),
                                 SectionNavItem("Ayarlar", Icons.Default.Settings, onOpenSettings)
                             )
                         )
