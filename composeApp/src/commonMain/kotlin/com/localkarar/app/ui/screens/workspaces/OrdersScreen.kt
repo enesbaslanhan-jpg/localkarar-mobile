@@ -53,7 +53,7 @@ fun OrdersScreen(
     val error by viewModel.error.collectAsState()
     val selectedProvider by viewModel.selectedProvider.collectAsState()
     val selectedStatus by viewModel.selectedStatus.collectAsState()
-    val searchQuery by viewModel.searchQuery.collectAsState()
+    // Note: searchQuery not present in canonical Web Orders.jsx (status is a deep-link filter)
 
     var selectedOrderDetail by remember { mutableStateOf<OrderDto?>(null) }
 
@@ -145,22 +145,6 @@ fun OrdersScreen(
                 )
             }
 
-            // Search Bar
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = LkSpacing.Space4, vertical = LkSpacing.Space2)
-            ) {
-                LkTextField(
-                    value = searchQuery,
-                    onValueChange = { viewModel.setSearchQuery(workspaceId, it) },
-                    placeholder = "Sipariş No veya Müşteri Ara...",
-                    trailingContent = {
-                        Icon(Icons.Default.Search, contentDescription = null, tint = LkTextMuted)
-                    }
-                )
-            }
-
             // Provider Filter Chips
             LazyRow(
                 modifier = Modifier
@@ -216,7 +200,7 @@ fun OrdersScreen(
                                 color = if (isSelected) LkPrimary else LkLineSoft,
                                 shape = LkShapes.SM
                             )
-                            .clickable { viewModel.setStatusFilter(workspaceId, status) }
+                            .clickable { viewModel.setStatusFilter(status) }
                             .padding(horizontal = 10.dp, vertical = 4.dp)
                     ) {
                         Text(

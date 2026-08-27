@@ -190,20 +190,20 @@ fun ProductsScreen(
                 item {
                     StatusFilterChip(
                         label = "Kritik Stok",
-                        isSelected = selectedStockFilter == "low_stock",
+                        isSelected = selectedStockFilter == "low",
                         onClick = {
                             viewModel.setOnSaleFilter(workspaceId, null)
-                            viewModel.setStockFilter(workspaceId, "low_stock")
+                            viewModel.setStockFilter(workspaceId, "low")
                         }
                     )
                 }
                 item {
                     StatusFilterChip(
                         label = "Stok Tükendi",
-                        isSelected = selectedStockFilter == "out_of_stock",
+                        isSelected = selectedStockFilter == "out",
                         onClick = {
                             viewModel.setOnSaleFilter(workspaceId, null)
-                            viewModel.setStockFilter(workspaceId, "out_of_stock")
+                            viewModel.setStockFilter(workspaceId, "out")
                         }
                     )
                 }

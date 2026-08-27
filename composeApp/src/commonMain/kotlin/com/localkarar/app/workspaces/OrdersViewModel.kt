@@ -12,6 +12,10 @@ class OrdersViewModel(
     private val repository: WorkspaceRepository
 ) : ViewModel() {
 
+    // Raw orders loaded from backend (provider filter applied server-side)
+    private val _allOrders = MutableStateFlow<List<OrderDto>>(emptyList())
+
+    // Derived: status is a client-side deep-link filter (Web parity)
     private val _orders = MutableStateFlow<List<OrderDto>>(emptyList())
     val orders: StateFlow<List<OrderDto>> = _orders.asStateFlow()
 
@@ -30,36 +34,45 @@ class OrdersViewModel(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
+    // Backend filter: provider is sent on the canonical list request
     private val _selectedProvider = MutableStateFlow<String?>(null)
     val selectedProvider: StateFlow<String?> = _selectedProvider.asStateFlow()
 
+    // Client-side deep-link filter: status is NOT sent to backend (Web parity)
     private val _selectedStatus = MutableStateFlow<String?>(null)
     val selectedStatus: StateFlow<String?> = _selectedStatus.asStateFlow()
-
-    private val _searchQuery = MutableStateFlow("")
-    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
     fun loadOrders(workspaceId: String) {
         if (workspaceId.isBlank()) return
         _isLoading.value = true
         _error.value = null
         viewModelScope.launch {
+            // Canonical Web contract: only workspaceId + provider + limit go to backend
             repository.getOrders(
                 workspaceId = workspaceId,
-                provider = _selectedProvider.value,
-                status = _selectedStatus.value,
-                query = _searchQuery.value
+                provider = _selectedProvider.value
             )
                 .onSuccess { resp ->
-                    _orders.value = resp.orders
+                    _allOrders.value = resp.orders
                     _lastSyncedAt.value = resp.lastSyncedAt
                     _integrationConnected.value = resp.integrationConnected
                     _isLoading.value = false
+                    applyClientSideFilters()
                 }
                 .onFailure { err ->
                     _error.value = err.message ?: "Siparişler yüklenemedi."
                     _isLoading.value = false
                 }
+        }
+    }
+
+    // Apply status as a client-side deep-link filter (matching Web Orders.jsx behavior)
+    private fun applyClientSideFilters() {
+        val status = _selectedStatus.value
+        _orders.value = if (status.isNullOrBlank() || status == "TÜMÜ") {
+            _allOrders.value
+        } else {
+            _allOrders.value.filter { it.status.equals(status, ignoreCase = true) }
         }
     }
 
@@ -81,18 +94,15 @@ class OrdersViewModel(
         }
     }
 
+    // provider -> backend (re-fetches)
     fun setProviderFilter(workspaceId: String, provider: String?) {
         _selectedProvider.value = provider
         loadOrders(workspaceId)
     }
 
-    fun setStatusFilter(workspaceId: String, status: String?) {
+    // status -> client-side only (no re-fetch)
+    fun setStatusFilter(status: String?) {
         _selectedStatus.value = status
-        loadOrders(workspaceId)
-    }
-
-    fun setSearchQuery(workspaceId: String, query: String) {
-        _searchQuery.value = query
-        loadOrders(workspaceId)
+        applyClientSideFilters()
     }
 }

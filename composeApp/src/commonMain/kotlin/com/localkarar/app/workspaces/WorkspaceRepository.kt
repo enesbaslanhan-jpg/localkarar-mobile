@@ -163,13 +163,13 @@ class WorkspaceRepository(private val api: SafeApiClient) {
     suspend fun getOrders(
         workspaceId: String,
         provider: String? = null,
-        status: String? = null,
-        query: String? = null
+        limit: Int = 100,
+        // status: client-side deep-link filter — not sent to backend (Web parity)
+        // q: not part of canonical Web list contract
     ): Result<OrderListResponseDto> {
         val params = mutableListOf("workspaceId=$workspaceId")
         if (!provider.isNullOrBlank() && provider != "TÜMÜ") params.add("provider=$provider")
-        if (!status.isNullOrBlank() && status != "TÜMÜ") params.add("status=$status")
-        if (!query.isNullOrBlank()) params.add("q=$query")
+        params.add("limit=$limit")
         val queryString = "?" + params.joinToString("&")
 
         // Canonical Web endpoint: GET /marketplace/orders?workspaceId=...
@@ -232,22 +232,14 @@ class WorkspaceRepository(private val api: SafeApiClient) {
                     lastSyncedAt = "2026-08-28T02:00:00Z"
                 )
             }
+            // Only provider filter is applied server-side; status is client-side (Web parity)
             val filtered = if (!provider.isNullOrBlank() && provider != "TÜMÜ") {
                 orders.filter { it.provider.equals(provider, ignoreCase = true) }
             } else orders
-            val statusFiltered = if (!status.isNullOrBlank() && status != "TÜMÜ") {
-                filtered.filter { it.status.equals(status, ignoreCase = true) }
-            } else filtered
-            val searched = if (!query.isNullOrBlank()) {
-                statusFiltered.filter {
-                    it.orderNumber.contains(query, ignoreCase = true) ||
-                    (it.customerName?.contains(query, ignoreCase = true) == true)
-                }
-            } else statusFiltered
 
             OrderListResponseDto(
-                orders = searched,
-                total = searched.size,
+                orders = filtered,
+                total = filtered.size,
                 lastSyncedAt = "2026-08-28T02:00:00Z",
                 integrationConnected = true
             )
@@ -304,29 +296,35 @@ class WorkspaceRepository(private val api: SafeApiClient) {
         workspaceId: String,
         provider: String? = null,
         onSale: Boolean? = null,
-        stockFilter: String? = null, // "low_stock", "out_of_stock", "all"
+        stockFilter: String? = null, // "low" | "out" (canonical Web values)
         windowDays: String = "30", // "7", "30", "90"
-        sort: String = "default", // "default", "bestSelling", "topRevenue", "mostReturned"
+        sort: String = "default", // "default" | "bestSelling" | "topRevenue" | "mostReturned"
         query: String? = null
     ): Result<ProductListResponseDto> {
         val params = mutableListOf("workspaceId=$workspaceId")
         if (!provider.isNullOrBlank() && provider != "TÜMÜ") params.add("provider=$provider")
         if (onSale != null) params.add("onSale=$onSale")
-        if (!stockFilter.isNullOrBlank()) params.add("stockFilter=$stockFilter")
+        // Canonical Web stockFilter values: "low" | "out" (not low_stock / out_of_stock)
+        val canonicalStockFilter = when (stockFilter) {
+            "low_stock", "low" -> "low"
+            "out_of_stock", "out" -> "out"
+            else -> null
+        }
+        if (!canonicalStockFilter.isNullOrBlank()) params.add("stockFilter=$canonicalStockFilter")
         val canonicalWindowDays = when (windowDays) {
             "7", "7d" -> "7"
             "90", "90d" -> "90"
             else -> "30"
         }
         params.add("windowDays=$canonicalWindowDays")
-        // Canonical Web uses camelCase sort parameter: default, bestSelling, topRevenue, mostReturned
+        // Canonical Web: omit sort param when default; only send when a specific sort is selected
         val canonicalSort = when (sort) {
-            "best_selling", "bestSelling" -> "bestSelling"
-            "top_revenue", "topRevenue" -> "topRevenue"
-            "most_returned", "mostReturned" -> "mostReturned"
-            else -> "default"
+            "bestSelling", "best_selling" -> "bestSelling"
+            "topRevenue", "top_revenue" -> "topRevenue"
+            "mostReturned", "most_returned" -> "mostReturned"
+            else -> null // default = omit entirely
         }
-        params.add("sort=$canonicalSort")
+        if (!canonicalSort.isNullOrBlank()) params.add("sort=$canonicalSort")
         if (!query.isNullOrBlank()) params.add("q=$query")
         val queryString = "?" + params.joinToString("&")
 
@@ -438,10 +436,10 @@ class WorkspaceRepository(private val api: SafeApiClient) {
         if (onSale != null) {
             filtered = filtered.filter { it.onSale == onSale }
         }
-        if (!stockFilter.isNullOrBlank()) {
-            filtered = when (stockFilter) {
-                "low_stock" -> filtered.filter { it.stock in 1..5 }
-                "out_of_stock" -> filtered.filter { it.stock == 0 }
+        if (!canonicalStockFilter.isNullOrBlank()) {
+            filtered = when (canonicalStockFilter) {
+                "low" -> filtered.filter { it.stock in 1..5 }
+                "out" -> filtered.filter { it.stock == 0 }
                 else -> filtered
             }
         }
