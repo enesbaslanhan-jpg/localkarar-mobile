@@ -18,11 +18,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import com.localkarar.app.network.dto.CreateProductRequestDto
 import com.localkarar.app.network.dto.ProductDto
-import com.localkarar.app.network.dto.UpdateProductRequestDto
 import com.localkarar.app.ui.components.LkButton
 import com.localkarar.app.ui.components.LkButtonVariant
 import com.localkarar.app.ui.components.LkNumericField
@@ -30,7 +29,20 @@ import com.localkarar.app.ui.components.LkTextField
 import com.localkarar.app.ui.theme.*
 import com.localkarar.app.workspaces.ProductsViewModel
 
-private val PRODUCT_CATEGORIES = listOf("Tümü", "Hizmet", "Yazılım", "Donanım", "Genel")
+private val PROVIDERS = listOf("TÜMÜ", "TRENDYOL", "HEPSIBURADA", "N11", "SHOPIFY")
+
+private val WINDOW_OPTIONS = listOf(
+    "7d" to "7 Gün",
+    "30d" to "30 Gün",
+    "90d" to "90 Gün"
+)
+
+private val SORT_OPTIONS = listOf(
+    "default" to "Varsayılan",
+    "best_selling" to "En Çok Satan",
+    "top_revenue" to "En Çok Ciro",
+    "most_returned" to "En Çok İade"
+)
 
 @Composable
 fun ProductsScreen(
@@ -41,11 +53,14 @@ fun ProductsScreen(
     val products by viewModel.products.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
-    val selectedCategory by viewModel.selectedCategory.collectAsState()
+    val selectedProvider by viewModel.selectedProvider.collectAsState()
+    val selectedOnSale by viewModel.selectedOnSale.collectAsState()
+    val selectedStockFilter by viewModel.selectedStockFilter.collectAsState()
+    val selectedWindow by viewModel.selectedWindow.collectAsState()
+    val selectedSortBy by viewModel.selectedSortBy.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
 
-    var showCreateDialog by remember { mutableStateOf(false) }
-    var editingProduct by remember { mutableStateOf<ProductDto?>(null) }
+    var editingSettingsProduct by remember { mutableStateOf<ProductDto?>(null) }
 
     LaunchedEffect(workspaceId) {
         viewModel.loadProducts(workspaceId)
@@ -59,19 +74,21 @@ fun ProductsScreen(
                 contentColor = LkTextPrimary,
                 elevation = 0.dp,
                 title = {
-                    Text(
-                        text = "Ürünler ve Hizmetler",
-                        style = LkTypography.getSectionTitle()
-                    )
+                    Column {
+                        Text(
+                            text = "Pazaryeri Ürünleri",
+                            style = LkTypography.getSectionTitle()
+                        )
+                        Text(
+                            text = "Katalog & Satış Performansı",
+                            style = LkTypography.getMicro(),
+                            color = LkTextMuted
+                        )
+                    }
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Geri")
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { showCreateDialog = true }) {
-                        Icon(Icons.Default.Add, contentDescription = "Yeni Ürün", tint = LkPrimary)
                     }
                 }
             )
@@ -82,37 +99,7 @@ fun ProductsScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // Metrics Row
-            val activeCount = products.count { it.status == "active" }
-            val lowStockCount = products.count { it.stockQuantity <= it.minStockLevel }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = LkSpacing.Space4, vertical = LkSpacing.Space3),
-                horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space3)
-            ) {
-                MetricCard(
-                    title = "Toplam Ürün",
-                    value = "${products.size}",
-                    color = LkPrimary,
-                    modifier = Modifier.weight(1f)
-                )
-                MetricCard(
-                    title = "Aktif Katalog",
-                    value = "$activeCount",
-                    color = LkSuccess,
-                    modifier = Modifier.weight(1f)
-                )
-                MetricCard(
-                    title = "Kritik Stok",
-                    value = "$lowStockCount",
-                    color = if (lowStockCount > 0) LkDanger else LkTextSecondary,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            // Search Bar
+            // Search Bar (Title, SKU, Barcode)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -121,22 +108,22 @@ fun ProductsScreen(
                 LkTextField(
                     value = searchQuery,
                     onValueChange = { viewModel.setSearchQuery(workspaceId, it) },
-                    placeholder = "Ürün Adı veya SKU Kod ile Ara...",
+                    placeholder = "Başlık, SKU veya Barkod ile Ara...",
                     trailingContent = {
                         Icon(Icons.Default.Search, contentDescription = null, tint = LkTextMuted)
                     }
                 )
             }
 
-            // Category Chips Row
+            // Provider Filter Chips
             LazyRow(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = LkSpacing.Space4, vertical = LkSpacing.Space2),
+                    .padding(horizontal = LkSpacing.Space4, vertical = 2.dp),
                 horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2)
             ) {
-                items(PRODUCT_CATEGORIES) { category ->
-                    val isSelected = selectedCategory == category
+                items(PROVIDERS) { provider ->
+                    val isSelected = (selectedProvider == null && provider == "TÜMÜ") || (selectedProvider == provider)
                     Box(
                         modifier = Modifier
                             .background(
@@ -148,11 +135,13 @@ fun ProductsScreen(
                                 color = if (isSelected) LkPrimary else LkLineSoft,
                                 shape = LkShapes.SM
                             )
-                            .clickable { viewModel.setCategoryFilter(workspaceId, category) }
+                            .clickable {
+                                viewModel.setProviderFilter(workspaceId, if (provider == "TÜMÜ") null else provider)
+                            }
                             .padding(horizontal = LkSpacing.Space3, vertical = 6.dp)
                     ) {
                         Text(
-                            text = category,
+                            text = provider,
                             style = LkTypography.getMicro(),
                             color = if (isSelected) LkOnPrimary else LkTextSecondary,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
@@ -160,6 +149,132 @@ fun ProductsScreen(
                     }
                 }
             }
+
+            // Sale & Stock Status Filter Chips
+            LazyRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = LkSpacing.Space4, vertical = 2.dp),
+                horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2)
+            ) {
+                item {
+                    StatusFilterChip(
+                        label = "Tümü",
+                        isSelected = selectedOnSale == null && selectedStockFilter == null,
+                        onClick = {
+                            viewModel.setOnSaleFilter(workspaceId, null)
+                            viewModel.setStockFilter(workspaceId, null)
+                        }
+                    )
+                }
+                item {
+                    StatusFilterChip(
+                        label = "Satışta",
+                        isSelected = selectedOnSale == true && selectedStockFilter == null,
+                        onClick = {
+                            viewModel.setOnSaleFilter(workspaceId, true)
+                            viewModel.setStockFilter(workspaceId, null)
+                        }
+                    )
+                }
+                item {
+                    StatusFilterChip(
+                        label = "Satışta Değil",
+                        isSelected = selectedOnSale == false && selectedStockFilter == null,
+                        onClick = {
+                            viewModel.setOnSaleFilter(workspaceId, false)
+                            viewModel.setStockFilter(workspaceId, null)
+                        }
+                    )
+                }
+                item {
+                    StatusFilterChip(
+                        label = "Kritik Stok",
+                        isSelected = selectedStockFilter == "low_stock",
+                        onClick = {
+                            viewModel.setOnSaleFilter(workspaceId, null)
+                            viewModel.setStockFilter(workspaceId, "low_stock")
+                        }
+                    )
+                }
+                item {
+                    StatusFilterChip(
+                        label = "Stok Tükendi",
+                        isSelected = selectedStockFilter == "out_of_stock",
+                        onClick = {
+                            viewModel.setOnSaleFilter(workspaceId, null)
+                            viewModel.setStockFilter(workspaceId, "out_of_stock")
+                        }
+                    )
+                }
+            }
+
+            // Performance Window & Sorting Controls
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = LkSpacing.Space4, vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Performance Window Chips
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    WINDOW_OPTIONS.forEach { (windowKey, windowLabel) ->
+                        val isSelected = selectedWindow == windowKey
+                        Box(
+                            modifier = Modifier
+                                .background(
+                                    color = if (isSelected) LkPrimary.copy(alpha = 0.2f) else LkSurfacePanel,
+                                    shape = LkShapes.SM
+                                )
+                                .border(
+                                    width = 1.dp,
+                                    color = if (isSelected) LkPrimary else LkLineSoft,
+                                    shape = LkShapes.SM
+                                )
+                                .clickable { viewModel.setPerformanceWindow(workspaceId, windowKey) }
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = windowLabel,
+                                style = LkTypography.getMicro(),
+                                color = if (isSelected) LkPrimary else LkTextMuted,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                            )
+                        }
+                    }
+                }
+
+                // Sort Chips (horizontal scrollable if needed)
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    items(SORT_OPTIONS) { (sortKey, sortLabel) ->
+                        val isSelected = selectedSortBy == sortKey
+                        Box(
+                            modifier = Modifier
+                                .background(
+                                    color = if (isSelected) LkSuccess.copy(alpha = 0.15f) else LkSurfacePanel,
+                                    shape = LkShapes.SM
+                                )
+                                .border(
+                                    width = 1.dp,
+                                    color = if (isSelected) LkSuccess else LkLineSoft,
+                                    shape = LkShapes.SM
+                                )
+                                .clickable { viewModel.setSortBy(workspaceId, sortKey) }
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = sortLabel,
+                                style = LkTypography.getMicro(),
+                                color = if (isSelected) LkSuccess else LkTextSecondary,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
 
             if (isLoading) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -197,20 +312,15 @@ fun ProductsScreen(
                         )
                         Spacer(modifier = Modifier.height(LkSpacing.Space4))
                         Text(
-                            text = "Henüz ürün veya hizmet eklenmedi.",
+                            text = "Filtrelere uygun ürün bulunamadı.",
                             style = LkTypography.getSectionTitle(),
                             color = LkTextSecondary
                         )
                         Spacer(modifier = Modifier.height(LkSpacing.Space2))
                         Text(
-                            text = "İşletmenizin satışını yaptığı ürün veya hizmet kalemlerini buradan tanımlayın.",
+                            text = "Entegrasyonlarınızdan gelen katalog verilerini görüntülemek için filtreleri sıfırlayabilirsiniz.",
                             style = LkTypography.getBodySmall(),
                             color = LkTextMuted
-                        )
-                        Spacer(modifier = Modifier.height(LkSpacing.Space6))
-                        LkButton(
-                            text = "+ Yeni Ürün / Hizmet Ekle",
-                            onClick = { showCreateDialog = true }
                         )
                     }
                 }
@@ -222,10 +332,9 @@ fun ProductsScreen(
                     verticalArrangement = Arrangement.spacedBy(LkSpacing.Space3)
                 ) {
                     items(products, key = { it.id }) { product ->
-                        ProductCard(
+                        MarketplaceProductCard(
                             product = product,
-                            onEdit = { editingProduct = product },
-                            onDelete = { viewModel.deleteProduct(workspaceId, product.id) }
+                            onEditSettings = { editingSettingsProduct = product }
                         )
                     }
                 }
@@ -233,52 +342,19 @@ fun ProductsScreen(
         }
     }
 
-    if (showCreateDialog) {
-        ProductFormDialog(
-            product = null,
-            onDismiss = { showCreateDialog = false },
-            onConfirm = { req ->
-                viewModel.createProduct(
+    if (editingSettingsProduct != null) {
+        ProductLocalSettingsDialog(
+            product = editingSettingsProduct!!,
+            onDismiss = { editingSettingsProduct = null },
+            onSave = { note, threshold, fav ->
+                viewModel.saveLocalSettings(
                     workspaceId,
-                    CreateProductRequestDto(
-                        code = req.code,
-                        name = req.name,
-                        category = req.category,
-                        price = req.price,
-                        costPrice = req.costPrice,
-                        stockQuantity = req.stockQuantity,
-                        minStockLevel = req.minStockLevel,
-                        unit = req.unit,
-                        description = req.description
-                    )
+                    editingSettingsProduct!!.id,
+                    note,
+                    threshold,
+                    fav
                 ) {
-                    showCreateDialog = false
-                }
-            }
-        )
-    }
-
-    if (editingProduct != null) {
-        ProductFormDialog(
-            product = editingProduct,
-            onDismiss = { editingProduct = null },
-            onConfirm = { req ->
-                viewModel.updateProduct(
-                    workspaceId,
-                    editingProduct!!.id,
-                    UpdateProductRequestDto(
-                        code = req.code,
-                        name = req.name,
-                        category = req.category,
-                        price = req.price,
-                        costPrice = req.costPrice,
-                        stockQuantity = req.stockQuantity,
-                        minStockLevel = req.minStockLevel,
-                        unit = req.unit,
-                        description = req.description
-                    )
-                ) {
-                    editingProduct = null
+                    editingSettingsProduct = null
                 }
             }
         )
@@ -286,38 +362,49 @@ fun ProductsScreen(
 }
 
 @Composable
-private fun MetricCard(
-    title: String,
-    value: String,
-    color: Color,
-    modifier: Modifier = Modifier
+private fun StatusFilterChip(
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
 ) {
     Box(
-        modifier = modifier
-            .background(LkSurfacePanel, LkShapes.MD)
-            .border(1.dp, LkLineSoft, LkShapes.MD)
-            .padding(LkSpacing.Space3)
+        modifier = Modifier
+            .background(
+                color = if (isSelected) LkPrimary.copy(alpha = 0.15f) else LkSurfacePanel,
+                shape = LkShapes.SM
+            )
+            .border(
+                width = 1.dp,
+                color = if (isSelected) LkPrimary else LkLineSoft,
+                shape = LkShapes.SM
+            )
+            .clickable { onClick() }
+            .padding(horizontal = 10.dp, vertical = 4.dp)
     ) {
-        Column {
-            Text(text = title, style = LkTypography.getMicro(), color = LkTextSecondary)
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(text = value, style = LkTypography.getBodyStrong(), color = color, fontWeight = FontWeight.Bold)
-        }
+        Text(
+            text = label,
+            style = LkTypography.getMicro(),
+            color = if (isSelected) LkPrimary else LkTextSecondary,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+        )
     }
 }
 
 @Composable
-private fun ProductCard(
+private fun MarketplaceProductCard(
     product: ProductDto,
-    onEdit: () -> Unit,
-    onDelete: () -> Unit
+    onEditSettings: () -> Unit
 ) {
-    var expandedMenu by remember { mutableStateOf(false) }
+    val providerColor = when (product.provider.uppercase()) {
+        "TRENDYOL" -> Color(0xFFF27A1A)
+        "HEPSIBURADA" -> Color(0xFFFF6000)
+        "N11" -> Color(0xFF5E2D91)
+        "SHOPIFY" -> Color(0xFF96BF48)
+        else -> LkPrimary
+    }
 
-    val isLowStock = product.stockQuantity <= product.minStockLevel
-    val margin = if (product.price > 0 && product.costPrice > 0) {
-        ((product.price - product.costPrice) / product.price * 100).toInt()
-    } else null
+    val isOutOfStock = product.stock == 0
+    val isLowStock = product.stock in 1..5
 
     Box(
         modifier = Modifier
@@ -333,65 +420,85 @@ private fun ProductCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = product.name,
-                        style = LkTypography.getBodyStrong(),
-                        color = LkTextPrimary,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.width(LkSpacing.Space2))
                     Box(
                         modifier = Modifier
-                            .background(LkPrimary.copy(alpha = 0.12f), LkShapes.SM)
+                            .background(providerColor.copy(alpha = 0.15f), LkShapes.SM)
+                            .border(1.dp, providerColor.copy(alpha = 0.3f), LkShapes.SM)
                             .padding(horizontal = 6.dp, vertical = 2.dp)
                     ) {
                         Text(
-                            text = product.category,
+                            text = product.provider,
                             style = LkTypography.getMicro(),
-                            color = LkPrimary,
+                            color = providerColor,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(LkSpacing.Space2))
+
+                    if (product.isFavorite) {
+                        Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = "Favori",
+                            tint = Color(0xFFFFC107),
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .background(
+                                color = if (product.onSale) LkSuccess.copy(alpha = 0.15f) else LkTextMuted.copy(alpha = 0.15f),
+                                shape = LkShapes.SM
+                            )
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = if (product.onSale) "Satışta" else "Satışta Değil",
+                            style = LkTypography.getMicro(),
+                            color = if (product.onSale) LkSuccess else LkTextMuted,
                             fontWeight = FontWeight.SemiBold
                         )
                     }
                 }
 
-                Box {
-                    IconButton(
-                        onClick = { expandedMenu = true },
-                        modifier = Modifier.size(24.dp)
-                    ) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "İşlemler", tint = LkTextMuted)
-                    }
-                    DropdownMenu(
-                        expanded = expandedMenu,
-                        onDismissRequest = { expandedMenu = false },
-                        modifier = Modifier.background(LkSurfacePanel)
-                    ) {
-                        DropdownMenuItem(onClick = { expandedMenu = false; onEdit() }) {
-                            Text("Düzenle", style = LkTypography.getBodySmall(), color = LkTextPrimary)
-                        }
-                        Divider(color = LkLineSoft)
-                        DropdownMenuItem(onClick = { expandedMenu = false; onDelete() }) {
-                            Text("Ürünü Sil", style = LkTypography.getBodySmall(), color = LkDanger)
-                        }
-                    }
+                IconButton(
+                    onClick = onEditSettings,
+                    modifier = Modifier.size(24.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Tune,
+                        contentDescription = "Yerel Ayarlar",
+                        tint = LkTextMuted
+                    )
                 }
             }
+
+            Spacer(modifier = Modifier.height(LkSpacing.Space2))
+
+            Text(
+                text = product.title,
+                style = LkTypography.getBodyStrong(),
+                color = LkTextPrimary,
+                fontWeight = FontWeight.Bold
+            )
 
             Spacer(modifier = Modifier.height(2.dp))
 
             Text(
-                text = "SKU: ${product.code}",
+                text = "SKU: ${product.sku} ${if (!product.barcode.isNullOrBlank()) "| Barkod: ${product.barcode}" else ""}",
                 style = LkTypography.getMicro(),
                 color = LkTextMuted
             )
 
-            if (!product.description.isNullOrBlank()) {
+            if (!product.internalNote.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = product.description,
-                    style = LkTypography.getBodySmall(),
-                    color = LkTextSecondary,
-                    maxLines = 2
+                    text = "Not: ${product.internalNote}",
+                    style = LkTypography.getMicro(),
+                    color = LkPrimary,
+                    fontWeight = FontWeight.Medium
                 )
             }
 
@@ -399,23 +506,26 @@ private fun ProductCard(
             Divider(color = LkLineSoft)
             Spacer(modifier = Modifier.height(LkSpacing.Space2))
 
+            // Price & Stock Row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
+                Row(verticalAlignment = Alignment.Bottom) {
                     Text(
-                        text = "Satış Fiyatı: ${product.price.toInt()} ${product.currency}",
+                        text = "${product.salePrice?.toInt() ?: 0} ${product.currency}",
                         style = LkTypography.getBodyStrong(),
                         color = LkTextPrimary,
                         fontWeight = FontWeight.Bold
                     )
-                    if (product.costPrice > 0) {
+                    if (product.listPrice != null && product.listPrice > (product.salePrice ?: 0.0)) {
+                        Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "Maliyet: ${product.costPrice.toInt()} ₺ ${if (margin != null) "(%$margin Marj)" else ""}",
+                            text = "${product.listPrice.toInt()} ₺",
                             style = LkTypography.getMicro(),
-                            color = LkTextSecondary
+                            color = LkTextMuted,
+                            textDecoration = TextDecoration.LineThrough
                         )
                     }
                 }
@@ -423,54 +533,85 @@ private fun ProductCard(
                 Box(
                     modifier = Modifier
                         .background(
-                            color = if (isLowStock) LkDanger.copy(alpha = 0.15f) else LkSuccess.copy(alpha = 0.15f),
+                            color = when {
+                                isOutOfStock -> LkDanger.copy(alpha = 0.15f)
+                                isLowStock -> LkWarning.copy(alpha = 0.15f)
+                                else -> LkSuccess.copy(alpha = 0.15f)
+                            },
                             shape = LkShapes.SM
                         )
                         .border(
                             width = 1.dp,
-                            color = if (isLowStock) LkDanger.copy(alpha = 0.3f) else LkSuccess.copy(alpha = 0.3f),
+                            color = when {
+                                isOutOfStock -> LkDanger.copy(alpha = 0.3f)
+                                isLowStock -> LkWarning.copy(alpha = 0.3f)
+                                else -> LkSuccess.copy(alpha = 0.3f)
+                            },
                             shape = LkShapes.SM
                         )
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
                     Text(
-                        text = if (isLowStock) "Kritik: ${product.stockQuantity} ${product.unit}" else "Stok: ${product.stockQuantity} ${product.unit}",
+                        text = when {
+                            isOutOfStock -> "Tükendi"
+                            isLowStock -> "Kritik: ${product.stock} Adet"
+                            else -> "Stok: ${product.stock} Adet"
+                        },
                         style = LkTypography.getMicro(),
-                        color = if (isLowStock) LkDanger else LkSuccess,
+                        color = when {
+                            isOutOfStock -> LkDanger
+                            isLowStock -> LkWarning
+                            else -> LkSuccess
+                        },
                         fontWeight = FontWeight.Bold
                     )
                 }
+            }
+
+            Spacer(modifier = Modifier.height(LkSpacing.Space2))
+
+            // Performance Stats Grid (Satılan, Sipariş, Ciro, İade)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(LkSurfaceCanvas, LkShapes.SM)
+                    .padding(horizontal = LkSpacing.Space3, vertical = 6.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                PerformanceMetricItem(label = "Satılan", value = "${product.unitsSold} ad.")
+                PerformanceMetricItem(label = "Sipariş", value = "${product.orderCount}")
+                PerformanceMetricItem(label = "Ciro", value = "${product.grossSales?.toInt() ?: 0} ₺")
+                PerformanceMetricItem(
+                    label = "İade",
+                    value = "%${product.returnRate ?: 0.0}",
+                    valueColor = if ((product.returnRate ?: 0.0) > 3.0) LkDanger else LkTextSecondary
+                )
             }
         }
     }
 }
 
-private data class ProductFormData(
-    val code: String,
-    val name: String,
-    val category: String,
-    val price: Double,
-    val costPrice: Double,
-    val stockQuantity: Int,
-    val minStockLevel: Int,
-    val unit: String,
-    val description: String?
-)
+@Composable
+private fun PerformanceMetricItem(
+    label: String,
+    value: String,
+    valueColor: Color = LkTextPrimary
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(text = label, style = LkTypography.getMicro(), color = LkTextMuted)
+        Text(text = value, style = LkTypography.getMicro(), color = valueColor, fontWeight = FontWeight.Bold)
+    }
+}
 
 @Composable
-private fun ProductFormDialog(
-    product: ProductDto?,
+private fun ProductLocalSettingsDialog(
+    product: ProductDto,
     onDismiss: () -> Unit,
-    onConfirm: (ProductFormData) -> Unit
+    onSave: (internalNote: String?, lowStockThreshold: Int?, isFavorite: Boolean) -> Unit
 ) {
-    var code by remember { mutableStateOf(product?.code ?: "PRD-${kotlin.random.Random.nextInt(100, 999)}") }
-    var name by remember { mutableStateOf(product?.name ?: "") }
-    var category by remember { mutableStateOf(product?.category ?: "Genel") }
-    var price by remember { mutableStateOf(product?.price?.toString() ?: "") }
-    var costPrice by remember { mutableStateOf(product?.costPrice?.toString() ?: "") }
-    var stockQuantity by remember { mutableStateOf(product?.stockQuantity?.toString() ?: "0") }
-    var unit by remember { mutableStateOf(product?.unit ?: "Adet") }
-    var description by remember { mutableStateOf(product?.description ?: "") }
+    var internalNote by remember { mutableStateOf(product.internalNote ?: "") }
+    var threshold by remember { mutableStateOf(product.lowStockThresholdOverride?.toString() ?: "5") }
+    var isFavorite by remember { mutableStateOf(product.isFavorite) }
 
     Dialog(onDismissRequest = onDismiss) {
         Box(
@@ -486,74 +627,57 @@ private fun ProductFormDialog(
                     .verticalScroll(rememberScrollState())
             ) {
                 Text(
-                    text = if (product == null) "Yeni Ürün / Hizmet Ekle" else "Ürünü Düzenle",
+                    text = "Yerel Ürün Ayarları",
                     style = LkTypography.getSectionTitle(),
                     color = LkTextPrimary
                 )
+                Text(
+                    text = product.title,
+                    style = LkTypography.getBodySmall(),
+                    color = LkTextSecondary,
+                    maxLines = 1
+                )
+
                 Spacer(modifier = Modifier.height(LkSpacing.Space4))
 
                 LkTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = "Ürün / Hizmet Adı",
-                    placeholder = "Örn: Danışmanlık Paketi veya Ürün A"
+                    value = internalNote,
+                    onValueChange = { internalNote = it },
+                    label = "İç Not (Sadece siz görürsünüz)",
+                    placeholder = "Tedarikçi notu, raf konumu vb."
                 )
+
                 Spacer(modifier = Modifier.height(LkSpacing.Space3))
 
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space3)) {
-                    LkTextField(
-                        value = code,
-                        onValueChange = { code = it },
-                        label = "SKU Kodu",
-                        modifier = Modifier.weight(1f)
-                    )
-                    LkTextField(
-                        value = category,
-                        onValueChange = { category = it },
-                        label = "Kategori",
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-                Spacer(modifier = Modifier.height(LkSpacing.Space3))
-
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space3)) {
-                    LkNumericField(
-                        value = price,
-                        onValueChange = { price = it },
-                        label = "Satış Fiyatı (TRY)",
-                        modifier = Modifier.weight(1f)
-                    )
-                    LkNumericField(
-                        value = costPrice,
-                        onValueChange = { costPrice = it },
-                        label = "Maliyet (TRY)",
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-                Spacer(modifier = Modifier.height(LkSpacing.Space3))
-
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space3)) {
-                    LkNumericField(
-                        value = stockQuantity,
-                        onValueChange = { stockQuantity = it },
-                        label = "Mevcut Stok",
-                        modifier = Modifier.weight(1f)
-                    )
-                    LkTextField(
-                        value = unit,
-                        onValueChange = { unit = it },
-                        label = "Birim",
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-                Spacer(modifier = Modifier.height(LkSpacing.Space3))
-
-                LkTextField(
-                    value = description,
-                    onValueChange = { description = it },
-                    label = "Açıklama (Opsiyonel)",
-                    placeholder = "Ürün özellikleri, detaylar..."
+                LkNumericField(
+                    value = threshold,
+                    onValueChange = { threshold = it },
+                    label = "Kritik Stok Uyarısı Eşiği (Adet)",
+                    placeholder = "5"
                 )
+
+                Spacer(modifier = Modifier.height(LkSpacing.Space3))
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { isFavorite = !isFavorite }
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        checked = isFavorite,
+                        onCheckedChange = { isFavorite = it },
+                        colors = CheckboxDefaults.colors(checkedColor = LkPrimary)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Favorilere Ekle",
+                        style = LkTypography.getBodySmall(),
+                        color = LkTextPrimary
+                    )
+                }
+
                 Spacer(modifier = Modifier.height(LkSpacing.Space6))
 
                 Row(
@@ -569,24 +693,13 @@ private fun ProductFormDialog(
                     LkButton(
                         text = "Kaydet",
                         onClick = {
-                            val parsedPrice = price.toDoubleOrNull() ?: 0.0
-                            val parsedCost = costPrice.toDoubleOrNull() ?: 0.0
-                            val parsedStock = stockQuantity.toIntOrNull() ?: 0
-                            onConfirm(
-                                ProductFormData(
-                                    code = code,
-                                    name = name,
-                                    category = category,
-                                    price = parsedPrice,
-                                    costPrice = parsedCost,
-                                    stockQuantity = parsedStock,
-                                    minStockLevel = 5,
-                                    unit = unit,
-                                    description = description.ifBlank { null }
-                                )
+                            val parsedThreshold = threshold.toIntOrNull()
+                            onSave(
+                                internalNote.ifBlank { null },
+                                parsedThreshold,
+                                isFavorite
                             )
                         },
-                        enabled = name.isNotBlank() && price.isNotBlank(),
                         modifier = Modifier.weight(1f)
                     )
                 }

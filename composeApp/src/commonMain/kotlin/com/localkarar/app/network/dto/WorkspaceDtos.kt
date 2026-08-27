@@ -369,16 +369,20 @@ data class DocumentMetadataDto(
 )
 
 // ============================================================================
-// COMMERCE: SİPARİŞLER (ORDERS) & ÜRÜNLER (PRODUCTS) DTOs
+// MARKETPLACE COMMERCE: SİPARİŞLER (ORDERS) & ÜRÜNLER (PRODUCTS) DTOs
 // ============================================================================
 
 @Serializable
 data class OrderItemDto(
+    val id: String? = null,
     val productId: String? = null,
-    val productName: String,
+    val title: String,
+    val sku: String? = null,
+    val barcode: String? = null,
     val quantity: Int = 1,
-    val unitPrice: Double = 0.0,
-    val totalPrice: Double = 0.0
+    val unitPrice: Double? = null,
+    val totalPrice: Double? = null,
+    val imageUrl: String? = null
 )
 
 @Serializable
@@ -386,103 +390,77 @@ data class OrderDto(
     val id: String,
     val workspaceId: String,
     val orderNumber: String,
-    val customerName: String,
-    val contactId: String? = null,
-    val itemsCount: Int = 1,
-    val totalAmount: Double = 0.0,
-    val currency: String = "TRY",
-    val status: String = "pending", // pending, processing, shipped, delivered, cancelled
-    val paymentStatus: String = "unpaid", // unpaid, paid, partially_paid, refunded
-    val orderDate: String? = null,
-    val deliveryDate: String? = null,
-    val notes: String? = null,
-    val items: List<OrderItemDto> = emptyList()
-)
-
-@Serializable
-data class CreateOrderRequestDto(
-    val orderNumber: String,
-    val customerName: String,
-    val contactId: String? = null,
-    val totalAmount: Double,
-    val currency: String = "TRY",
-    val status: String = "pending",
-    val paymentStatus: String = "unpaid",
-    val orderDate: String? = null,
-    val deliveryDate: String? = null,
-    val notes: String? = null,
-    val items: List<OrderItemDto> = emptyList()
-)
-
-@Serializable
-data class UpdateOrderRequestDto(
+    val provider: String = "TRENDYOL", // TRENDYOL, HEPSIBURADA, N11, SHOPIFY, WOOCOMMERCE
+    val status: String = "CREATED", // CREATED, PROCESSING, SHIPPED, DELIVERED, CANCELLED, RETURNED, PARTIALLY_RETURNED, UNKNOWN
     val customerName: String? = null,
-    val contactId: String? = null,
-    val totalAmount: Double? = null,
-    val currency: String? = null,
-    val status: String? = null,
-    val paymentStatus: String? = null,
+    val orderDate: String? = null,
     val deliveryDate: String? = null,
-    val notes: String? = null,
-    val items: List<OrderItemDto>? = null
+    val grossAmount: Double? = null,
+    val commission: Double? = null,
+    val shipping: Double? = null,
+    val refund: Double? = null,
+    val netContribution: Double? = null,
+    val currency: String = "TRY",
+    val itemsCount: Int = 1,
+    val items: List<OrderItemDto> = emptyList(),
+    val lastSyncedAt: String? = null
+)
+
+@Serializable
+data class OrderSyncResponseDto(
+    val success: Boolean = true,
+    val syncedCount: Int = 0,
+    val lastSyncedAt: String? = null,
+    val message: String? = null
 )
 
 @Serializable
 data class OrderListResponseDto(
     val orders: List<OrderDto> = emptyList(),
-    val total: Int = 0
+    val total: Int = 0,
+    val lastSyncedAt: String? = null,
+    val integrationConnected: Boolean = true
 )
 
 @Serializable
 data class ProductDto(
     val id: String,
     val workspaceId: String,
-    val code: String, // SKU
-    val name: String,
-    val category: String = "Genel",
-    val price: Double = 0.0,
-    val costPrice: Double = 0.0,
+    val provider: String = "TRENDYOL", // TRENDYOL, HEPSIBURADA, N11, SHOPIFY, WOOCOMMERCE
+    val title: String,
+    val sku: String,
+    val barcode: String? = null,
+    val imageUrl: String? = null,
+    val salePrice: Double? = null,
+    val listPrice: Double? = null,
     val currency: String = "TRY",
-    val stockQuantity: Int = 0,
-    val minStockLevel: Int = 5,
-    val unit: String = "Adet",
-    val status: String = "active", // active, inactive, out_of_stock
-    val description: String? = null,
-    val createdAt: String? = null
+    val stock: Int = 0,
+    val onSale: Boolean = true,
+    // Performance window metrics (7d, 30d, 90d)
+    val unitsSold: Int = 0,
+    val orderCount: Int = 0,
+    val grossSales: Double? = null,
+    val returnRate: Double? = null, // percentage 0.0 - 100.0
+    // Local editable settings
+    val internalNote: String? = null,
+    val tags: List<String> = emptyList(),
+    val lowStockThresholdOverride: Int? = null,
+    val isFavorite: Boolean = false,
+    val lastSyncedAt: String? = null
 )
 
 @Serializable
-data class CreateProductRequestDto(
-    val code: String,
-    val name: String,
-    val category: String = "Genel",
-    val price: Double,
-    val costPrice: Double = 0.0,
-    val currency: String = "TRY",
-    val stockQuantity: Int = 0,
-    val minStockLevel: Int = 5,
-    val unit: String = "Adet",
-    val status: String = "active",
-    val description: String? = null
-)
-
-@Serializable
-data class UpdateProductRequestDto(
-    val code: String? = null,
-    val name: String? = null,
-    val category: String? = null,
-    val price: Double? = null,
-    val costPrice: Double? = null,
-    val currency: String? = null,
-    val stockQuantity: Int? = null,
-    val minStockLevel: Int? = null,
-    val unit: String? = null,
-    val status: String? = null,
-    val description: String? = null
+data class UpdateProductSettingsRequestDto(
+    val internalNote: String? = null,
+    val tags: List<String>? = null,
+    val lowStockThresholdOverride: Int? = null,
+    val isFavorite: Boolean? = null
 )
 
 @Serializable
 data class ProductListResponseDto(
     val products: List<ProductDto> = emptyList(),
-    val total: Int = 0
+    val total: Int = 0,
+    val lastSyncedAt: String? = null,
+    val integrationConnected: Boolean = true
 )

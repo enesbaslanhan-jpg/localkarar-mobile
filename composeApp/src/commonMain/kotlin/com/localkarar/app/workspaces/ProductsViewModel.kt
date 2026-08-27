@@ -2,9 +2,8 @@ package com.localkarar.app.workspaces
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.localkarar.app.network.dto.CreateProductRequestDto
 import com.localkarar.app.network.dto.ProductDto
-import com.localkarar.app.network.dto.UpdateProductRequestDto
+import com.localkarar.app.network.dto.UpdateProductSettingsRequestDto
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,8 +22,27 @@ class ProductsViewModel(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
-    private val _selectedCategory = MutableStateFlow("Tümü")
-    val selectedCategory: StateFlow<String> = _selectedCategory.asStateFlow()
+    private val _lastSyncedAt = MutableStateFlow<String?>(null)
+    val lastSyncedAt: StateFlow<String?> = _lastSyncedAt.asStateFlow()
+
+    private val _integrationConnected = MutableStateFlow(true)
+    val integrationConnected: StateFlow<Boolean> = _integrationConnected.asStateFlow()
+
+    // Filters
+    private val _selectedProvider = MutableStateFlow<String?>(null)
+    val selectedProvider: StateFlow<String?> = _selectedProvider.asStateFlow()
+
+    private val _selectedOnSale = MutableStateFlow<Boolean?>(null)
+    val selectedOnSale: StateFlow<Boolean?> = _selectedOnSale.asStateFlow()
+
+    private val _selectedStockFilter = MutableStateFlow<String?>(null)
+    val selectedStockFilter: StateFlow<String?> = _selectedStockFilter.asStateFlow()
+
+    private val _selectedWindow = MutableStateFlow("30d")
+    val selectedWindow: StateFlow<String> = _selectedWindow.asStateFlow()
+
+    private val _selectedSortBy = MutableStateFlow("default")
+    val selectedSortBy: StateFlow<String> = _selectedSortBy.asStateFlow()
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
@@ -34,9 +52,19 @@ class ProductsViewModel(
         _isLoading.value = true
         _error.value = null
         viewModelScope.launch {
-            repository.getProducts(workspaceId, _selectedCategory.value, _searchQuery.value)
+            repository.getProducts(
+                workspaceId = workspaceId,
+                provider = _selectedProvider.value,
+                onSale = _selectedOnSale.value,
+                stockFilter = _selectedStockFilter.value,
+                window = _selectedWindow.value,
+                sortBy = _selectedSortBy.value,
+                query = _searchQuery.value
+            )
                 .onSuccess { resp ->
                     _products.value = resp.products
+                    _lastSyncedAt.value = resp.lastSyncedAt
+                    _integrationConnected.value = resp.integrationConnected
                     _isLoading.value = false
                 }
                 .onFailure { err ->
@@ -46,8 +74,28 @@ class ProductsViewModel(
         }
     }
 
-    fun setCategoryFilter(workspaceId: String, category: String) {
-        _selectedCategory.value = category
+    fun setProviderFilter(workspaceId: String, provider: String?) {
+        _selectedProvider.value = provider
+        loadProducts(workspaceId)
+    }
+
+    fun setOnSaleFilter(workspaceId: String, onSale: Boolean?) {
+        _selectedOnSale.value = onSale
+        loadProducts(workspaceId)
+    }
+
+    fun setStockFilter(workspaceId: String, stockFilter: String?) {
+        _selectedStockFilter.value = stockFilter
+        loadProducts(workspaceId)
+    }
+
+    fun setPerformanceWindow(workspaceId: String, window: String) {
+        _selectedWindow.value = window
+        loadProducts(workspaceId)
+    }
+
+    fun setSortBy(workspaceId: String, sortBy: String) {
+        _selectedSortBy.value = sortBy
         loadProducts(workspaceId)
     }
 
@@ -56,40 +104,27 @@ class ProductsViewModel(
         loadProducts(workspaceId)
     }
 
-    fun createProduct(workspaceId: String, request: CreateProductRequestDto, onComplete: () -> Unit) {
-        _isLoading.value = true
+    fun saveLocalSettings(
+        workspaceId: String,
+        productId: String,
+        internalNote: String?,
+        lowStockThresholdOverride: Int?,
+        isFavorite: Boolean?,
+        onComplete: () -> Unit
+    ) {
         viewModelScope.launch {
-            repository.createProduct(workspaceId, request)
-                .onSuccess {
-                    loadProducts(workspaceId)
-                    onComplete()
-                }
-                .onFailure { err ->
-                    _error.value = err.message ?: "Ürün eklenemedi."
-                    _isLoading.value = false
-                }
-        }
-    }
-
-    fun updateProduct(workspaceId: String, productId: String, request: UpdateProductRequestDto, onComplete: () -> Unit) {
-        _isLoading.value = true
-        viewModelScope.launch {
-            repository.updateProduct(workspaceId, productId, request)
-                .onSuccess {
-                    loadProducts(workspaceId)
-                    onComplete()
-                }
-                .onFailure { err ->
-                    _error.value = err.message ?: "Ürün güncellenemedi."
-                    _isLoading.value = false
-                }
-        }
-    }
-
-    fun deleteProduct(workspaceId: String, productId: String) {
-        viewModelScope.launch {
-            repository.deleteProduct(workspaceId, productId)
-                .onSuccess { loadProducts(workspaceId) }
+            repository.updateProductSettings(
+                workspaceId,
+                productId,
+                UpdateProductSettingsRequestDto(
+                    internalNote = internalNote,
+                    lowStockThresholdOverride = lowStockThresholdOverride,
+                    isFavorite = isFavorite
+                )
+            ).onSuccess {
+                loadProducts(workspaceId)
+                onComplete()
+            }
         }
     }
 }

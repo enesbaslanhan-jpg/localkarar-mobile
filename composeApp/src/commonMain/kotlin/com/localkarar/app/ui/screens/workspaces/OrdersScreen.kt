@@ -20,21 +20,24 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import com.localkarar.app.network.dto.CreateOrderRequestDto
 import com.localkarar.app.network.dto.OrderDto
 import com.localkarar.app.ui.components.LkButton
 import com.localkarar.app.ui.components.LkButtonVariant
-import com.localkarar.app.ui.components.LkNumericField
 import com.localkarar.app.ui.components.LkTextField
 import com.localkarar.app.ui.theme.*
 import com.localkarar.app.workspaces.OrdersViewModel
 
-private val ORDER_STATUS_FILTERS = listOf(
+private val PROVIDER_OPTIONS = listOf("TÜMÜ", "TRENDYOL", "HEPSIBURADA", "N11", "SHOPIFY", "WOOCOMMERCE")
+
+private val STATUS_OPTIONS = listOf(
     null to "Tümü",
-    "pending" to "Beklemede",
-    "processing" to "Hazırlanıyor",
-    "delivered" to "Teslim Edildi",
-    "cancelled" to "İptal"
+    "CREATED" to "Yeni",
+    "PROCESSING" to "İşleniyor",
+    "SHIPPED" to "Kargoda",
+    "DELIVERED" to "Teslim Edildi",
+    "CANCELLED" to "İptal",
+    "RETURNED" to "İade",
+    "PARTIALLY_RETURNED" to "Kısmi İade"
 )
 
 @Composable
@@ -45,11 +48,14 @@ fun OrdersScreen(
 ) {
     val orders by viewModel.orders.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val isSyncing by viewModel.isSyncing.collectAsState()
+    val lastSyncedAt by viewModel.lastSyncedAt.collectAsState()
     val error by viewModel.error.collectAsState()
+    val selectedProvider by viewModel.selectedProvider.collectAsState()
     val selectedStatus by viewModel.selectedStatus.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
 
-    var showCreateDialog by remember { mutableStateOf(false) }
+    var selectedOrderDetail by remember { mutableStateOf<OrderDto?>(null) }
 
     LaunchedEffect(workspaceId) {
         viewModel.loadOrders(workspaceId)
@@ -63,10 +69,19 @@ fun OrdersScreen(
                 contentColor = LkTextPrimary,
                 elevation = 0.dp,
                 title = {
-                    Text(
-                        text = "Siparişler",
-                        style = LkTypography.getSectionTitle()
-                    )
+                    Column {
+                        Text(
+                            text = "Pazaryeri Siparişleri",
+                            style = LkTypography.getSectionTitle()
+                        )
+                        if (!lastSyncedAt.isNullOrBlank()) {
+                            Text(
+                                text = "Son eşitleme: ${lastSyncedAt?.take(16)?.replace("T", " ")}",
+                                style = LkTypography.getMicro(),
+                                color = LkTextMuted
+                            )
+                        }
+                    }
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
@@ -74,8 +89,20 @@ fun OrdersScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { showCreateDialog = true }) {
-                        Icon(Icons.Default.Add, contentDescription = "Yeni Sipariş", tint = LkPrimary)
+                    if (isSyncing) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp).padding(end = 12.dp),
+                            color = LkPrimary,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        IconButton(onClick = { viewModel.syncNow(workspaceId) }) {
+                            Icon(
+                                Icons.Default.Sync,
+                                contentDescription = "Şimdi Eşitle",
+                                tint = LkPrimary
+                            )
+                        }
                     }
                 }
             )
@@ -86,34 +113,35 @@ fun OrdersScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // Metrics Summary Row
-            val totalAmount = orders.sumOf { it.totalAmount }
-            val deliveredCount = orders.count { it.status == "delivered" }
-            val pendingCount = orders.count { it.status == "pending" || it.status == "processing" }
-
+            // Integration Sync Status Banner
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = LkSpacing.Space4, vertical = LkSpacing.Space3),
-                horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space3)
+                    .background(LkSurfacePanel)
+                    .padding(horizontal = LkSpacing.Space4, vertical = LkSpacing.Space2),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                MetricCard(
-                    title = "Toplam Sipariş",
-                    value = "${orders.size}",
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .background(LkSuccess, LkShapes.FULL)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Entegrasyonlar Aktif",
+                        style = LkTypography.getMicro(),
+                        color = LkTextSecondary
+                    )
+                }
+
+                Text(
+                    text = "Şimdi Eşitle",
+                    style = LkTypography.getMicro(),
                     color = LkPrimary,
-                    modifier = Modifier.weight(1f)
-                )
-                MetricCard(
-                    title = "Bekleyen",
-                    value = "$pendingCount",
-                    color = LkWarning,
-                    modifier = Modifier.weight(1f)
-                )
-                MetricCard(
-                    title = "Toplam Ciro",
-                    value = "${totalAmount.toInt()} ₺",
-                    color = LkSuccess,
-                    modifier = Modifier.weight(1.2f)
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.clickable { viewModel.syncNow(workspaceId) }
                 )
             }
 
@@ -133,15 +161,15 @@ fun OrdersScreen(
                 )
             }
 
-            // Filter Chips Row
+            // Provider Filter Chips
             LazyRow(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = LkSpacing.Space4, vertical = LkSpacing.Space2),
+                    .padding(horizontal = LkSpacing.Space4, vertical = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2)
             ) {
-                items(ORDER_STATUS_FILTERS) { (status, label) ->
-                    val isSelected = selectedStatus == status
+                items(PROVIDER_OPTIONS) { provider ->
+                    val isSelected = (selectedProvider == null && provider == "TÜMÜ") || (selectedProvider == provider)
                     Box(
                         modifier = Modifier
                             .background(
@@ -153,11 +181,13 @@ fun OrdersScreen(
                                 color = if (isSelected) LkPrimary else LkLineSoft,
                                 shape = LkShapes.SM
                             )
-                            .clickable { viewModel.setStatusFilter(workspaceId, status) }
+                            .clickable {
+                                viewModel.setProviderFilter(workspaceId, if (provider == "TÜMÜ") null else provider)
+                            }
                             .padding(horizontal = LkSpacing.Space3, vertical = 6.dp)
                     ) {
                         Text(
-                            text = label,
+                            text = provider,
                             style = LkTypography.getMicro(),
                             color = if (isSelected) LkOnPrimary else LkTextSecondary,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
@@ -165,6 +195,41 @@ fun OrdersScreen(
                     }
                 }
             }
+
+            // Status Filter Chips
+            LazyRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = LkSpacing.Space4, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2)
+            ) {
+                items(STATUS_OPTIONS) { (status, label) ->
+                    val isSelected = selectedStatus == status
+                    Box(
+                        modifier = Modifier
+                            .background(
+                                color = if (isSelected) LkPrimary.copy(alpha = 0.15f) else LkSurfacePanel,
+                                shape = LkShapes.SM
+                            )
+                            .border(
+                                width = 1.dp,
+                                color = if (isSelected) LkPrimary else LkLineSoft,
+                                shape = LkShapes.SM
+                            )
+                            .clickable { viewModel.setStatusFilter(workspaceId, status) }
+                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                    ) {
+                        Text(
+                            text = label,
+                            style = LkTypography.getMicro(),
+                            color = if (isSelected) LkPrimary else LkTextSecondary,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
 
             if (isLoading) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -195,27 +260,27 @@ fun OrdersScreen(
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(
-                            imageVector = Icons.Default.ShoppingCart,
+                            imageVector = Icons.Default.ReceiptLong,
                             contentDescription = null,
                             tint = LkTextMuted,
                             modifier = Modifier.size(56.dp)
                         )
                         Spacer(modifier = Modifier.height(LkSpacing.Space4))
                         Text(
-                            text = "Henüz sipariş kaydı bulunmuyor.",
+                            text = "Pazaryeri siparişi bulunamadı.",
                             style = LkTypography.getSectionTitle(),
                             color = LkTextSecondary
                         )
                         Spacer(modifier = Modifier.height(LkSpacing.Space2))
                         Text(
-                            text = "Müşterilerinizden gelen siparişleri ve teslimat süreçlerini buradan yönetin.",
+                            text = "Bağlı Trendyol, Hepsiburada veya N11 mağazalarınızdan siparişleri çekmek için 'Şimdi Eşitle' butonuna dokunun.",
                             style = LkTypography.getBodySmall(),
                             color = LkTextMuted
                         )
                         Spacer(modifier = Modifier.height(LkSpacing.Space6))
                         LkButton(
-                            text = "+ Yeni Sipariş Ekle",
-                            onClick = { showCreateDialog = true }
+                            text = "Şimdi Eşitle",
+                            onClick = { viewModel.syncNow(workspaceId) }
                         )
                     }
                 }
@@ -227,14 +292,9 @@ fun OrdersScreen(
                     verticalArrangement = Arrangement.spacedBy(LkSpacing.Space3)
                 ) {
                     items(orders, key = { it.id }) { order ->
-                        OrderCard(
+                        MarketplaceOrderCard(
                             order = order,
-                            onStatusChange = { newStatus ->
-                                viewModel.updateStatus(workspaceId, order.id, newStatus)
-                            },
-                            onDelete = {
-                                viewModel.deleteOrder(workspaceId, order.id)
-                            }
+                            onClick = { selectedOrderDetail = order }
                         )
                     }
                 }
@@ -242,59 +302,35 @@ fun OrdersScreen(
         }
     }
 
-    if (showCreateDialog) {
-        CreateOrderDialog(
-            onDismiss = { showCreateDialog = false },
-            onConfirm = { req ->
-                viewModel.createOrder(workspaceId, req) {
-                    showCreateDialog = false
-                }
-            }
+    if (selectedOrderDetail != null) {
+        OrderDetailDialog(
+            order = selectedOrderDetail!!,
+            onDismiss = { selectedOrderDetail = null }
         )
     }
 }
 
 @Composable
-private fun MetricCard(
-    title: String,
-    value: String,
-    color: Color,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .background(LkSurfacePanel, LkShapes.MD)
-            .border(1.dp, LkLineSoft, LkShapes.MD)
-            .padding(LkSpacing.Space3)
-    ) {
-        Column {
-            Text(text = title, style = LkTypography.getMicro(), color = LkTextSecondary)
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(text = value, style = LkTypography.getBodyStrong(), color = color, fontWeight = FontWeight.Bold)
-        }
-    }
-}
-
-@Composable
-private fun OrderCard(
+private fun MarketplaceOrderCard(
     order: OrderDto,
-    onStatusChange: (String) -> Unit,
-    onDelete: () -> Unit
+    onClick: () -> Unit
 ) {
-    var expandedMenu by remember { mutableStateOf(false) }
-
-    val statusColor = when (order.status) {
-        "delivered" -> LkSuccess
-        "processing" -> LkPrimary
-        "cancelled" -> LkDanger
-        else -> LkWarning
+    val providerColor = when (order.provider.uppercase()) {
+        "TRENDYOL" -> Color(0xFFF27A1A)
+        "HEPSIBURADA" -> Color(0xFFFF6000)
+        "N11" -> Color(0xFF5E2D91)
+        "SHOPIFY" -> Color(0xFF96BF48)
+        else -> LkPrimary
     }
 
-    val statusText = when (order.status) {
-        "delivered" -> "Teslim Edildi"
-        "processing" -> "Hazırlanıyor"
-        "cancelled" -> "İptal Edildi"
-        else -> "Beklemede"
+    val (statusColor, statusLabel) = when (order.status.uppercase()) {
+        "DELIVERED" -> LkSuccess to "Teslim Edildi"
+        "SHIPPED" -> LkPrimary to "Kargoda"
+        "PROCESSING" -> LkWarning to "İşleniyor"
+        "CANCELLED" -> LkDanger to "İptal Edildi"
+        "RETURNED" -> Color(0xFFE91E63) to "İade Edildi"
+        "PARTIALLY_RETURNED" -> Color(0xFFFF9800) to "Kısmi İade"
+        else -> LkTextSecondary to "Yeni Sipariş"
     }
 
     Box(
@@ -302,6 +338,7 @@ private fun OrderCard(
             .fillMaxWidth()
             .background(LkSurfacePanel, LkShapes.MD)
             .border(1.dp, LkLineSoft, LkShapes.MD)
+            .clickable { onClick() }
             .padding(LkSpacing.Space4)
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
@@ -311,110 +348,108 @@ private fun OrderCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .background(providerColor.copy(alpha = 0.15f), LkShapes.SM)
+                            .border(1.dp, providerColor.copy(alpha = 0.3f), LkShapes.SM)
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = order.provider,
+                            style = LkTypography.getMicro(),
+                            color = providerColor,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(LkSpacing.Space2))
                     Text(
                         text = order.orderNumber,
                         style = LkTypography.getBodyStrong(),
                         color = LkTextPrimary,
                         fontWeight = FontWeight.Bold
                     )
-                    Spacer(modifier = Modifier.width(LkSpacing.Space2))
-                    Box(
-                        modifier = Modifier
-                            .background(statusColor.copy(alpha = 0.15f), LkShapes.SM)
-                            .border(1.dp, statusColor.copy(alpha = 0.3f), LkShapes.SM)
-                            .padding(horizontal = 6.dp, vertical = 2.dp)
-                    ) {
-                        Text(
-                            text = statusText,
-                            style = LkTypography.getMicro(),
-                            color = statusColor,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
                 }
 
-                Box {
-                    IconButton(
-                        onClick = { expandedMenu = true },
-                        modifier = Modifier.size(24.dp)
-                    ) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "İşlemler", tint = LkTextMuted)
-                    }
-                    DropdownMenu(
-                        expanded = expandedMenu,
-                        onDismissRequest = { expandedMenu = false },
-                        modifier = Modifier.background(LkSurfacePanel)
-                    ) {
-                        DropdownMenuItem(onClick = { expandedMenu = false; onStatusChange("processing") }) {
-                            Text("Hazırlanıyor Yap", style = LkTypography.getBodySmall(), color = LkTextPrimary)
-                        }
-                        DropdownMenuItem(onClick = { expandedMenu = false; onStatusChange("delivered") }) {
-                            Text("Teslim Edildi Yap", style = LkTypography.getBodySmall(), color = LkSuccess)
-                        }
-                        DropdownMenuItem(onClick = { expandedMenu = false; onStatusChange("cancelled") }) {
-                            Text("İptal Et", style = LkTypography.getBodySmall(), color = LkDanger)
-                        }
-                        Divider(color = LkLineSoft)
-                        DropdownMenuItem(onClick = { expandedMenu = false; onDelete() }) {
-                            Text("Siparişi Sil", style = LkTypography.getBodySmall(), color = LkDanger)
-                        }
-                    }
+                Box(
+                    modifier = Modifier
+                        .background(statusColor.copy(alpha = 0.15f), LkShapes.SM)
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = statusLabel,
+                        style = LkTypography.getMicro(),
+                        color = statusColor,
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
             }
 
             Spacer(modifier = Modifier.height(LkSpacing.Space2))
 
-            Text(
-                text = "Müşteri: ${order.customerName}",
-                style = LkTypography.getBody(),
-                color = LkTextPrimary
-            )
-
-            if (!order.notes.isNullOrBlank()) {
+            if (!order.customerName.isNullOrBlank()) {
                 Text(
-                    text = order.notes,
-                    style = LkTypography.getMicro(),
-                    color = LkTextSecondary,
-                    maxLines = 1
+                    text = "Müşteri: ${order.customerName}",
+                    style = LkTypography.getBody(),
+                    color = LkTextPrimary
                 )
             }
+
+            Text(
+                text = "Tarih: ${order.orderDate?.take(10) ?: "-"}",
+                style = LkTypography.getMicro(),
+                color = LkTextMuted
+            )
 
             Spacer(modifier = Modifier.height(LkSpacing.Space3))
             Divider(color = LkLineSoft)
             Spacer(modifier = Modifier.height(LkSpacing.Space2))
 
+            // Financial Breakdown Row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = order.deliveryDate?.take(10) ?: "Tarih belirtilmedi",
-                    style = LkTypography.getMicro(),
-                    color = LkTextMuted
-                )
-                Text(
-                    text = "${order.totalAmount.toInt()} ${order.currency}",
-                    style = LkTypography.getBodyStrong(),
-                    color = LkPrimary,
-                    fontWeight = FontWeight.Bold
-                )
+                Column {
+                    if (order.grossAmount != null) {
+                        Text(
+                            text = "Brüt: ${order.grossAmount.toInt()} ${order.currency}",
+                            style = LkTypography.getMicro(),
+                            color = LkTextSecondary
+                        )
+                    }
+                    if (order.commission != null) {
+                        Text(
+                            text = "Komisyon: -${order.commission.toInt()} ₺",
+                            style = LkTypography.getMicro(),
+                            color = LkDanger
+                        )
+                    }
+                }
+
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = "Net Katkı",
+                        style = LkTypography.getMicro(),
+                        color = LkTextMuted
+                    )
+                    Text(
+                        text = "${order.netContribution?.toInt() ?: order.grossAmount?.toInt() ?: 0} ${order.currency}",
+                        style = LkTypography.getBodyStrong(),
+                        color = LkSuccess,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-private fun CreateOrderDialog(
-    onDismiss: () -> Unit,
-    onConfirm: (CreateOrderRequestDto) -> Unit
+private fun OrderDetailDialog(
+    order: OrderDto,
+    onDismiss: () -> Unit
 ) {
-    var orderNumber by remember { mutableStateOf("SIP-${kotlin.random.Random.nextInt(1000, 9999)}") }
-    var customerName by remember { mutableStateOf("") }
-    var amount by remember { mutableStateOf("") }
-    var notes by remember { mutableStateOf("") }
-    var deliveryDate by remember { mutableStateOf("") }
-
     Dialog(onDismissRequest = onDismiss) {
         Box(
             modifier = Modifier
@@ -428,81 +463,113 @@ private fun CreateOrderDialog(
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
             ) {
-                Text(
-                    text = "Yeni Sipariş Oluştur",
-                    style = LkTypography.getSectionTitle(),
-                    color = LkTextPrimary
-                )
-                Spacer(modifier = Modifier.height(LkSpacing.Space4))
-
-                LkTextField(
-                    value = orderNumber,
-                    onValueChange = { orderNumber = it },
-                    label = "Sipariş No"
-                )
-                Spacer(modifier = Modifier.height(LkSpacing.Space3))
-
-                LkTextField(
-                    value = customerName,
-                    onValueChange = { customerName = it },
-                    label = "Müşteri Adı / Ünvanı",
-                    placeholder = "Ahmet Yılmaz veya Şirket A.Ş."
-                )
-                Spacer(modifier = Modifier.height(LkSpacing.Space3))
-
-                LkNumericField(
-                    value = amount,
-                    onValueChange = { amount = it },
-                    label = "Toplam Tutar (TRY)",
-                    placeholder = "0.00"
-                )
-                Spacer(modifier = Modifier.height(LkSpacing.Space3))
-
-                LkTextField(
-                    value = deliveryDate,
-                    onValueChange = { deliveryDate = it },
-                    label = "Teslimat Tarihi",
-                    placeholder = "YYYY-AA-GG"
-                )
-                Spacer(modifier = Modifier.height(LkSpacing.Space3))
-
-                LkTextField(
-                    value = notes,
-                    onValueChange = { notes = it },
-                    label = "Sipariş Notu (Opsiyonel)",
-                    placeholder = "Adres veya özel teslimat detayları"
-                )
-                Spacer(modifier = Modifier.height(LkSpacing.Space6))
-
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space3)
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    LkButton(
-                        text = "İptal",
-                        variant = LkButtonVariant.SECONDARY,
-                        onClick = onDismiss,
-                        modifier = Modifier.weight(1f)
+                    Text(
+                        text = "Sipariş Detayı",
+                        style = LkTypography.getSectionTitle(),
+                        color = LkTextPrimary
                     )
-                    LkButton(
-                        text = "Kaydet",
-                        onClick = {
-                            val parsedAmount = amount.toDoubleOrNull() ?: 0.0
-                            onConfirm(
-                                CreateOrderRequestDto(
-                                    orderNumber = orderNumber,
-                                    customerName = customerName,
-                                    totalAmount = parsedAmount,
-                                    deliveryDate = deliveryDate.ifBlank { null },
-                                    notes = notes.ifBlank { null }
-                                )
-                            )
-                        },
-                        enabled = customerName.isNotBlank() && amount.isNotBlank(),
-                        modifier = Modifier.weight(1f)
-                    )
+                    IconButton(onClick = onDismiss, modifier = Modifier.size(24.dp)) {
+                        Icon(Icons.Default.Close, contentDescription = "Kapat", tint = LkTextMuted)
+                    }
                 }
+
+                Spacer(modifier = Modifier.height(LkSpacing.Space4))
+
+                Text(text = "Sipariş No: ${order.orderNumber}", style = LkTypography.getBodyStrong(), color = LkTextPrimary)
+                Text(text = "Pazaryeri: ${order.provider}", style = LkTypography.getBodySmall(), color = LkPrimary)
+                Text(text = "Müşteri: ${order.customerName ?: "-"}", style = LkTypography.getBodySmall(), color = LkTextSecondary)
+                Text(text = "Tarih: ${order.orderDate?.take(16)?.replace("T", " ") ?: "-"}", style = LkTypography.getBodySmall(), color = LkTextMuted)
+
+                Spacer(modifier = Modifier.height(LkSpacing.Space4))
+                Divider(color = LkLineSoft)
+                Spacer(modifier = Modifier.height(LkSpacing.Space3))
+
+                Text(text = "Sipariş Kalemleri", style = LkTypography.getBodyStrong(), color = LkTextPrimary)
+                Spacer(modifier = Modifier.height(LkSpacing.Space2))
+
+                order.items.forEach { item ->
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(LkSurfaceCanvas, LkShapes.SM)
+                            .padding(LkSpacing.Space3)
+                    ) {
+                        Column {
+                            Text(text = item.title, style = LkTypography.getBodySmall(), color = LkTextPrimary, fontWeight = FontWeight.SemiBold)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(text = "SKU: ${item.sku ?: "-"} | Adet: ${item.quantity}", style = LkTypography.getMicro(), color = LkTextMuted)
+                                Text(text = "${item.totalPrice?.toInt() ?: 0} ${order.currency}", style = LkTypography.getBodySmall(), color = LkTextPrimary)
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(LkSpacing.Space2))
+                }
+
+                Spacer(modifier = Modifier.height(LkSpacing.Space3))
+                Divider(color = LkLineSoft)
+                Spacer(modifier = Modifier.height(LkSpacing.Space3))
+
+                Text(text = "Finansal Dağılım", style = LkTypography.getBodyStrong(), color = LkTextPrimary)
+                Spacer(modifier = Modifier.height(LkSpacing.Space2))
+
+                DetailRow(label = "Brüt Tutar", value = "${order.grossAmount?.toInt() ?: 0} ${order.currency}", color = LkTextPrimary)
+                if (order.commission != null) {
+                    DetailRow(label = "Komisyon Kesintisi", value = "-${order.commission.toInt()} ₺", color = LkDanger)
+                }
+                if (order.shipping != null) {
+                    DetailRow(label = "Kargo Kesintisi", value = "-${order.shipping.toInt()} ₺", color = LkDanger)
+                }
+                if (order.refund != null) {
+                    DetailRow(label = "İade Tutarı", value = "-${order.refund.toInt()} ₺", color = LkDanger)
+                }
+                Divider(color = LkLineSoft, modifier = Modifier.padding(vertical = 4.dp))
+                DetailRow(
+                    label = "Net İşletme Katkısı",
+                    value = "${order.netContribution?.toInt() ?: order.grossAmount?.toInt() ?: 0} ${order.currency}",
+                    color = LkSuccess,
+                    isBold = true
+                )
+
+                Spacer(modifier = Modifier.height(LkSpacing.Space6))
+
+                LkButton(
+                    text = "Kapat",
+                    variant = LkButtonVariant.SECONDARY,
+                    onClick = onDismiss,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         }
+    }
+}
+
+@Composable
+private fun DetailRow(
+    label: String,
+    value: String,
+    color: Color,
+    isBold: Boolean = false
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 2.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(text = label, style = LkTypography.getBodySmall(), color = LkTextSecondary)
+        Text(
+            text = value,
+            style = LkTypography.getBodySmall(),
+            color = color,
+            fontWeight = if (isBold) FontWeight.Bold else FontWeight.Normal
+        )
     }
 }
