@@ -1,7 +1,7 @@
 # Development Status
 
 ## Stabilization & Navigation Baseline
-The `feature/m1-mobile-shell-v2` branch establishes the **Native Primary Navigation (V1)** locked architecture and **M2 Production + Auth Foundation** for LocalKarar Compose Multiplatform.
+The `feature/m3-business-tracker-v2` branch establishes the **Native Primary Navigation (V1)**, **M2 Production Auth**, and **M3 Business Tracker V2 (Orders + Products + 11-Section Parity)** for LocalKarar Compose Multiplatform.
 
 ## Current Status of Feature Integration
 
@@ -14,15 +14,13 @@ The `feature/m1-mobile-shell-v2` branch establishes the **Native Primary Navigat
 | **M1 - Workspace Section Selector** | **FUNCTIONALLY_IMPLEMENTED** | Native modal sheet supporting all 11 Web sections grouped into 5 domains |
 | **M1 - Topluluk Sub-Navigation** | **FUNCTIONALLY_IMPLEMENTED** | Internal sub-tabs: Akış (Feed), Kişiler, Sohbetler, Profil |
 | **M1 - Ayarlar Hub** | **FUNCTIONALLY_IMPLEMENTED** | First-class settings destination with categorized profile, security, app & account flows |
-| **M2 - Demo Auth Removal** | **COMPLETE** | Hardcoded tokens, student@localakademi.com demo bypass and fake users removed |
-| **M2 - Native Register Flow** | **FUNCTIONALLY_IMPLEMENTED** | Name, email, password validation, legal consent, Turkish error mapping |
-| **M2 - Password Reset (Forgot / Confirm)** | **FUNCTIONALLY_IMPLEMENTED** | Anti-enumeration email request + token confirmation screens |
-| **M2 - Platform Environment Resolution** | **COMPLETE** | Android debug (10.0.2.2), iOS debug (localhost:3000), Production (api.localkarar.com) |
-| **M2 - iOS Identity & Bundle Setup** | **COMPLETE** | `com.localkarar.app`, App Name `LocalKarar` in `Config.xcconfig` |
-| **M2 - Raw Error UX Safety** | **COMPLETE** | Intercepts HTTP/JSON error responses and translates to safe Turkish messages |
-| **Secondary Module Regression** | **FUNCTIONALLY_IMPLEMENTED** | Courses, Decision Tools, AI Mentor, News fully accessible via Product Center & Home |
-| **Hesaplamalar Unified Catalog** | **FUNCTIONALLY_IMPLEMENTED** | Unified catalog, 34 items, 7 categories, formula quick & detailed model flows |
-| **Ticaret Module (Orders & Products)** | **PLACEHOLDER_READY** | Architecture and route parity preserved for upcoming Commerce Package |
+| **M2 - Demo Auth Removal** | **COMPLETE** | Hardcoded tokens, demo student bypass and fake users removed |
+| **M2 - Native Register & Password Reset** | **FUNCTIONALLY_IMPLEMENTED** | Validations, anti-enumeration reset request, Turkish error mapping |
+| **M2 - Cross-Platform Environments** | **COMPLETE** | Android debug (10.0.2.2), iOS debug (localhost:3000), Production (api.localkarar.com) |
+| **M3 - İşletme Takibi 11 Bölüm Paritesi** | **FUNCTIONALLY_IMPLEMENTED** | 11 bölümün tamamı eksiksiz bağlandı ve gerçeğe uygun modellendi |
+| **M3 - Siparişler (Orders)** | **FUNCTIONALLY_IMPLEMENTED** | Sipariş kartları, metrikler, filtreler, arama, durum güncelleme ve oluşturma |
+| **M3 - Ürünler (Products)** | **FUNCTIONALLY_IMPLEMENTED** | Katalog, fiyat/maliyet/marj hesaplama, kritik stok uyarıları, düzenleme/ekleme |
+| **Hesaplamalar Unified Catalog** | **FUNCTIONALLY_IMPLEMENTED** | 34 hesaplama, formül & detaylı model akışları |
 
 ## Active Navigation Architecture (V1)
 - `Destination.Home` → **Ana Sayfa** (Primary Tab 1)

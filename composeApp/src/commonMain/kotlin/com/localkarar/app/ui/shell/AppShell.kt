@@ -429,17 +429,23 @@ private fun ScreenContent(
             )
         }
         is Destination.Orders -> {
+            val viewModel = remember(destination.workspaceId) {
+                com.localkarar.app.workspaces.OrdersViewModel(workspaceRepository)
+            }
             OrdersScreen(
                 workspaceId = destination.workspaceId,
-                onOpenSectionSelector = { onOpenWorkspaceSections(destination.workspaceId, "orders") },
-                onBack = onBack
+                viewModel = viewModel,
+                onNavigateBack = onBack
             )
         }
         is Destination.Products -> {
+            val viewModel = remember(destination.workspaceId) {
+                com.localkarar.app.workspaces.ProductsViewModel(workspaceRepository)
+            }
             ProductsScreen(
                 workspaceId = destination.workspaceId,
-                onOpenSectionSelector = { onOpenWorkspaceSections(destination.workspaceId, "products") },
-                onBack = onBack
+                viewModel = viewModel,
+                onNavigateBack = onBack
             )
         }
         is Destination.Records -> {

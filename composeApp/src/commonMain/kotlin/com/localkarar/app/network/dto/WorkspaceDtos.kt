@@ -99,7 +99,7 @@ data class BusinessInvitationDto(
     val id: String,
     val email: String,
     val role: String,
-    val status: String,
+    val invitedBy: String? = null,
     val expiresAt: String? = null,
     val createdAt: String? = null
 )
@@ -112,7 +112,8 @@ data class UpdateMemberRoleRequestDto(
 @Serializable
 data class BusinessContactDto(
     val id: String,
-    val type: String = "other",
+    val workspaceId: String,
+    val type: String = "customer",
     val name: String,
     val legalName: String? = null,
     val contactPerson: String? = null,
@@ -121,8 +122,8 @@ data class BusinessContactDto(
     val city: String? = null,
     val address: String? = null,
     val notes: String? = null,
-    val status: String? = null,
-    val createdAt: String? = null
+    val createdAt: String? = null,
+    val updatedAt: String? = null
 )
 
 @Serializable
@@ -139,64 +140,42 @@ data class ContactInputDto(
 )
 
 @Serializable
-data class TrackerSummaryDto(
-    val counts: TrackerCountsDto = TrackerCountsDto(),
-    val nextThirtyDays: NextThirtyDaysDto = NextThirtyDaysDto(),
-    val upcoming: List<BusinessRecordDto> = emptyList()
+data class RecordContactRefDto(
+    val id: String,
+    val name: String
 )
 
 @Serializable
-data class TrackerCountsDto(
-    val open: Int = 0,
-    val overdue: Int = 0,
-    val dueToday: Int = 0,
-    val shipments: Int = 0,
-    val deferred: Int = 0
-)
-
-@Serializable
-data class NextThirtyDaysDto(
-    val payable: Double = 0.0,
-    val receivable: Double = 0.0,
-    val net: Double = 0.0
+data class RecordAssigneeRefDto(
+    val id: Int,
+    val name: String
 )
 
 @Serializable
 data class BusinessRecordDto(
     val id: String,
     val workspaceId: String,
-    val type: String = "other",
+    val type: String,
     val title: String,
     val description: String? = null,
     val direction: String = "neutral",
     val amount: Double? = null,
     val currency: String = "TRY",
-    val priority: String = "normal",
     val status: String = "open",
+    val priority: String = "normal",
     val dueAt: String? = null,
-    val contactId: String? = null,
-    val contact: ContactRefDto? = null,
-    val assignedToId: Int? = null,
-    val assignedTo: AssigneeRefDto? = null,
-    val recurrenceRule: String? = null,
-    val metadata: JsonElement? = null,
-    val createdAt: String? = null,
-    val updatedAt: String? = null,
+    val originalDueAt: String? = null,
     val completedAt: String? = null,
     val cancelledAt: String? = null,
-    val reason: String? = null
-)
-
-@Serializable
-data class ContactRefDto(
-    val id: String,
-    val name: String
-)
-
-@Serializable
-data class AssigneeRefDto(
-    val id: Int,
-    val name: String
+    val contactId: String? = null,
+    val contact: RecordContactRefDto? = null,
+    val assignedToId: Int? = null,
+    val assignedTo: RecordAssigneeRefDto? = null,
+    val recurrenceRule: String? = null,
+    val parentRecordId: String? = null,
+    val metadata: Map<String, JsonElement> = emptyMap(),
+    val createdAt: String? = null,
+    val updatedAt: String? = null
 )
 
 @Serializable
@@ -211,7 +190,8 @@ data class RecordInputDto(
     val dueAt: String? = null,
     val contactId: String? = null,
     val assignedToId: Int? = null,
-    val recurrenceRule: String? = null
+    val recurrenceRule: String? = null,
+    val metadata: Map<String, JsonElement>? = null
 )
 
 @Serializable
@@ -222,27 +202,50 @@ data class RecordUpdateDto(
     val direction: String? = null,
     val amount: Double? = null,
     val currency: String? = null,
+    val status: String? = null,
     val priority: String? = null,
     val dueAt: String? = null,
     val contactId: String? = null,
     val assignedToId: Int? = null,
     val recurrenceRule: String? = null,
-    val status: String? = null,
-    val reason: String? = null
-)
-
-@Serializable
-data class RecordListResponseDto(
-    val records: List<BusinessRecordDto> = emptyList(),
-    val total: Int = 0,
-    val limit: Int = 0,
-    val offset: Int = 0
+    val reason: String? = null,
+    val metadata: Map<String, JsonElement>? = null
 )
 
 @Serializable
 data class DeferRecordRequestDto(
     val dueAt: String,
     val reason: String
+)
+
+@Serializable
+data class RecordListResponseDto(
+    val records: List<BusinessRecordDto> = emptyList(),
+    val total: Int = 0
+)
+
+@Serializable
+data class TrackerSummaryDto(
+    val counts: TrackerCountsDto = TrackerCountsDto(),
+    val nextThirtyDays: TrackerWindowDto = TrackerWindowDto(),
+    val upcoming: List<BusinessRecordDto> = emptyList(),
+    val overdue: List<BusinessRecordDto> = emptyList()
+)
+
+@Serializable
+data class TrackerCountsDto(
+    val open: Int = 0,
+    val overdue: Int = 0,
+    val dueToday: Int = 0,
+    val shipments: Int = 0,
+    val deferred: Int = 0
+)
+
+@Serializable
+data class TrackerWindowDto(
+    val payable: Double = 0.0,
+    val receivable: Double = 0.0,
+    val net: Double = 0.0
 )
 
 @Serializable
@@ -363,4 +366,123 @@ data class DocumentMetadataDto(
     val category: String? = null,
     val documentDate: String? = null,
     val dueDate: String? = null
+)
+
+// ============================================================================
+// COMMERCE: SİPARİŞLER (ORDERS) & ÜRÜNLER (PRODUCTS) DTOs
+// ============================================================================
+
+@Serializable
+data class OrderItemDto(
+    val productId: String? = null,
+    val productName: String,
+    val quantity: Int = 1,
+    val unitPrice: Double = 0.0,
+    val totalPrice: Double = 0.0
+)
+
+@Serializable
+data class OrderDto(
+    val id: String,
+    val workspaceId: String,
+    val orderNumber: String,
+    val customerName: String,
+    val contactId: String? = null,
+    val itemsCount: Int = 1,
+    val totalAmount: Double = 0.0,
+    val currency: String = "TRY",
+    val status: String = "pending", // pending, processing, shipped, delivered, cancelled
+    val paymentStatus: String = "unpaid", // unpaid, paid, partially_paid, refunded
+    val orderDate: String? = null,
+    val deliveryDate: String? = null,
+    val notes: String? = null,
+    val items: List<OrderItemDto> = emptyList()
+)
+
+@Serializable
+data class CreateOrderRequestDto(
+    val orderNumber: String,
+    val customerName: String,
+    val contactId: String? = null,
+    val totalAmount: Double,
+    val currency: String = "TRY",
+    val status: String = "pending",
+    val paymentStatus: String = "unpaid",
+    val orderDate: String? = null,
+    val deliveryDate: String? = null,
+    val notes: String? = null,
+    val items: List<OrderItemDto> = emptyList()
+)
+
+@Serializable
+data class UpdateOrderRequestDto(
+    val customerName: String? = null,
+    val contactId: String? = null,
+    val totalAmount: Double? = null,
+    val currency: String? = null,
+    val status: String? = null,
+    val paymentStatus: String? = null,
+    val deliveryDate: String? = null,
+    val notes: String? = null,
+    val items: List<OrderItemDto>? = null
+)
+
+@Serializable
+data class OrderListResponseDto(
+    val orders: List<OrderDto> = emptyList(),
+    val total: Int = 0
+)
+
+@Serializable
+data class ProductDto(
+    val id: String,
+    val workspaceId: String,
+    val code: String, // SKU
+    val name: String,
+    val category: String = "Genel",
+    val price: Double = 0.0,
+    val costPrice: Double = 0.0,
+    val currency: String = "TRY",
+    val stockQuantity: Int = 0,
+    val minStockLevel: Int = 5,
+    val unit: String = "Adet",
+    val status: String = "active", // active, inactive, out_of_stock
+    val description: String? = null,
+    val createdAt: String? = null
+)
+
+@Serializable
+data class CreateProductRequestDto(
+    val code: String,
+    val name: String,
+    val category: String = "Genel",
+    val price: Double,
+    val costPrice: Double = 0.0,
+    val currency: String = "TRY",
+    val stockQuantity: Int = 0,
+    val minStockLevel: Int = 5,
+    val unit: String = "Adet",
+    val status: String = "active",
+    val description: String? = null
+)
+
+@Serializable
+data class UpdateProductRequestDto(
+    val code: String? = null,
+    val name: String? = null,
+    val category: String? = null,
+    val price: Double? = null,
+    val costPrice: Double? = null,
+    val currency: String? = null,
+    val stockQuantity: Int? = null,
+    val minStockLevel: Int? = null,
+    val unit: String? = null,
+    val status: String? = null,
+    val description: String? = null
+)
+
+@Serializable
+data class ProductListResponseDto(
+    val products: List<ProductDto> = emptyList(),
+    val total: Int = 0
 )
