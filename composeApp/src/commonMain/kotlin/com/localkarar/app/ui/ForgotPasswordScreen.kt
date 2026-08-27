@@ -6,8 +6,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.Icon
 import androidx.compose.material.Text
-import androidx.compose.material.TextButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.LockReset
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -16,21 +19,20 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.localkarar.app.auth.AuthViewModel
 import com.localkarar.app.ui.components.LkButton
-import com.localkarar.app.ui.components.LkPasswordTextField
+import com.localkarar.app.ui.components.LkButtonVariant
 import com.localkarar.app.ui.components.LkTextField
 import com.localkarar.app.ui.theme.*
 
 @Composable
-fun LoginScreen(
+fun ForgotPasswordScreen(
     viewModel: AuthViewModel,
-    onNavigateToRegister: () -> Unit,
-    onNavigateToForgotPassword: () -> Unit
+    onNavigateToResetPassword: () -> Unit,
+    onNavigateToLogin: () -> Unit
 ) {
     var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    
     val isLoading by viewModel.isLoading.collectAsState()
-    val error by viewModel.loginError.collectAsState()
+    val error by viewModel.resetError.collectAsState()
+    val resetSuccess by viewModel.resetSuccess.collectAsState()
 
     Box(
         modifier = Modifier
@@ -53,7 +55,7 @@ fun LoginScreen(
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
             ) {
-                // App Brand
+                // Header Icon
                 Box(
                     modifier = Modifier
                         .size(56.dp)
@@ -61,29 +63,38 @@ fun LoginScreen(
                         .border(1.dp, LkLineSoft, LkShapes.MD),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("LK", style = LkTypography.getSectionTitle(), color = LkPrimary, fontWeight = FontWeight.Bold)
+                    Icon(
+                        imageVector = if (resetSuccess) Icons.Default.CheckCircle else Icons.Default.LockReset,
+                        contentDescription = null,
+                        tint = if (resetSuccess) LkSuccess else LkPrimary,
+                        modifier = Modifier.size(28.dp)
+                    )
                 }
-                
+
                 Spacer(modifier = Modifier.height(LkSpacing.Space4))
-                
+
                 Text(
-                    text = "LocalKarar'a Giriş Yap",
+                    text = if (resetSuccess) "E-postanızı Kontrol Edin" else "Şifrenizi Sıfırlayın",
                     style = LkTypography.getSectionTitle(),
                     color = LkTextPrimary,
                     textAlign = TextAlign.Center
                 )
-                
+
                 Spacer(modifier = Modifier.height(LkSpacing.Space2))
-                
+
                 Text(
-                    text = "Devam etmek için kurumsal hesabınıza giriş yapın.",
+                    text = if (resetSuccess) {
+                        "$email adresi sistemde kayıtlıysa şifre sıfırlama bağlantısı gönderildi. Bağlantı 1 saat geçerlidir."
+                    } else {
+                        "Hesabınızın e-posta adresini girin; sıfırlama bağlantısını iletelim."
+                    },
                     style = LkTypography.getBodySmall(),
                     color = LkTextSecondary,
                     textAlign = TextAlign.Center
                 )
-                
+
                 Spacer(modifier = Modifier.height(LkSpacing.Space6))
-                
+
                 if (error != null) {
                     Box(
                         modifier = Modifier
@@ -103,64 +114,60 @@ fun LoginScreen(
                     Spacer(modifier = Modifier.height(LkSpacing.Space4))
                 }
 
-                LkTextField(
-                    value = email,
-                    onValueChange = { email = it },
-                    label = "Kurumsal E-posta",
-                    placeholder = "ornek@sirket.com"
-                )
-                
-                Spacer(modifier = Modifier.height(LkSpacing.Space4))
-                
-                LkPasswordTextField(
-                    value = password,
-                    onValueChange = { password = it },
-                    label = "Şifre",
-                    placeholder = "••••••••"
-                )
+                if (!resetSuccess) {
+                    LkTextField(
+                        value = email,
+                        onValueChange = { email = it },
+                        label = "Kayıtlı E-posta Adresi",
+                        placeholder = "adiniz@sirketiniz.com"
+                    )
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
+                    Spacer(modifier = Modifier.height(LkSpacing.Space6))
+
+                    LkButton(
+                        text = if (isLoading) "Gönderiliyor..." else "Sıfırlama Bağlantısı Gönder",
+                        onClick = { viewModel.requestPasswordReset(email) },
+                        enabled = email.isNotBlank() && !isLoading,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(LkSpacing.Space4))
+
                     Text(
-                        text = "Şifremi unuttum",
-                        style = LkTypography.getMicro(),
+                        text = "Sıfırlama kodum var",
+                        style = LkTypography.getBodySmall(),
                         color = LkPrimary,
                         modifier = Modifier
-                            .clickable(onClick = onNavigateToForgotPassword)
+                            .clickable(onClick = onNavigateToResetPassword)
                             .padding(vertical = LkSpacing.Space2)
                     )
-                }
-                
-                Spacer(modifier = Modifier.height(LkSpacing.Space4))
-                
-                LkButton(
-                    text = if (isLoading) "Giriş Yapılıyor..." else "Giriş Yap",
-                    onClick = { viewModel.login(email, password) },
-                    enabled = email.isNotBlank() && password.isNotBlank() && !isLoading,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Spacer(modifier = Modifier.height(LkSpacing.Space6))
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = "Hesabınız yok mu?",
-                        style = LkTypography.getBodySmall(),
-                        color = LkTextSecondary
+                } else {
+                    LkButton(
+                        text = "Sıfırlama Kodunu Gir",
+                        onClick = onNavigateToResetPassword,
+                        modifier = Modifier.fillMaxWidth()
                     )
-                    Spacer(modifier = Modifier.width(LkSpacing.Space2))
+
+                    Spacer(modifier = Modifier.height(LkSpacing.Space4))
+
+                    LkButton(
+                        text = "Giriş Ekranına Dön",
+                        variant = LkButtonVariant.SECONDARY,
+                        onClick = onNavigateToLogin,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(LkSpacing.Space4))
+
+                if (!resetSuccess) {
                     Text(
-                        text = "Kayıt Ol",
+                        text = "Giriş ekranına dön",
                         style = LkTypography.getBodySmall(),
-                        color = LkPrimary,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.clickable(onClick = onNavigateToRegister)
+                        color = LkTextSecondary,
+                        modifier = Modifier
+                            .clickable(onClick = onNavigateToLogin)
+                            .padding(vertical = LkSpacing.Space2)
                     )
                 }
             }

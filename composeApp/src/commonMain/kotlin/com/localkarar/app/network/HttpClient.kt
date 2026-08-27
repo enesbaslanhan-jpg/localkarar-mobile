@@ -10,7 +10,37 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
-import io.ktor.utils.io.errors.IOException
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+
+private fun parseUserFacingErrorMessage(rawBody: String): String {
+    if (rawBody.isBlank()) return "İşlem gerçekleştirilemedi. Lütfen tekrar deneyin."
+    return try {
+        val trimmed = rawBody.trim()
+        if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+            val json = Json { ignoreUnknownKeys = true }
+            val element = json.parseToJsonElement(trimmed) as? JsonObject
+            val errorVal = element?.get("error")?.let { (it as? JsonPrimitive)?.content }
+            val msgVal = element?.get("message")?.let { (it as? JsonPrimitive)?.content }
+            val resolved = errorVal ?: msgVal ?: ""
+            when {
+                resolved.contains("Email already in use", ignoreCase = true) -> "Bu e-posta adresi zaten kullanımda."
+                resolved.contains("Invalid credentials", ignoreCase = true) -> "E-posta adresi veya şifre hatalı."
+                resolved.contains("User not found", ignoreCase = true) -> "Kullanıcı bulunamadı."
+                resolved.contains("Registration is closed", ignoreCase = true) -> "Kayıtlar şu an kapalıdır."
+                resolved.contains("VALIDATION_ERROR", ignoreCase = true) -> "Girdiğiniz bilgileri kontrol edip tekrar deneyin."
+                resolved.contains("INVALID_RESET_TOKEN", ignoreCase = true) -> "Sıfırlama kodu geçersiz ya da süresi dolmuş."
+                resolved.contains("PASSWORD_UNCHANGED", ignoreCase = true) -> "Yeni şifre mevcut şifreyle aynı olamaz."
+                resolved.isNotBlank() && !resolved.startsWith("{") -> resolved
+                else -> "Girdiğiniz bilgileri kontrol edin."
+            }
+        } else {
+            "İşlem gerçekleştirilemedi. Lütfen tekrar deneyin."
+        }
+    } catch (e: Exception) {
+        "İşlem gerçekleştirilemedi. Lütfen tekrar deneyin."
+    }
+}
 
 fun createHttpClient(secureStorage: SecureStorage): HttpClient {
     return HttpClient {
@@ -71,22 +101,23 @@ fun createHttpClient(secureStorage: SecureStorage): HttpClient {
                             throw ApiError.Unauthorized(message = "Oturumunuzun süresi doldu. Lütfen tekrar giriş yapın.")
                         }
                     }
-                    HttpStatusCode.Forbidden -> throw ApiError.Forbidden()
-                    HttpStatusCode.NotFound -> throw ApiError.NotFound()
+                    HttpStatusCode.Forbidden -> throw ApiError.Forbidden("Bu işlem için yetkiniz bulunmuyor.")
+                    HttpStatusCode.NotFound -> throw ApiError.NotFound("Aranan kaynak bulunamadı.")
                     HttpStatusCode.Conflict -> throw ApiError.UnknownError(message = "Veri çakışması oluştu.")
                     HttpStatusCode.UnprocessableEntity, HttpStatusCode.BadRequest -> {
-                        throw ApiError.ValidationError(message = "Geçersiz istek: $exceptionResponseText")
+                        val friendlyMessage = parseUserFacingErrorMessage(exceptionResponseText)
+                        throw ApiError.ValidationError(message = friendlyMessage)
                     }
                     else -> {
                         println("API_ERROR: HTTP ${exceptionResponse.status.value} - $exceptionResponseText")
-                        throw ApiError.ServerError("Sunucu hatası: ${exceptionResponse.status.value}")
+                        throw ApiError.ServerError("Sunucuyla iletişim kurulurken bir sorun oluştu.")
                     }
                 }
             }
 
             handleResponseExceptionWithRequest { exception, _ ->
                 when (exception) {
-                    is IOException -> throw ApiError.NetworkUnavailable()
+                    is kotlinx.io.IOException -> throw ApiError.NetworkUnavailable()
                     is HttpRequestTimeoutException -> throw ApiError.Timeout()
                 }
             }
