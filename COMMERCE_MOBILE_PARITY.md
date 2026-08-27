@@ -60,10 +60,10 @@ This document establishes the authoritative contract and parity matrix between W
   - `provider`: `TRENDYOL` | `HEPSIBURADA` | `N11` | `SHOPIFY`
   - `onSale`: `true` | `false`
   - `stockFilter`: `low_stock` | `out_of_stock` | `all`
-  - `window`: `7d` | `30d` | `90d`
-  - `sortBy`: `default` | `bestSelling` | `topRevenue` | `mostReturned` (strictly camelCase)
+  - `windowDays`: `"7"` | `"30"` | `"90"` (canonical discrete integer strings)
+  - `sort`: `default` | `bestSelling` | `topRevenue` | `mostReturned` (strictly camelCase)
   - `q`: string (Search title, SKU, barcode)
-- **Mobile Repository Method:** `WorkspaceRepository.getProducts(workspaceId, provider, onSale, stockFilter, window, sortBy, query)`
+- **Mobile Repository Method:** `WorkspaceRepository.getProducts(workspaceId, provider, onSale, stockFilter, windowDays, sort, query)`
 - **Runtime Status:** Verified
 
 ### B. Product Detail

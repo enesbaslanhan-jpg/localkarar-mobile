@@ -32,9 +32,9 @@ import com.localkarar.app.workspaces.ProductsViewModel
 private val PROVIDERS = listOf("TÜMÜ", "TRENDYOL", "HEPSIBURADA", "N11", "SHOPIFY")
 
 private val WINDOW_OPTIONS = listOf(
-    "7d" to "7 Gün",
-    "30d" to "30 Gün",
-    "90d" to "90 Gün"
+    "7" to "7 Gün",
+    "30" to "30 Gün",
+    "90" to "90 Gün"
 )
 
 private val SORT_OPTIONS = listOf(
@@ -56,8 +56,8 @@ fun ProductsScreen(
     val selectedProvider by viewModel.selectedProvider.collectAsState()
     val selectedOnSale by viewModel.selectedOnSale.collectAsState()
     val selectedStockFilter by viewModel.selectedStockFilter.collectAsState()
-    val selectedWindow by viewModel.selectedWindow.collectAsState()
-    val selectedSortBy by viewModel.selectedSortBy.collectAsState()
+    val selectedWindowDays by viewModel.selectedWindowDays.collectAsState()
+    val selectedSort by viewModel.selectedSort.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
 
     var editingSettingsProduct by remember { mutableStateOf<ProductDto?>(null) }
@@ -220,7 +220,7 @@ fun ProductsScreen(
                 // Performance Window Chips
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     WINDOW_OPTIONS.forEach { (windowKey, windowLabel) ->
-                        val isSelected = selectedWindow == windowKey
+                        val isSelected = selectedWindowDays == windowKey
                         Box(
                             modifier = Modifier
                                 .background(
@@ -248,7 +248,7 @@ fun ProductsScreen(
                 // Sort Chips (horizontal scrollable if needed)
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     items(SORT_OPTIONS) { (sortKey, sortLabel) ->
-                        val isSelected = selectedSortBy == sortKey
+                        val isSelected = selectedSort == sortKey
                         Box(
                             modifier = Modifier
                                 .background(
@@ -260,7 +260,7 @@ fun ProductsScreen(
                                     color = if (isSelected) LkSuccess else LkLineSoft,
                                     shape = LkShapes.SM
                                 )
-                                .clickable { viewModel.setSortBy(workspaceId, sortKey) }
+                                .clickable { viewModel.setSort(workspaceId, sortKey) }
                                 .padding(horizontal = 8.dp, vertical = 4.dp)
                         ) {
                             Text(

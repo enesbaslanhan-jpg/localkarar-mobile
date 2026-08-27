@@ -38,11 +38,11 @@ class ProductsViewModel(
     private val _selectedStockFilter = MutableStateFlow<String?>(null)
     val selectedStockFilter: StateFlow<String?> = _selectedStockFilter.asStateFlow()
 
-    private val _selectedWindow = MutableStateFlow("30d")
-    val selectedWindow: StateFlow<String> = _selectedWindow.asStateFlow()
+    private val _selectedWindowDays = MutableStateFlow("30")
+    val selectedWindowDays: StateFlow<String> = _selectedWindowDays.asStateFlow()
 
-    private val _selectedSortBy = MutableStateFlow("default")
-    val selectedSortBy: StateFlow<String> = _selectedSortBy.asStateFlow()
+    private val _selectedSort = MutableStateFlow("default")
+    val selectedSort: StateFlow<String> = _selectedSort.asStateFlow()
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
@@ -57,8 +57,8 @@ class ProductsViewModel(
                 provider = _selectedProvider.value,
                 onSale = _selectedOnSale.value,
                 stockFilter = _selectedStockFilter.value,
-                window = _selectedWindow.value,
-                sortBy = _selectedSortBy.value,
+                windowDays = _selectedWindowDays.value,
+                sort = _selectedSort.value,
                 query = _searchQuery.value
             )
                 .onSuccess { resp ->
@@ -89,13 +89,13 @@ class ProductsViewModel(
         loadProducts(workspaceId)
     }
 
-    fun setPerformanceWindow(workspaceId: String, window: String) {
-        _selectedWindow.value = window
+    fun setPerformanceWindow(workspaceId: String, windowDays: String) {
+        _selectedWindowDays.value = windowDays
         loadProducts(workspaceId)
     }
 
-    fun setSortBy(workspaceId: String, sortBy: String) {
-        _selectedSortBy.value = sortBy
+    fun setSort(workspaceId: String, sort: String) {
+        _selectedSort.value = sort
         loadProducts(workspaceId)
     }
 

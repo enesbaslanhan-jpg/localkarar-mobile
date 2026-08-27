@@ -305,23 +305,28 @@ class WorkspaceRepository(private val api: SafeApiClient) {
         provider: String? = null,
         onSale: Boolean? = null,
         stockFilter: String? = null, // "low_stock", "out_of_stock", "all"
-        window: String = "30d", // "7d", "30d", "90d"
-        sortBy: String = "default", // "default", "bestSelling", "topRevenue", "mostReturned"
+        windowDays: String = "30", // "7", "30", "90"
+        sort: String = "default", // "default", "bestSelling", "topRevenue", "mostReturned"
         query: String? = null
     ): Result<ProductListResponseDto> {
         val params = mutableListOf("workspaceId=$workspaceId")
         if (!provider.isNullOrBlank() && provider != "TÜMÜ") params.add("provider=$provider")
         if (onSale != null) params.add("onSale=$onSale")
         if (!stockFilter.isNullOrBlank()) params.add("stockFilter=$stockFilter")
-        params.add("window=$window")
-        // Canonical Web uses camelCase: default, bestSelling, topRevenue, mostReturned
-        val canonicalSort = when (sortBy) {
+        val canonicalWindowDays = when (windowDays) {
+            "7", "7d" -> "7"
+            "90", "90d" -> "90"
+            else -> "30"
+        }
+        params.add("windowDays=$canonicalWindowDays")
+        // Canonical Web uses camelCase sort parameter: default, bestSelling, topRevenue, mostReturned
+        val canonicalSort = when (sort) {
             "best_selling", "bestSelling" -> "bestSelling"
             "top_revenue", "topRevenue" -> "topRevenue"
             "most_returned", "mostReturned" -> "mostReturned"
             else -> "default"
         }
-        params.add("sortBy=$canonicalSort")
+        params.add("sort=$canonicalSort")
         if (!query.isNullOrBlank()) params.add("q=$query")
         val queryString = "?" + params.joinToString("&")
 
