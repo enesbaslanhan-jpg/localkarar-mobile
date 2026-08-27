@@ -18,5 +18,14 @@ shared/shared.podspec
 *.log
 logcat*.txt
 raw_json*.txt
+window_dump*.xml
+build_errors*.txt
+build_output*.txt
+error_summary*.txt
+errors*.json
+errors*.txt
+untracked-files.txt
+*.patch
 *.keystore
 *.jks
+

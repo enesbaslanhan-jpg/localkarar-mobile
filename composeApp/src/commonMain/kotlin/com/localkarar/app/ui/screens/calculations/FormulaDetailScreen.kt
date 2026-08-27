@@ -23,6 +23,77 @@ import com.localkarar.app.ui.components.LkResultRow
 import com.localkarar.app.ui.components.LkSectionHeader
 import com.localkarar.app.ui.theme.*
 
+internal val FORMULA_RESULT_LABELS = mapOf(
+    "kar" to "Kâr",
+    "kar_marji" to "Kâr marjı",
+    "durum" to "Durum",
+    "katki_payi" to "Katkı payı",
+    "basabas_adet" to "Başabaş adedi",
+    "basabas_gelir" to "Başabaş geliri",
+    "net_pozisyon" to "Net nakit pozisyonu",
+    "nakit_oran" to "Nakit oranı",
+    "isletme_sermayesi" to "İşletme sermayesi",
+    "net_kar" to "Net kâr",
+    "roi_yuzde" to "ROI",
+    "devir_hizi" to "Stok devir hızı",
+    "stokta_kalma_gunu" to "Stokta kalma süresi",
+    "cac" to "Müşteri edinme maliyeti",
+    "ltv" to "Müşteri yaşam boyu değeri",
+    "ltv_cac_orani" to "LTV/CAC oranı",
+    "degerlendirme" to "Değerlendirme",
+    "indirimli_fiyat" to "İndirimli fiyat",
+    "normal_kar" to "Normal kâr",
+    "kampanya_kar" to "Kampanya kârı",
+    "kar_farki" to "Kâr farkı",
+    "aylik_taksit" to "Aylık taksit",
+    "toplam_odeme" to "Toplam ödeme",
+    "toplam_faiz" to "Toplam faiz",
+    "birim_maliyet_try" to "Birim maliyet (TRY)",
+    "birim_maliyet_usd" to "Birim maliyet (USD)",
+    "toplam_maliyet" to "Toplam maliyet",
+    "gercek_birim_maliyet" to "Gerçek birim maliyet",
+    "onerilen_kdv_haric_fiyat" to "Önerilen KDV hariç fiyat",
+    "komisyon_tutari" to "Komisyon tutarı",
+    "odeme_kesintisi" to "Ödeme kesintisi",
+    "birim_katki" to "Birim katkı",
+    "gerceklesen_marj" to "Gerçekleşen marj",
+    "kdv_haric_tutar" to "KDV hariç tutar",
+    "kdv_tutari" to "KDV tutarı",
+    "kdv_dahil_tutar" to "KDV dahil tutar",
+    "toplam_giris" to "Toplam kasa girişi",
+    "toplam_cikis" to "Toplam kasa çıkışı",
+    "beklenen_kasa" to "Beklenen kasa",
+    "aylik_nakit_acigi" to "Aylık nakit açığı",
+    "dayanma_suresi_ay" to "Nakit dayanma süresi (ay)",
+    "toplam_uretim_maliyeti" to "Toplam üretim maliyeti",
+    "birim_maliyet" to "Birim maliyet",
+    "vadeli_toplam" to "Vadeli toplam",
+    "vade_farki" to "Vade farkı",
+    "aylik_esit_odeme" to "Aylık eşit ödeme",
+    "siparis_toplam_maliyeti" to "Sipariş toplam maliyeti",
+    "siparis_katkisi" to "Sipariş katkısı",
+    "siparis_marji" to "Sipariş marjı",
+)
+
+private fun resultTone(status: String): ResultTone {
+    val lower = status.lowercase()
+    return when {
+        lower.contains("kârlı") || lower.contains("pozitif") || lower.contains("yeterli") || lower.contains("sağlıklı") || lower.contains("6 ay") || lower.contains("tüketimi yok") -> ResultTone.Success
+        lower.contains("kritik") || lower.contains("zarar") || lower.contains("negatif") || lower.contains("yetersiz") || lower.contains("açığı") -> ResultTone.Danger
+        else -> ResultTone.Neutral
+    }
+}
+
+private enum class ResultTone { Success, Danger, Neutral }
+
+private fun ResultTone.badgeColor(): androidx.compose.ui.graphics.Color {
+    return when (this) {
+        ResultTone.Success -> LkSuccess
+        ResultTone.Danger -> LkDanger
+        ResultTone.Neutral -> LkWarning
+    }
+}
+
 @Composable
 fun FormulaDetailScreen(
     viewModel: FormulaCalculatorViewModel,
@@ -40,7 +111,9 @@ fun FormulaDetailScreen(
             is FormulaCalculatorUiState.Content -> {
                 val formula = state.formula
                 val inputValues = remember(formula.id) {
-                    mutableStateMapOf<String, String>()
+                    mutableStateMapOf<String, String>().apply {
+                        putAll(state.initialInputs)
+                    }
                 }
                 val inputErrors = remember(formula.id) {
                     mutableStateMapOf<String, String>()
@@ -144,14 +217,34 @@ fun FormulaDetailScreen(
                     if (state.result != null) {
                         item {
                             LkInfoPanel(title = "Sonuç") {
-                                state.result.result.forEach { (key, value) ->
+                                val result = state.result!!
+                                val resultEntries = result.result.filterKeys { it != "warnings" && it != "assumptions" }
+                                
+                                // Show durum/status badge first if present
+                                result.result["durum"]?.let { durumValue ->
+                                    val durumText = durumValue.displayValue()
+                                    val tone = resultTone(durumText)
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.Center
+                                    ) {
+                                        LkChip(
+                                            text = durumText,
+                                            background = tone.badgeColor().copy(alpha = 0.15f),
+                                            contentColor = tone.badgeColor()
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(LkSpacing.Space3))
+                                }
+
+                                resultEntries.forEach { (key, value) ->
                                     LkResultRow(
-                                        label = key.replace('_', ' ').replaceFirstChar { it.uppercase() },
+                                        label = formulaResultLabel(key),
                                         value = value.displayValue()
                                     )
                                     Spacer(modifier = Modifier.height(LkSpacing.Space2))
                                 }
-                                state.result.warnings.forEach { warning ->
+                                result.warnings.forEach { warning ->
                                     Spacer(modifier = Modifier.height(LkSpacing.Space2))
                                     Text(
                                         text = warning,

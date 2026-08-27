@@ -2,6 +2,7 @@ package com.localkarar.app.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -22,8 +23,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.localkarar.app.ui.theme.LkLineStrong
+import com.localkarar.app.ui.theme.LkPrimary
 import com.localkarar.app.ui.theme.LkShapes
 import com.localkarar.app.ui.theme.LkSpacing
+import com.localkarar.app.ui.theme.LkSurfaceCanvas
 import com.localkarar.app.ui.theme.LkSurfacePanel
 import com.localkarar.app.ui.theme.LkSurfaceRaised
 import com.localkarar.app.ui.theme.LkTextPrimary
@@ -128,6 +131,27 @@ fun LkChip(
         color = contentColor,
         modifier = modifier
             .background(background, CircleShape)
+            .padding(horizontal = LkSpacing.Space3, vertical = LkSpacing.Space1)
+    )
+}
+
+@Composable
+fun LkChip(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Text(
+        text = text,
+        style = LkTypography.getMicro(),
+        color = if (selected) LkSurfaceCanvas else LkTextSecondary,
+        modifier = modifier
+            .background(
+                if (selected) LkPrimary else LkSurfaceRaised,
+                CircleShape
+            )
+            .clickable(onClick = onClick)
             .padding(horizontal = LkSpacing.Space3, vertical = LkSpacing.Space1)
     )
 }

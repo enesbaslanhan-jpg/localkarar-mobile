@@ -13,12 +13,21 @@ class CourseRepository(
 ) {
 
 
-    suspend fun getCourses(page: Int = 1, pageSize: Int = 12): Result<CoursesListResponse> {
+    suspend fun getCourses(
+        page: Int = 1,
+        pageSize: Int = 12,
+        category: String? = null,
+        search: String? = null,
+        level: String? = null
+    ): Result<CoursesListResponse> {
         return try {
             val response = httpClient.get("/courses") {
                 url {
                     parameters.append("page", page.toString())
                     parameters.append("pageSize", pageSize.toString())
+                    category?.takeIf { it.isNotBlank() }?.let { parameters.append("category", it) }
+                    search?.takeIf { it.isNotBlank() }?.let { parameters.append("search", it) }
+                    level?.takeIf { it.isNotBlank() }?.let { parameters.append("level", it) }
                 }
             }
 
@@ -26,6 +35,29 @@ class CourseRepository(
                 Result.success(response.body())
             } else {
                 Result.failure(Exception("Courses fetch failed: ${response.status}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getCategories(): Result<List<String>> {
+        return try {
+            val response = httpClient.get("/courses/categories")
+            Result.success(response.body())
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getMyEnrollments(): Result<EnrollmentsListResponse> {
+        return try {
+            val response = httpClient.get("/enrollments/my")
+
+            if (response.status.isSuccess()) {
+                Result.success(response.body())
+            } else {
+                Result.failure(Exception("Enrollments fetch failed: ${response.status}"))
             }
         } catch (e: Exception) {
             Result.failure(e)

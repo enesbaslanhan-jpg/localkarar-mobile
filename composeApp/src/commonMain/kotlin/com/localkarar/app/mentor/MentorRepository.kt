@@ -41,7 +41,7 @@ class MentorRepository(
 ) {
     private val json = Json { ignoreUnknownKeys = true }
 
-    private val base = "$baseUrl/api/mentor"
+    private val base = "$baseUrl/mentor"
 
     private suspend fun errorMessage(response: io.ktor.client.statement.HttpResponse): String {
         return try {

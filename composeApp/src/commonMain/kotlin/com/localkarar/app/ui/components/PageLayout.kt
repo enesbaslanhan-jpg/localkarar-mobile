@@ -15,6 +15,7 @@ import com.localkarar.app.ui.theme.*
 fun LkPageLayout(
     title: String? = null,
     onBack: (() -> Unit)? = null,
+    actions: @Composable RowScope.() -> Unit = {},
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
@@ -41,7 +42,8 @@ fun LkPageLayout(
                                         Icon(Icons.Default.ArrowBack, contentDescription = "Geri", tint = LkPrimary)
                                     }
                                 }
-                            } else null
+                            } else null,
+                            actions = actions
                         )
                         Divider(color = LkLineSoft, thickness = 1.dp)
                     }

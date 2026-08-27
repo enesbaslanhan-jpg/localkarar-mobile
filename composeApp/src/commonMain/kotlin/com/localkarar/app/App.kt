@@ -43,13 +43,21 @@ fun App(secureStorage: SecureStorage) {
     val authViewModel = remember { AuthViewModel(authRepository) }
 
     val dashboardRepository = remember { DashboardRepository(httpClient, secureStorage) }
-    val homeViewModel = remember { HomeViewModel(dashboardRepository) }
     val courseRepository = remember { CourseRepository(httpClient, secureStorage) }
     val decisionRepository = remember { DecisionRepository(httpClient) }
-
-    val calculationsRepository = remember { CalculationsRepository(SafeApiClient(httpClient, "Hesaplamalar")) }
     val activeWorkspaceStore = remember { ActiveWorkspaceStore() }
     val workspaceRepository = remember { WorkspaceRepository(SafeApiClient(httpClient, "İşletme")) }
+    
+    val homeViewModel = remember { 
+        HomeViewModel(
+            dashboardRepository,
+            workspaceRepository,
+            decisionRepository,
+            activeWorkspaceStore
+        ) 
+    }
+
+    val calculationsRepository = remember { CalculationsRepository(SafeApiClient(httpClient, "Hesaplamalar")) }
     val mentorRepository = remember { MentorRepository(httpClient) }
     val newsRepository = remember { NewsRepository(httpClient) }
     val communityRepository = remember { CommunityRepository(httpClient) }
@@ -80,6 +88,7 @@ fun App(secureStorage: SecureStorage) {
                     AppShell(
                         user = state.user,
                         homeViewModel = homeViewModel,
+                        dashboardRepository = dashboardRepository,
                         courseRepository = courseRepository,
                         decisionRepository = decisionRepository,
                         calculationsRepository = calculationsRepository,

@@ -14,6 +14,8 @@ import io.ktor.utils.io.errors.IOException
 
 fun createHttpClient(secureStorage: SecureStorage): HttpClient {
     return HttpClient {
+        expectSuccess = true
+
         install(ContentNegotiation) {
             json(Json {
                 prettyPrint = true
@@ -44,7 +46,15 @@ fun createHttpClient(secureStorage: SecureStorage): HttpClient {
         }
 
         HttpResponseValidator {
-            handleResponseExceptionWithRequest { exception, _ ->
+            validateResponse { response ->
+                val contentType = response.contentType()
+                if (contentType != null && !contentType.match(ContentType.Application.Json)) {
+                    println("API_ERROR: Expected JSON but got ${contentType.contentType}/${contentType.contentSubtype} for ${response.request.url}")
+                    throw ApiError.ServerError("Beklenmeyen yanıt formatı alındı. (Sunucu Hatası)")
+                }
+            }
+
+            handleResponseExceptionWithRequest { exception, request ->
                 val clientException = exception as? ClientRequestException ?: return@handleResponseExceptionWithRequest
                 val exceptionResponse = clientException.response
                 val exceptionResponseText = try {
@@ -54,13 +64,23 @@ fun createHttpClient(secureStorage: SecureStorage): HttpClient {
                 }
                 
                 when (exceptionResponse.status) {
-                    HttpStatusCode.Unauthorized -> throw ApiError.Unauthorized()
+                    HttpStatusCode.Unauthorized -> {
+                        if (request.url.encodedPath.contains("/auth/login")) {
+                            throw ApiError.Unauthorized(message = "E-posta veya şifre hatalı.")
+                        } else {
+                            throw ApiError.Unauthorized(message = "Oturumunuzun süresi doldu. Lütfen tekrar giriş yapın.")
+                        }
+                    }
                     HttpStatusCode.Forbidden -> throw ApiError.Forbidden()
                     HttpStatusCode.NotFound -> throw ApiError.NotFound()
-                    HttpStatusCode.BadRequest, HttpStatusCode.UnprocessableEntity -> {
+                    HttpStatusCode.Conflict -> throw ApiError.UnknownError(message = "Veri çakışması oluştu.")
+                    HttpStatusCode.UnprocessableEntity, HttpStatusCode.BadRequest -> {
                         throw ApiError.ValidationError(message = "Geçersiz istek: $exceptionResponseText")
                     }
-                    else -> throw ApiError.ServerError("Sunucu hatası: ${exceptionResponse.status.value}")
+                    else -> {
+                        println("API_ERROR: HTTP ${exceptionResponse.status.value} - $exceptionResponseText")
+                        throw ApiError.ServerError("Sunucu hatası: ${exceptionResponse.status.value}")
+                    }
                 }
             }
 

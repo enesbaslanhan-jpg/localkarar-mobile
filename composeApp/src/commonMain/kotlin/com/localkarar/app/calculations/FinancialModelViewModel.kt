@@ -41,9 +41,7 @@ class FinancialModelViewModel(
             if (result.isSuccess) {
                 _uiState.value = FinancialModelUiState.Content(result.getOrThrow())
             } else {
-                _uiState.value = FinancialModelUiState.Error(
-                    result.exceptionOrNull()?.message ?: "Model yüklenemedi."
-                )
+                _uiState.value = FinancialModelUiState.Error("Model yüklenemedi.")
             }
         }
     }
@@ -68,7 +66,7 @@ class FinancialModelViewModel(
                 _uiState.value = current.copy(runResult = result.getOrThrow(), isRunning = false)
             } else {
                 _uiState.value = current.copy(isRunning = false)
-                onError(result.exceptionOrNull()?.message ?: "Model çalıştırılamadı.")
+                onError("Model çalıştırılamadı.")
             }
         }
     }

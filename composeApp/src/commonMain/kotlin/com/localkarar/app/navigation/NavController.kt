@@ -15,16 +15,15 @@ class NavController(initialDestination: Destination) {
         val currentStack = _backStack.value
         if (currentStack.lastOrNull() == destination) return
         
-        // Simple heuristic: if we're navigating to a root tab, don't build an infinite stack.
-        // Instead, just clear and set it, or replace.
-        val rootDestinations = listOf(
+        val isRoot = when (destination) {
             Destination.Home, 
             Destination.Courses, 
-            Destination.DecisionTools, 
-            Destination.AiMentor
-        )
+            is Destination.DecisionTools, 
+            Destination.AiMentor -> true
+            else -> false
+        }
         
-        if (destination in rootDestinations) {
+        if (isRoot) {
             _backStack.value = listOf(destination)
         } else {
             _backStack.value = currentStack + destination

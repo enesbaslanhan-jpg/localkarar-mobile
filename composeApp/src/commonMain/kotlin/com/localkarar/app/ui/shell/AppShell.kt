@@ -19,14 +19,13 @@ import kotlinx.coroutines.launch
 
 import com.localkarar.app.home.HomeUiState
 import com.localkarar.app.home.HomeViewModel
+import com.localkarar.app.home.DashboardRepository
 import com.localkarar.app.courses.CourseRepository
 import com.localkarar.app.decision.DecisionRepository
 import com.localkarar.app.decision.DecisionToolsViewModel
 import com.localkarar.app.decision.DecisionSessionViewModel
-import com.localkarar.app.decision.DecisionHistoryViewModel
 import com.localkarar.app.ui.screens.decision.DecisionToolsScreen
 import com.localkarar.app.ui.screens.decision.DecisionSessionScreen
-import com.localkarar.app.ui.screens.decision.DecisionHistoryScreen
 import com.localkarar.app.courses.CoursesViewModel
 import com.localkarar.app.courses.CourseDetailViewModel
 import com.localkarar.app.courses.LessonReaderViewModel
@@ -98,6 +97,7 @@ import com.localkarar.app.auth.UserDto
 fun AppShell(
     user: UserDto,
     homeViewModel: HomeViewModel,
+    dashboardRepository: DashboardRepository,
     courseRepository: CourseRepository,
     decisionRepository: DecisionRepository,
     calculationsRepository: CalculationsRepository,
@@ -170,6 +170,7 @@ fun AppShell(
                     navController = navController,
                     user = user,
                     homeViewModel = homeViewModel,
+                    dashboardRepository = dashboardRepository,
                     courseRepository = courseRepository,
                     decisionRepository = decisionRepository,
                     calculationsRepository = calculationsRepository,
@@ -193,6 +194,7 @@ private fun ScreenContent(
     navController: NavController,
     user: UserDto,
     homeViewModel: HomeViewModel,
+    dashboardRepository: DashboardRepository,
     courseRepository: CourseRepository,
     decisionRepository: DecisionRepository,
     calculationsRepository: CalculationsRepository,
@@ -213,10 +215,17 @@ private fun ScreenContent(
         Destination.Home -> HomeScreen(
             viewModel = homeViewModel,
             onNavigateToCourses = { navController.navigateTo(Destination.Courses) },
-            onNavigateToCourseDetail = { courseId -> navController.navigateTo(Destination.CourseDetail(courseId)) }
+            onNavigateToCourseDetail = { courseId -> navController.navigateTo(Destination.CourseDetail(courseId)) },
+            onNavigateToCalculations = { navController.navigateTo(Destination.Calculations) },
+            onNavigateToMentor = { navController.navigateTo(Destination.AiMentor) },
+            onNavigateToDecisions = { navController.navigateTo(Destination.DecisionTools()) },
+            onNavigateToDecisionDetail = { code -> navController.navigateTo(Destination.DecisionSession(code)) }, // The web app navigates to check, but let's pass code
+            onNavigateToWorkspaces = { navController.navigateTo(Destination.Workspaces) },
+            onNavigateToTracker = { workspaceId -> navController.navigateTo(Destination.Records(workspaceId)) },
+            onNavigateToEnrollments = { navController.navigateTo(Destination.Courses) }
         )
         Destination.Courses -> {
-            val viewModel = remember { CoursesViewModel(courseRepository) }
+            val viewModel = remember { CoursesViewModel(courseRepository, dashboardRepository) }
             CoursesScreen(
                 viewModel = viewModel,
                 onNavigateToCourseDetail = { courseId -> navController.navigateTo(Destination.CourseDetail(courseId)) },
@@ -241,8 +250,17 @@ private fun ScreenContent(
                 onBack = onBack
             )
         }
-        Destination.DecisionTools -> {
+        is Destination.DecisionTools -> {
             val viewModel = remember { DecisionToolsViewModel(decisionRepository) }
+            // Apply the filter passed from navigation to the viewmodel state initially
+            LaunchedEffect(destination.initialFilter) {
+                if (viewModel.uiState.value is com.localkarar.app.decision.DecisionToolsUiState.Content) {
+                    viewModel.updateStatusFilter(destination.initialFilter)
+                } else {
+                    // if loading, we might need to pass it to loadTools, but since loadTools loads all tools, we just need to set the filter in ViewModel.
+                    viewModel.updateStatusFilter(destination.initialFilter)
+                }
+            }
             DecisionToolsScreen(
                 viewModel = viewModel,
                 onNavigateToSession = { sessionId -> navController.navigateTo(Destination.DecisionSession(sessionId)) },
@@ -254,13 +272,6 @@ private fun ScreenContent(
             DecisionSessionScreen(
                 viewModel = viewModel,
                 onBack = onBack
-            )
-        }
-        Destination.DecisionHistory -> {
-            val viewModel = remember { DecisionHistoryViewModel(decisionRepository) }
-            DecisionHistoryScreen(
-                viewModel = viewModel,
-                onOpenSession = { sessionId -> navController.navigateTo(Destination.DecisionSession(sessionId)) }
             )
         }
         Destination.AiMentor -> {
@@ -282,21 +293,30 @@ private fun ScreenContent(
             )
         }
         Destination.Calculations -> {
-            val viewModel = remember { CalculationsViewModel(calculationsRepository) }
+            val viewModel = remember(activeWorkspaceId) {
+                CalculationsViewModel(calculationsRepository, workspaceRepository, activeWorkspaceId)
+            }
             CalculationsScreen(
                 viewModel = viewModel,
-                onFormulaSelected = { formula -> navController.navigateTo(Destination.FormulaDetail(formula)) },
-                onModelSelected = { code -> navController.navigateTo(Destination.FinancialModelDetail(code)) },
-                onRunsSelected = {
-                    val id = activeWorkspaceId
-                    if (id != null) navController.navigateTo(Destination.ModelRuns(id))
+                onCalculationSelected = { item ->
+                    // Route to the appropriate detail screen based on mode
+                    if (item.supportsQuickCalculation && item.formula != null) {
+                        navController.navigateTo(Destination.FormulaDetail(item.formula!!))
+                    } else if (item.supportsDetailedAnalysis && item.definition.modelCode != null) {
+                        navController.navigateTo(Destination.FinancialModelDetail(item.definition.modelCode!!))
+                    }
                 },
-                onBack = onBack
+                onNavigateToWorkspace = {
+                    val id = activeWorkspaceId
+                    if (id != null) navController.navigateTo(Destination.WorkspaceHome(id))
+                },
+                onBack = onBack,
+                navController = navController
             )
         }
         is Destination.FormulaDetail -> {
             val viewModel = remember(destination.formula.id) {
-                FormulaCalculatorViewModel(destination.formula, calculationsRepository)
+                FormulaCalculatorViewModel(destination.formula, calculationsRepository, destination.historicalCalculation)
             }
             FormulaDetailScreen(viewModel = viewModel, onBack = onBack)
         }
@@ -506,7 +526,7 @@ private data class NavItem(
 private val NAV_ITEMS = listOf(
     NavItem("Ana Sayfa", Icons.Default.Home,           Destination.Home),
     NavItem("Kurslar",   Icons.Default.School,         Destination.Courses),
-    NavItem("Karar",     Icons.Default.AccountBalance,  Destination.DecisionTools),
+    NavItem("Karar",     Icons.Default.AccountBalance,  Destination.DecisionTools()),
     NavItem("Mentor",    Icons.Default.Psychology,      Destination.AiMentor),
     NavItem("Menü",      Icons.Default.Menu,            null),  // opens drawer
 )

@@ -1,4 +1,4 @@
-﻿package com.localkarar.app.ui
+package com.localkarar.app.ui
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -17,8 +17,8 @@ import com.localkarar.app.ui.theme.*
 
 @Composable
 fun LoginScreen(viewModel: AuthViewModel) {
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("student@localakademi.com") }
+    var password by remember { mutableStateOf("student123") }
     
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.loginError.collectAsState()

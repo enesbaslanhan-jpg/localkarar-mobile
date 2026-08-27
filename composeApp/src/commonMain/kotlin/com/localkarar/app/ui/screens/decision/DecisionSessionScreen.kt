@@ -1,4 +1,4 @@
-﻿package com.localkarar.app.ui.screens.decision
+package com.localkarar.app.ui.screens.decision
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -70,7 +70,15 @@ fun DecisionSessionScreen(
 
                             if (state.result != null) {
                                 item {
-                                    LkDecisionResultPanel(snapshot = state.result.snapshot)
+                                    LkDecisionResultPanel(
+                                        snapshot = state.result.snapshot,
+                                        toolCode = session.decisionCheckCode,
+                                        onRestart = {
+                                            actionError = null
+                                            viewModel.restartSession(session.decisionCheckCode, onError = { actionError = it })
+                                        },
+                                        onListClick = onBack
+                                    )
                                 }
                             } else {
                                 items(session.definition) { question ->
@@ -78,8 +86,13 @@ fun DecisionSessionScreen(
                                     LkDecisionInput(
                                         question = question,
                                         value = currentAnswer?.valueJson,
+                                        isUnknown = currentAnswer?.isUnknown == true,
+                                        error = state.errors[question.code],
                                         onValueChange = { newValue ->
-                                            viewModel.updateAnswer(question.code, newValue)
+                                            viewModel.updateAnswer(question.code, newValue, currentAnswer?.isUnknown == true)
+                                        },
+                                        onUnknownChange = { unknown ->
+                                            viewModel.updateAnswer(question.code, currentAnswer?.valueJson, unknown)
                                         }
                                     )
                                 }
@@ -87,7 +100,7 @@ fun DecisionSessionScreen(
                                 item {
                                     Spacer(modifier = Modifier.height(16.dp))
                                     LkButton(
-                                        text = "Hesapla",
+                                        text = "Sonucu hesapla",
                                         onClick = { 
                                             actionError = null
                                             viewModel.completeSession(onError = { actionError = it }) 

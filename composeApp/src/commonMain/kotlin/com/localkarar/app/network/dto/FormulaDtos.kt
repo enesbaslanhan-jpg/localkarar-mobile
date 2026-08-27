@@ -69,7 +69,8 @@ data class FinancialModelDto(
     val limitations: List<String> = emptyList(),
     val sources: List<FinancialSourceDto> = emptyList(),
     val courseCode: String? = null,
-    val requirementCount: Int = 0
+    val requirementCount: Int = 0,
+    val versions: List<FinancialModelVersionDto> = emptyList()
 )
 
 @Serializable
@@ -99,6 +100,14 @@ data class FinancialSourceDto(
     val url: String = "",
     val authority: String = "",
     val usage: String = ""
+)
+
+@Serializable
+data class FinancialModelVersionDto(
+    val id: String = "",
+    val version: String = "",
+    val changeSummary: String = "",
+    val createdAt: String? = null
 )
 
 @Serializable

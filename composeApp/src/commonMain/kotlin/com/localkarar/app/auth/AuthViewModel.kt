@@ -36,7 +36,7 @@ class AuthViewModel(
         _loginError.value = null
 
         viewModelScope.launch {
-            val request = LoginRequest(email, password)
+            val request = LoginRequest(email.trim(), password.trim())
             val result = authRepository.login(request)
             
             if (result.isFailure) {

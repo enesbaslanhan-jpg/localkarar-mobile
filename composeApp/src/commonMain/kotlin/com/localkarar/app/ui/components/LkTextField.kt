@@ -1,4 +1,4 @@
-﻿package com.localkarar.app.ui.components
+package com.localkarar.app.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -46,6 +46,7 @@ fun LkTextField(
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     keyboardActions: KeyboardActions = KeyboardActions.Default,
     visualTransformation: VisualTransformation = VisualTransformation.None,
+    enabled: Boolean = true,
     trailingContent: @Composable (() -> Unit)? = null
 ) {
     var isFocused by remember { mutableStateOf(false) }
@@ -71,10 +72,11 @@ fun LkTextField(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(40.dp)
-                .background(LkSurfaceSunken, LkShapes.SM)
+                .background(if (enabled) LkSurfaceSunken else LkSurfaceSunken.copy(alpha = 0.5f), LkShapes.SM)
                 .border(1.dp, borderColor, LkShapes.SM)
                 .onFocusChanged { isFocused = it.isFocused },
-            textStyle = LkTypography.getBodySmall().copy(color = LkTextPrimary),
+            enabled = enabled,
+            textStyle = LkTypography.getBodySmall().copy(color = if (enabled) LkTextPrimary else LkTextMuted),
             keyboardOptions = keyboardOptions,
             keyboardActions = keyboardActions,
             visualTransformation = visualTransformation,

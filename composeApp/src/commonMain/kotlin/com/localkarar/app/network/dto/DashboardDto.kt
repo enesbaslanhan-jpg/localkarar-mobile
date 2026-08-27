@@ -8,17 +8,51 @@ data class DashboardResponse(
     val user: DashboardUserDto,
     val stats: DashboardStatsDto,
     val enrollments: List<DashboardEnrollmentDto>? = null,
-    val currentLearningPath: JsonElement? = null,
+    val currentLearningPath: LearningPathDto? = null,
     val resumeItem: ResumeItemDto? = null,
     val recommendations: List<RecommendationDto>? = null,
     val upcomingTasks: List<UpcomingTaskDto>? = null,
     val recentActivity: List<RecentActivityDto>? = null,
-    val quizHistory: List<JsonElement>? = null,
+    val quizHistory: List<QuizAttemptDto>? = null,
     val recentCompletedKO: JsonElement? = null,
     val recentQuizResult: JsonElement? = null,
-    val recentMentorSession: JsonElement? = null,
-    val recentCourseActivity: JsonElement? = null,
+    val recentMentorSession: RecentMentorSessionDto? = null,
+    val recentCourseActivity: RecentCourseActivityDto? = null,
     val demoMode: Boolean = false
+)
+
+@Serializable
+data class LearningPathDto(
+    val id: Int,
+    val title: String,
+    val pathData: JsonElement? = null,
+    val createdAt: String
+)
+
+@Serializable
+data class QuizAttemptDto(
+    val id: String,
+    val koId: Int,
+    val score: Int,
+    val passed: Boolean,
+    val feedback: String,
+    val createdAt: String,
+    val quizId: String? = null
+)
+
+@Serializable
+data class RecentMentorSessionDto(
+    val id: String,
+    val eventType: String,
+    val createdAt: String
+)
+
+@Serializable
+data class RecentCourseActivityDto(
+    val id: String,
+    val eventType: String,
+    val courseTitle: String? = null,
+    val createdAt: String
 )
 
 @Serializable

@@ -58,6 +58,11 @@ data class EnrollmentDto(
 )
 
 @Serializable
+data class EnrollmentsListResponse(
+    val enrollments: List<DashboardEnrollmentDto>
+)
+
+@Serializable
 data class LessonSummaryDto(
     val id: Int,
     val title: String,
@@ -97,7 +102,19 @@ data class LessonDetailDto(
     val knowledgeObject: KnowledgeObjectDto? = null,
     val progress: LessonProgressDto? = null,
     val prevLesson: LessonPointerDto? = null,
-    val nextLesson: LessonPointerDto? = null
+    val nextLesson: LessonPointerDto? = null,
+    val embeddedPracticeBlocks: List<EmbeddedPracticeBlockDto> = emptyList()
+)
+
+@Serializable
+data class EmbeddedPracticeBlockDto(
+    val id: String,
+    val type: String,
+    val title: String,
+    val description: String? = null,
+    val targetId: String? = null,
+    val targetCode: String? = null,
+    val order: Int? = null
 )
 
 @Serializable
@@ -108,7 +125,36 @@ data class KnowledgeObjectDto(
     val content: String? = null,
     val status: String? = null,
     val hasFlashcards: Boolean = false,
-    val hasVideo: Boolean = false
+    val hasVideo: Boolean = false,
+    val metadata: KnowledgeObjectMetadataDto? = null,
+    val sources: List<KnowledgeObjectSourceWrapperDto> = emptyList()
+)
+
+@Serializable
+data class KnowledgeObjectMetadataDto(
+    val summary: String? = null,
+    val description: String? = null,
+    val level: String? = null,
+    val examples: List<String> = emptyList(),
+    val steps: List<String> = emptyList(),
+    val checklist: List<String> = emptyList(),
+    val formulas: List<String> = emptyList(),
+    val learningOutcomes: List<String> = emptyList()
+)
+
+@Serializable
+data class KnowledgeObjectSourceWrapperDto(
+    val id: String,
+    val source: KnowledgeObjectSourceDto
+)
+
+@Serializable
+data class KnowledgeObjectSourceDto(
+    val id: String,
+    val title: String,
+    val publisher: String? = null,
+    val authorityLevel: String? = null,
+    val url: String? = null
 )
 
 @Serializable

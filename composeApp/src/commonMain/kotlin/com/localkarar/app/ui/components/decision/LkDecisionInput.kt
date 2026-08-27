@@ -1,4 +1,4 @@
-﻿package com.localkarar.app.ui.components.decision
+package com.localkarar.app.ui.components.decision
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -23,6 +23,8 @@ import com.localkarar.app.ui.components.LkTextField
 import com.localkarar.app.ui.theme.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.Checkbox
+import androidx.compose.material.CheckboxDefaults
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
@@ -33,8 +35,10 @@ import kotlinx.serialization.json.jsonPrimitive
 fun LkDecisionInput(
     question: DecisionQuestionDto,
     value: JsonElement?,
+    isUnknown: Boolean = false,
     error: String? = null,
     onValueChange: (JsonElement?) -> Unit,
+    onUnknownChange: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -62,6 +66,7 @@ fun LkDecisionInput(
                     Switch(
                         checked = isChecked,
                         onCheckedChange = { onValueChange(JsonPrimitive(it)) },
+                        enabled = !isUnknown,
                         colors = SwitchDefaults.colors(
                             checkedThumbColor = LkOnPrimary,
                             checkedTrackColor = LkPrimary,
@@ -100,7 +105,7 @@ fun LkDecisionInput(
                                 if (error != null) LkDanger else LkLineStrong,
                                 RoundedCornerShape(8.dp)
                             )
-                            .clickable { expanded = true }
+                            .clickable(enabled = !isUnknown) { expanded = true }
                             .padding(horizontal = 16.dp),
                         contentAlignment = Alignment.CenterStart
                     ) {
@@ -121,6 +126,15 @@ fun LkDecisionInput(
                                 modifier = Modifier.size(16.dp)
                             )
                         }
+                    }
+                    if (selectedOption?.description != null && !isUnknown) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = selectedOption.description,
+                            style = LkTypography.getMicro(),
+                            color = LkTextSecondary,
+                            modifier = Modifier.padding(start = 4.dp)
+                        )
                     }
                     DropdownMenu(
                         expanded = expanded,
@@ -178,6 +192,7 @@ fun LkDecisionInput(
                     label = question.label + if (question.required) " *" else "",
                     placeholder = question.description,
                     error = error,
+                    enabled = !isUnknown,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     trailingContent = question.suffix?.let {
                         {
@@ -192,7 +207,31 @@ fun LkDecisionInput(
                 )
             }
         }
-        if (error != null) {
+        if (question.allowUnknown) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onUnknownChange(!isUnknown) }
+                    .padding(top = 8.dp)
+            ) {
+                Checkbox(
+                    checked = isUnknown,
+                    onCheckedChange = { onUnknownChange(it) },
+                    colors = CheckboxDefaults.colors(
+                        checkedColor = LkPrimary,
+                        uncheckedColor = LkLineStrong
+                    )
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Bilmiyorum / Emin Değilim",
+                    style = LkTypography.getBodySmall(),
+                    color = LkTextSecondary
+                )
+            }
+        }
+        if (error != null && !isUnknown) {
             Text(
                 text = error,
                 color = LkDanger,

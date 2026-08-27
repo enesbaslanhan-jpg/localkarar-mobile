@@ -96,24 +96,6 @@ fun LkDecisionToolCard(
                     )
                 }
             }
-            if (status != null && status != "not_started") {
-                val config = when (status) {
-                    "completed" -> ToolStatusConfig("Tamamlandı", LkSuccess.copy(alpha = 0.15f), LkSuccess)
-                    else -> ToolStatusConfig("Devam", LkPrimary.copy(alpha = 0.15f), LkPrimary)
-                }
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(999.dp))
-                        .background(config.bg)
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                ) {
-                    Text(
-                        text = config.label,
-                        style = LkTypography.getMicro(),
-                        color = config.fg
-                    )
-                }
-            }
         }
         Spacer(modifier = Modifier.height(8.dp))
         Text(
@@ -121,6 +103,36 @@ fun LkDecisionToolCard(
             style = LkTypography.getBodySmall(),
             color = LkTextSecondary
         )
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        val ctaText = when (status) {
+            "completed", "complete" -> "Sonucu Gör"
+            "in_progress", "started" -> "Devam Et"
+            else -> "Aracı Aç"
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(LkPrimary)
+                .padding(vertical = 12.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = ctaText,
+                    color = LkOnPrimary,
+                    style = LkTypography.getBody()
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Icon(
+                    imageVector = Icons.Default.ArrowForward,
+                    contentDescription = null,
+                    tint = LkOnPrimary,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+        }
     }
 }
 

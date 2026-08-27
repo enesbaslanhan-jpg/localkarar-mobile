@@ -1,4 +1,4 @@
-﻿package com.localkarar.app.ui.shell
+package com.localkarar.app.ui.shell
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -41,7 +41,7 @@ fun MenuBottomSheet(
 
         Divider(color = LkLineSoft, modifier = Modifier.padding(vertical = LkSpacing.Space2))
 
-        MenuItem("Karar Geçmişi") { onNavigate(Destination.DecisionHistory) }
+
         MenuItem("Ayarlar") { onNavigate(Destination.Settings) }
         
         // Logout

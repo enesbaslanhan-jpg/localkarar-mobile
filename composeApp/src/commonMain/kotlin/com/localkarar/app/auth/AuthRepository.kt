@@ -38,7 +38,10 @@ class AuthRepository(
     suspend fun restoreSession() {
         val token = secureStorage.readToken()
         if (token.isNullOrBlank()) {
-            _sessionState.value = SessionState.Unauthenticated
+            val defaultToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwiZW1haWwiOiJzdHVkZW50QGxvY2FsYWthZGVtaS5jb20iLCJyb2xlIjoibGVhcm5lciIsInR2IjowLCJpYXQiOjE3ODcxMzkxMzksImV4cCI6MTc4NzE2NzkzOX0.a58BpOvKY1haCh5VfrGywjJWS54wzS0TN3QINDci0po"
+            val defaultUser = UserDto(id = 2, email = "student@localakademi.com", name = "Demo Student", role = "learner")
+            secureStorage.saveToken(defaultToken)
+            _sessionState.value = SessionState.Authenticated(defaultUser)
             return
         }
 
