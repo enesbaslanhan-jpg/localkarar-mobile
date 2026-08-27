@@ -108,6 +108,7 @@ class ProductsViewModel(
         workspaceId: String,
         productId: String,
         internalNote: String?,
+        tags: List<String>? = null,
         lowStockThresholdOverride: Int?,
         isFavorite: Boolean?,
         onComplete: () -> Unit
@@ -117,7 +118,9 @@ class ProductsViewModel(
                 workspaceId,
                 productId,
                 UpdateProductSettingsRequestDto(
+                    workspaceId = workspaceId,
                     internalNote = internalNote,
+                    tags = tags,
                     lowStockThresholdOverride = lowStockThresholdOverride,
                     isFavorite = isFavorite
                 )

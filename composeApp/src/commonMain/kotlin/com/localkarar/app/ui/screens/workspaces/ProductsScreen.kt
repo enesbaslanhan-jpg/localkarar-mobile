@@ -39,9 +39,9 @@ private val WINDOW_OPTIONS = listOf(
 
 private val SORT_OPTIONS = listOf(
     "default" to "Varsayılan",
-    "best_selling" to "En Çok Satan",
-    "top_revenue" to "En Çok Ciro",
-    "most_returned" to "En Çok İade"
+    "bestSelling" to "En Çok Satan",
+    "topRevenue" to "En Çok Ciro",
+    "mostReturned" to "En Çok İade"
 )
 
 @Composable
@@ -346,11 +346,12 @@ fun ProductsScreen(
         ProductLocalSettingsDialog(
             product = editingSettingsProduct!!,
             onDismiss = { editingSettingsProduct = null },
-            onSave = { note, threshold, fav ->
+            onSave = { note, tags, threshold, fav ->
                 viewModel.saveLocalSettings(
                     workspaceId,
                     editingSettingsProduct!!.id,
                     note,
+                    tags,
                     threshold,
                     fav
                 ) {
@@ -502,6 +503,21 @@ private fun MarketplaceProductCard(
                 )
             }
 
+            if (product.tags.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    items(product.tags) { tag ->
+                        Box(
+                            modifier = Modifier
+                                .background(LkSurfaceCanvas, LkShapes.SM)
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Text(text = "#$tag", style = LkTypography.getMicro(), color = LkTextSecondary)
+                        }
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(LkSpacing.Space3))
             Divider(color = LkLineSoft)
             Spacer(modifier = Modifier.height(LkSpacing.Space2))
@@ -607,9 +623,10 @@ private fun PerformanceMetricItem(
 private fun ProductLocalSettingsDialog(
     product: ProductDto,
     onDismiss: () -> Unit,
-    onSave: (internalNote: String?, lowStockThreshold: Int?, isFavorite: Boolean) -> Unit
+    onSave: (internalNote: String?, tags: List<String>?, lowStockThreshold: Int?, isFavorite: Boolean) -> Unit
 ) {
     var internalNote by remember { mutableStateOf(product.internalNote ?: "") }
+    var tagsText by remember { mutableStateOf(product.tags.joinToString(", ")) }
     var threshold by remember { mutableStateOf(product.lowStockThresholdOverride?.toString() ?: "5") }
     var isFavorite by remember { mutableStateOf(product.isFavorite) }
 
@@ -645,6 +662,15 @@ private fun ProductLocalSettingsDialog(
                     onValueChange = { internalNote = it },
                     label = "İç Not (Sadece siz görürsünüz)",
                     placeholder = "Tedarikçi notu, raf konumu vb."
+                )
+
+                Spacer(modifier = Modifier.height(LkSpacing.Space3))
+
+                LkTextField(
+                    value = tagsText,
+                    onValueChange = { tagsText = it },
+                    label = "Etiketler (Virgülle ayırın)",
+                    placeholder = "Örn: Aksesuar, Bestseller"
                 )
 
                 Spacer(modifier = Modifier.height(LkSpacing.Space3))
@@ -694,8 +720,10 @@ private fun ProductLocalSettingsDialog(
                         text = "Kaydet",
                         onClick = {
                             val parsedThreshold = threshold.toIntOrNull()
+                            val parsedTags = tagsText.split(",").map { it.trim() }.filter { it.isNotBlank() }
                             onSave(
                                 internalNote.ifBlank { null },
+                                if (parsedTags.isNotEmpty()) parsedTags else null,
                                 parsedThreshold,
                                 isFavorite
                             )

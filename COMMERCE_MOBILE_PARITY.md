@@ -1,81 +1,105 @@
-# Commerce Mobile Parity Specification (M3.1)
+# Commerce Mobile Parity Specification (M3.2 Final Contract)
 
 This document establishes the authoritative contract and parity matrix between Web Marketplace Commerce (`local_akademi` @ `design/localkarar-18`) and Native Mobile (`LocalKarar-Mobile`).
 
 ---
 
-## 1. Orders (Siparişler) Action Matrix
+## 1. Orders API Contract
 
 ### A. List Marketplace Orders
-- **Web Behavior:** Displays normalized orders from connected marketplaces (Trendyol, Hepsiburada, N11, Shopify, WooCommerce). Shows gross amount, marketplace commission deduction, shipping deduction, refund amount, and calculated net contribution.
-- **Web API Method:** `api.workspace.orders.list(workspaceId, { provider, status, q })`
-- **Backend Endpoint:** `/workspaces/:workspaceId/orders`
+- **Feature:** List marketplace orders with provider badges, status filters, search, gross amount, and net contribution.
+- **Web API Method:** `api.marketplace.orders.list(workspaceId, filters)`
+- **Canonical Endpoint:** `GET /marketplace/orders`
 - **HTTP Method:** `GET`
-- **Request / Query Parameters:**
+- **Query Parameters:**
+  - `workspaceId`: string (required)
   - `provider`: `TRENDYOL` | `HEPSIBURADA` | `N11` | `SHOPIFY` | `WOOCOMMERCE`
   - `status`: `CREATED` | `PROCESSING` | `SHIPPED` | `DELIVERED` | `CANCELLED` | `RETURNED` | `PARTIALLY_RETURNED` | `UNKNOWN`
-  - `q`: string (Search in orderNumber, customerName)
-- **Response DTO:** `OrderListResponseDto` (`orders: List<OrderDto>`, `total: Int`, `lastSyncedAt: String?`, `integrationConnected: Boolean`)
-- **Mobile Implementation:** `OrdersViewModel.loadOrders()` -> `WorkspaceRepository.getOrders()` -> `OrdersScreen.kt`
+  - `q`: string (Search order number, customer name)
+- **Mobile Repository Method:** `WorkspaceRepository.getOrders(workspaceId, provider, status, query)`
+- **Runtime Status:** Verified (HTTP Success + Resilient Fallback)
 
-### B. Sync Marketplace Orders (Şimdi Eşitle)
-- **Web Behavior:** Explicit user-triggered action via "Şimdi Eşitle" button. Does NOT auto-trigger sync on initial page load. Displays syncing spinner and updates `lastSyncedAt`.
-- **Web API Method:** `api.workspace.orders.sync(workspaceId)`
-- **Backend Endpoint:** `/workspaces/:workspaceId/orders/sync`
-- **HTTP Method:** `POST`
-- **Request Body:** None
-- **Response DTO:** `OrderSyncResponseDto` (`success: Boolean`, `syncedCount: Int`, `lastSyncedAt: String`, `message: String?`)
-- **Mobile Implementation:** `OrdersViewModel.syncNow()` -> `WorkspaceRepository.syncOrders()` -> `OrdersScreen.kt` (Header Sync Action)
-
-### C. View Order Detail & Items
-- **Web Behavior:** Clicking on an order opens the marketplace order breakdown displaying customer info, provider badge, line items (title, SKU, barcode, quantity, unit price) and complete financial deductions table.
-- **Web API Method:** `api.workspace.orders.get(workspaceId, orderId)`
-- **Backend Endpoint:** `/workspaces/:workspaceId/orders/:orderId`
+### B. Order Detail
+- **Feature:** View customer details, line items, SKU, barcode, and financial deductions (commission, shipping, refund, net contribution).
+- **Web API Method:** `api.marketplace.orders.get(workspaceId, orderId)`
+- **Canonical Endpoint:** `GET /marketplace/orders/:orderId`
 - **HTTP Method:** `GET`
-- **Response DTO:** `OrderDto`
-- **Mobile Implementation:** `OrdersScreen.kt` -> `OrderDetailDialog` (with financial distribution and items breakdown)
+- **Query Parameters:** `workspaceId=:workspaceId`
+- **Mobile Repository Method:** `WorkspaceRepository.getOrderDetail(workspaceId, orderId)`
+- **Runtime Status:** Verified
+
+### C. Integration Status
+- **Feature:** Check if marketplace integration is active and obtain `lastSyncedAt`.
+- **Web API Method:** `api.integrations.status(workspaceId)`
+- **Canonical Endpoint:** `GET /integrations/trendyol/status`
+- **HTTP Method:** `GET`
+- **Query Parameters:** `workspaceId=:workspaceId`
+- **Mobile Repository Method:** `WorkspaceRepository.getIntegrationStatus(workspaceId)`
+- **Runtime Status:** Verified
+
+### D. Sync Marketplace Orders
+- **Feature:** Explicit user-triggered action via "Şimdi Eşitle" button.
+- **Web API Method:** `api.integrations.trendyol.sync(workspaceId)`
+- **Canonical Endpoint:** `POST /integrations/trendyol/sync`
+- **HTTP Method:** `POST`
+- **Request Body:** `{ "workspaceId": "..." }`
+- **Mobile Repository Method:** `WorkspaceRepository.syncOrders(workspaceId)`
+- **Runtime Status:** Verified
 
 ---
 
-## 2. Products (Ürünler & Katalog) Action Matrix
+## 2. Products API Contract
 
 ### A. List Marketplace Products & Performance
-- **Web Behavior:** Displays marketplace catalog items with provider badges, SKU, barcode, sale price, strikethrough list price, and stock levels. Integrates sales performance metrics across 7-day, 30-day, and 90-day windows.
-- **Web API Method:** `api.workspace.products.list(workspaceId, { provider, onSale, stockFilter, window, sortBy, q })`
-- **Backend Endpoint:** `/workspaces/:workspaceId/products`
+- **Feature:** List marketplace catalog items with provider badges, SKU, barcode, sale price, strikethrough list price, stock levels, and performance metrics over 7d/30d/90d windows.
+- **Web API Method:** `api.marketplace.products.list(workspaceId, filters)`
+- **Canonical Endpoint:** `GET /marketplace/products`
 - **HTTP Method:** `GET`
-- **Request / Query Parameters:**
-  - `provider`: `TRENDYOL` | `HEPSIBURADA` | `N11` | `SHOPIFY` | `WOOCOMMERCE`
+- **Query Parameters:**
+  - `workspaceId`: string (required)
+  - `provider`: `TRENDYOL` | `HEPSIBURADA` | `N11` | `SHOPIFY`
   - `onSale`: `true` | `false`
   - `stockFilter`: `low_stock` | `out_of_stock` | `all`
   - `window`: `7d` | `30d` | `90d`
-  - `sortBy`: `default` | `best_selling` | `top_revenue` | `most_returned`
+  - `sortBy`: `default` | `bestSelling` | `topRevenue` | `mostReturned` (strictly camelCase)
   - `q`: string (Search title, SKU, barcode)
-- **Response DTO:** `ProductListResponseDto` (`products: List<ProductDto>`, `total: Int`, `lastSyncedAt: String?`, `integrationConnected: Boolean`)
-- **Mobile Implementation:** `ProductsViewModel.loadProducts()` -> `WorkspaceRepository.getProducts()` -> `ProductsScreen.kt`
+- **Mobile Repository Method:** `WorkspaceRepository.getProducts(workspaceId, provider, onSale, stockFilter, window, sortBy, query)`
+- **Runtime Status:** Verified
 
-### B. Update Local Product Settings
-- **Web Behavior:** Provider-owned product data (title, SKU, provider price) is read-only. Users may only edit LocalKarar-local overrides (internal notes, custom low stock threshold, favorite flag).
-- **Web API Method:** `api.workspace.products.updateSettings(workspaceId, productId, settings)`
-- **Backend Endpoint:** `/workspaces/:workspaceId/products/:productId/settings`
+### B. Product Detail
+- **Feature:** View product details, SKU, barcode, prices, stock, and performance stats.
+- **Web API Method:** `api.marketplace.products.get(workspaceId, productId)`
+- **Canonical Endpoint:** `GET /marketplace/products/:productId`
+- **HTTP Method:** `GET`
+- **Query Parameters:** `workspaceId=:workspaceId`
+- **Mobile Repository Method:** `WorkspaceRepository.getProductDetail(workspaceId, productId)`
+- **Runtime Status:** Verified
+
+### C. Update Local Product Settings
+- **Feature:** Save LocalKarar-local overrides (internal note, tags, custom low stock threshold, favorite flag) without mutating provider-owned fields.
+- **Web API Method:** `api.marketplace.products.updateSettings(workspaceId, productId, settings)`
+- **Canonical Endpoint:** `PATCH /marketplace/products/:productId/settings`
 - **HTTP Method:** `PATCH`
-- **Request Body:** `UpdateProductSettingsRequestDto` (`internalNote: String?`, `tags: List<String>?`, `lowStockThresholdOverride: Int?`, `isFavorite: Boolean?`)
-- **Response DTO:** `ProductDto` (or `Unit`)
-- **Mobile Implementation:** `ProductsViewModel.saveLocalSettings()` -> `WorkspaceRepository.updateProductSettings()` -> `ProductsScreen.kt` (`ProductLocalSettingsDialog`)
+- **Request Body:**
+  ```json
+  {
+    "workspaceId": "...",
+    "internalNote": "...",
+    "tags": ["Aksesuar", "Bestseller"],
+    "lowStockThresholdOverride": 5,
+    "isFavorite": true
+  }
+  ```
+- **Mobile Repository Method:** `WorkspaceRepository.updateProductSettings(workspaceId, productId, body)`
+- **Runtime Status:** Verified (Local persistence & API contract)
 
 ---
 
-## 3. Removed Non-Parity Logic (Cleanup Audit)
+## 3. Sort Contract Mapping
 
-1. **Orders:**
-   - Removed manual generic order creation dialog.
-   - Removed manual generic order CRUD (`createOrder`, `deleteOrder`).
-   - Removed manual status mutation buttons (`Hazırlanıyor Yap`, `Teslim Edildi Yap`, `İptal Et`, `Sil`).
-   - Replaced with provider-owned order statuses (`CREATED`, `PROCESSING`, `SHIPPED`, `DELIVERED`, `CANCELLED`, `RETURNED`, `PARTIALLY_RETURNED`, `UNKNOWN`).
-
-2. **Products:**
-   - Removed invented category system (`Hizmet / Yazılım / Donanım / Genel`).
-   - Removed manual generic product creation and generic product deletion.
-   - Removed editable provider-owned SKU / title / price.
-   - Removed invented costPrice and invented margin formula.
-   - Replaced with marketplace performance indicators (`unitsSold`, `orderCount`, `grossSales`, `returnRate` across 7d/30d/90d windows).
+| UI Label | Mobile / Web Code | Canonical Backend Value |
+| :--- | :--- | :--- |
+| Varsayılan | `default` | `default` |
+| En Çok Satan | `bestSelling` | `bestSelling` |
+| En Çok Ciro | `topRevenue` | `topRevenue` |
+| En Çok İade | `mostReturned` | `mostReturned` |

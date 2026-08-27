@@ -369,8 +369,20 @@ data class DocumentMetadataDto(
 )
 
 // ============================================================================
-// MARKETPLACE COMMERCE: SİPARİŞLER (ORDERS) & ÜRÜNLER (PRODUCTS) DTOs
+// CANONICAL MARKETPLACE COMMERCE DTOs (/marketplace & /integrations)
 // ============================================================================
+
+@Serializable
+data class SyncMarketplaceRequestDto(
+    val workspaceId: String
+)
+
+@Serializable
+data class IntegrationStatusDto(
+    val connected: Boolean = true,
+    val provider: String = "TRENDYOL",
+    val lastSyncedAt: String? = null
+)
 
 @Serializable
 data class OrderItemDto(
@@ -451,6 +463,7 @@ data class ProductDto(
 
 @Serializable
 data class UpdateProductSettingsRequestDto(
+    val workspaceId: String,
     val internalNote: String? = null,
     val tags: List<String>? = null,
     val lowStockThresholdOverride: Int? = null,
