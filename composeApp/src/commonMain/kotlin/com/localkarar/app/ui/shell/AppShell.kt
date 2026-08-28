@@ -343,7 +343,8 @@ private fun ScreenContent(
             AiMentorScreen(
                 viewModel = viewModel,
                 memoryViewModel = memoryViewModel,
-                onOpenConversation = { conversationId -> navController.navigateTo(Destination.Conversation(conversationId)) }
+                onOpenConversation = { conversationId -> navController.navigateTo(Destination.Conversation(conversationId)) },
+                onBack = onBack
             )
         }
         is Destination.Conversation -> {
@@ -352,7 +353,8 @@ private fun ScreenContent(
             }
             ConversationScreen(
                 conversationId = destination.conversationId,
-                viewModel = viewModel
+                viewModel = viewModel,
+                onBack = onBack
             )
         }
         Destination.Calculations -> {

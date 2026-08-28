@@ -11,6 +11,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
+enum class MentorTab {
+    ACTIVE,
+    ARCHIVED
+}
+
 class MentorViewModel(
     private val repository: MentorRepository
 ) : ViewModel() {
@@ -27,22 +32,29 @@ class MentorViewModel(
     private val _state = MutableStateFlow<UiState>(UiState.Loading)
     val state: StateFlow<UiState> = _state
 
-    var showMemorySheet by mutableStateOf(false)
+    var selectedTab by mutableStateOf(MentorTab.ACTIVE)
         private set
 
     init {
         refresh()
     }
 
+    fun setTab(tab: MentorTab) {
+        if (selectedTab == tab) return
+        selectedTab = tab
+        refresh()
+    }
+
     fun refresh() {
         viewModelScope.launch {
+            val isArchived = selectedTab == MentorTab.ARCHIVED
             val current = _state.value
             if (current is UiState.Content) {
                 _state.value = current.copy(loading = true)
             } else {
                 _state.value = UiState.Loading
             }
-            repository.listConversations().onSuccess { conversations ->
+            repository.listConversations(archived = isArchived).onSuccess { conversations ->
                 _state.value = UiState.Content(conversations = conversations)
             }.onFailure { e ->
                 if (current is UiState.Content) {
@@ -64,17 +76,37 @@ class MentorViewModel(
         }
     }
 
+    fun onRename(id: Int, newTitle: String) {
+        val clean = newTitle.trim()
+        if (clean.isEmpty()) return
+        viewModelScope.launch {
+            repository.renameConversation(id, clean).onSuccess {
+                refresh()
+            }
+        }
+    }
+
     fun onArchive(id: Int) {
         viewModelScope.launch {
-            repository.archiveConversation(id)
-            refresh()
+            repository.archiveConversation(id).onSuccess {
+                refresh()
+            }
+        }
+    }
+
+    fun onUnarchive(id: Int) {
+        viewModelScope.launch {
+            repository.unarchiveConversation(id).onSuccess {
+                refresh()
+            }
         }
     }
 
     fun onDelete(id: Int) {
         viewModelScope.launch {
-            repository.deleteConversation(id)
-            refresh()
+            repository.deleteConversation(id).onSuccess {
+                refresh()
+            }
         }
     }
 }
@@ -152,8 +184,21 @@ class MemoryViewModel(
 
     fun deleteMemory(id: Int) {
         viewModelScope.launch {
-            repository.deleteMemory(id)
-            refresh()
+            repository.deleteMemory(id).onSuccess {
+                refresh()
+            }
+        }
+    }
+
+    fun clearAllMemories(onSuccess: () -> Unit = {}) {
+        viewModelScope.launch {
+            repository.clearAllMemories().onSuccess {
+                notice = "Tüm hatıralar temizlendi"
+                refresh()
+                onSuccess()
+            }.onFailure { e ->
+                notice = e.message ?: "Hatıralar temizlenemedi"
+            }
         }
     }
 
