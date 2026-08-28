@@ -693,11 +693,11 @@ private data class NavItem(
 
 private val PRIMARY_NAV_ITEMS = listOf(
     NavItem("Ana Sayfa", Icons.Default.Home) { Destination.Home },
-    NavItem("İşletme", Icons.Default.Business) { activeId ->
+    NavItem("İşletme Takibi", Icons.Default.Business) { activeId ->
         if (activeId != null) Destination.WorkspaceHome(activeId) else Destination.Workspaces
     },
     NavItem("Topluluk", Icons.Default.Groups) { Destination.Community },
-    NavItem("Hesapla", Icons.Default.Calculate) { Destination.Calculations },
+    NavItem("Hesaplamalar", Icons.Default.Calculate) { Destination.Calculations },
     NavItem("Ayarlar", Icons.Default.Settings) { Destination.Settings }
 )
 
