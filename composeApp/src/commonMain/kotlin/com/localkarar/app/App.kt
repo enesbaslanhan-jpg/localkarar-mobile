@@ -49,9 +49,18 @@ private enum class AuthRoute {
 
 @Composable
 fun App(secureStorage: SecureStorage) {
-    val httpClient = remember { createHttpClient(secureStorage) }
+    var authRepoHolder: AuthRepository? = null
+    val httpClient = remember {
+        createHttpClient(
+            secureStorage = secureStorage,
+            onUserUpdated = { user -> authRepoHolder?.updateUser(user) },
+            onSessionExpired = { authRepoHolder?.logout() }
+        )
+    }
 
-    val authRepository = remember { AuthRepository(httpClient, secureStorage) }
+    val authRepository = remember {
+        AuthRepository(httpClient, secureStorage).also { authRepoHolder = it }
+    }
     val authViewModel = remember { AuthViewModel(authRepository) }
 
     val dashboardRepository = remember { DashboardRepository(httpClient, secureStorage) }

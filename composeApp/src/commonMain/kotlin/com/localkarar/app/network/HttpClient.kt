@@ -13,6 +13,12 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
+import com.localkarar.app.auth.RefreshTokenRequest
+import com.localkarar.app.auth.SessionDto
+import com.localkarar.app.auth.UserDto
+import io.ktor.client.plugins.auth.*
+import io.ktor.client.plugins.auth.providers.*
+
 private fun parseUserFacingErrorMessage(rawBody: String): String {
     if (rawBody.isBlank()) return "İşlem gerçekleştirilemedi. Lütfen tekrar deneyin."
     return try {
@@ -42,16 +48,22 @@ private fun parseUserFacingErrorMessage(rawBody: String): String {
     }
 }
 
-fun createHttpClient(secureStorage: SecureStorage): HttpClient {
+fun createHttpClient(
+    secureStorage: SecureStorage,
+    onUserUpdated: ((UserDto) -> Unit)? = null,
+    onSessionExpired: (() -> Unit)? = null
+): HttpClient {
+    val jsonSerializer = Json {
+        prettyPrint = true
+        isLenient = true
+        ignoreUnknownKeys = true
+    }
+
     return HttpClient {
         expectSuccess = true
 
         install(ContentNegotiation) {
-            json(Json {
-                prettyPrint = true
-                isLenient = true
-                ignoreUnknownKeys = true
-            })
+            json(jsonSerializer)
         }
 
         install(Logging) {
@@ -65,14 +77,73 @@ fun createHttpClient(secureStorage: SecureStorage): HttpClient {
             socketTimeoutMillis = 30000L
         }
 
+        install(Auth) {
+            bearer {
+                loadTokens {
+                    val token = secureStorage.readToken()
+                    val refresh = secureStorage.readRefreshToken()
+                    if (!token.isNullOrBlank()) {
+                        BearerTokens(accessToken = token, refreshToken = refresh ?: "")
+                    } else {
+                        null
+                    }
+                }
+
+                refreshTokens {
+                    val currentRefresh = secureStorage.readRefreshToken()
+                        ?: oldTokens?.refreshToken
+                    if (currentRefresh.isNullOrBlank()) {
+                        secureStorage.clearAll()
+                        onSessionExpired?.invoke()
+                        return@refreshTokens null
+                    }
+
+                    try {
+                        val refreshResponse = client.post("${ApiConfig.baseUrl}/auth/refresh") {
+                            contentType(ContentType.Application.Json)
+                            setBody(RefreshTokenRequest(refreshToken = currentRefresh))
+                            markAsRefreshTokenRequest()
+                        }
+
+                        if (refreshResponse.status.isSuccess()) {
+                            val session = jsonSerializer.decodeFromString(
+                                SessionDto.serializer(),
+                                refreshResponse.bodyAsText()
+                            )
+                            secureStorage.saveToken(session.token)
+                            if (!session.refreshToken.isNullOrBlank()) {
+                                secureStorage.saveRefreshToken(session.refreshToken)
+                            }
+                            onUserUpdated?.invoke(session.user)
+                            BearerTokens(
+                                accessToken = session.token,
+                                refreshToken = session.refreshToken ?: currentRefresh
+                            )
+                        } else {
+                            secureStorage.clearAll()
+                            onSessionExpired?.invoke()
+                            null
+                        }
+                    } catch (e: Exception) {
+                        secureStorage.clearAll()
+                        onSessionExpired?.invoke()
+                        null
+                    }
+                }
+
+                sendWithoutRequest { request ->
+                    val path = request.url.encodedPath
+                    !path.contains("/auth/login") &&
+                    !path.contains("/auth/register") &&
+                    !path.contains("/auth/refresh") &&
+                    !path.contains("/auth/password-reset")
+                }
+            }
+        }
+
         defaultRequest {
             url(ApiConfig.baseUrl)
             contentType(ContentType.Application.Json)
-            
-            val token = secureStorage.readToken()
-            if (!token.isNullOrBlank()) {
-                header(HttpHeaders.Authorization, "Bearer $token")
-            }
         }
 
         HttpResponseValidator {
