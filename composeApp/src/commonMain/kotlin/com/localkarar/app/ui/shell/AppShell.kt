@@ -100,6 +100,7 @@ import com.localkarar.app.ui.screens.settings.SettingsScreen
 import com.localkarar.app.ui.screens.settings.ProfileScreen
 import com.localkarar.app.ui.screens.settings.PasswordChangeScreen
 import com.localkarar.app.ui.screens.settings.EmailChangeScreen
+import com.localkarar.app.ui.screens.settings.LegalConsentsScreen
 import com.localkarar.app.ui.screens.settings.DeleteAccountScreen
 import com.localkarar.app.auth.UserDto
 
@@ -271,6 +272,8 @@ private fun ScreenContent(
     val socialViewModel = remember { SocialViewModel(communityRepository) }
     val threadsViewModel = remember { ThreadsViewModel(communityRepository) }
     val notificationsViewModel = remember { CommunityNotificationsViewModel(communityRepository) }
+    val newsViewModel = remember { NewsViewModel(newsRepository) }
+    val settingsViewModel = remember { SettingsViewModel(settingsRepository) }
 
     when (destination) {
         Destination.Login -> { /* Handled at app root */ }
@@ -539,15 +542,18 @@ private fun ScreenContent(
             WorkspaceSettingsScreen(viewModel = viewModel, onBack = onBack)
         }
         Destination.News -> {
-            val viewModel = remember { NewsViewModel(newsRepository) }
             NewsFeedScreen(
-                viewModel = viewModel,
-                onOpenArticle = { articleId -> navController.navigateTo(Destination.NewsDetail(articleId)) }
+                viewModel = newsViewModel,
+                onOpenArticle = { articleId -> navController.navigateTo(Destination.NewsDetail(articleId)) },
+                onBack = onBack
             )
         }
         is Destination.NewsDetail -> {
-            val viewModel = remember { NewsViewModel(newsRepository) }
-            NewsDetailScreen(articleId = destination.articleId, viewModel = viewModel)
+            NewsDetailScreen(
+                articleId = destination.articleId,
+                viewModel = newsViewModel,
+                onBack = onBack
+            )
         }
         Destination.Community -> {
             CommunityFeedScreen(
@@ -612,37 +618,58 @@ private fun ScreenContent(
             )
         }
         Destination.Settings -> {
-            val viewModel = remember { SettingsViewModel(settingsRepository) }
             SettingsScreen(
                 userName = user.name,
                 userEmail = user.email,
+                userRole = user.role,
+                userAvatarUrl = user.avatarUrl,
+                activeWorkspaceId = activeWorkspaceId,
+                viewModel = settingsViewModel,
                 onOpenProfile = { navController.navigateTo(Destination.Profile) },
                 onOpenWorkspaces = { navController.navigateTo(Destination.Workspaces) },
+                onOpenWorkspaceSettings = { wsId -> navController.navigateTo(Destination.WorkspaceSettings(wsId)) },
                 onOpenPassword = { navController.navigateTo(Destination.PasswordChange) },
                 onOpenEmail = { navController.navigateTo(Destination.EmailChange) },
+                onOpenConsents = { navController.navigateTo(Destination.LegalConsents) },
                 onOpenDeleteAccount = { navController.navigateTo(Destination.DeleteAccount) },
+                onLogoutAll = { settingsViewModel.logoutAll { t, u -> onNewSession(t, u) } },
                 onLogout = onLogout
             )
         }
         Destination.Profile -> {
-            val viewModel = remember { SettingsViewModel(settingsRepository) }
             ProfileScreen(
-                viewModel = viewModel,
+                viewModel = settingsViewModel,
                 user = user,
-                onNewSession = onNewSession
+                onNewSession = onNewSession,
+                onBack = onBack
             )
         }
         Destination.PasswordChange -> {
-            val viewModel = remember { SettingsViewModel(settingsRepository) }
-            PasswordChangeScreen(viewModel = viewModel)
+            PasswordChangeScreen(
+                viewModel = settingsViewModel,
+                onNewSession = onNewSession,
+                onBack = onBack
+            )
         }
         Destination.EmailChange -> {
-            val viewModel = remember { SettingsViewModel(settingsRepository) }
-            EmailChangeScreen(viewModel = viewModel, onNewSession = onNewSession)
+            EmailChangeScreen(
+                viewModel = settingsViewModel,
+                onNewSession = onNewSession,
+                onBack = onBack
+            )
+        }
+        Destination.LegalConsents -> {
+            LegalConsentsScreen(
+                viewModel = settingsViewModel,
+                onBack = onBack
+            )
         }
         Destination.DeleteAccount -> {
-            val viewModel = remember { SettingsViewModel(settingsRepository) }
-            DeleteAccountScreen(viewModel = viewModel, onDeleted = onLogout)
+            DeleteAccountScreen(
+                viewModel = settingsViewModel,
+                onDeleted = onLogout,
+                onBack = onBack
+            )
         }
     }
 }

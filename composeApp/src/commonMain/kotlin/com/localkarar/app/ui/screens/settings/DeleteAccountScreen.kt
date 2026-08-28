@@ -2,11 +2,14 @@ package com.localkarar.app.ui.screens.settings
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.localkarar.app.settings.SettingsViewModel
@@ -18,52 +21,57 @@ import com.localkarar.app.ui.theme.*
 @Composable
 fun DeleteAccountScreen(
     viewModel: SettingsViewModel,
-    onDeleted: () -> Unit
+    onDeleted: () -> Unit,
+    onBack: () -> Unit
 ) {
-    LkPageLayout(title = "Hesabımı Sil", onBack = null) {
+    LkPageLayout(title = "Hesabımı Sil", onBack = onBack) {
         Column(
             Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                backgroundColor = LkSurfaceSunken,
+                backgroundColor = LkDanger.copy(alpha = 0.12f),
                 elevation = 0.dp
             ) {
                 Column(Modifier.padding(16.dp)) {
                     Text(
-                        "Hesabınız ve tüm verileriniz kalıcı olarak silinir. Bu işlem geri alınamaz.",
+                        "DİKKAT: Hesabınız ve tüm ilişkili verileriniz (çalışma alanları, kayıtlar, topluluk paylaşımları) kalıcı olarak silinecektir. Bu işlem geri alınamaz.",
                         style = LkTypography.getBodySmall(),
                         color = LkDanger
                     )
                 }
             }
-            Spacer(Modifier.height(16.dp))
+
             OutlinedTextField(
                 value = viewModel.deletePassword,
                 onValueChange = { viewModel.onDeletePasswordChange(it) },
                 modifier = Modifier.fillMaxWidth(),
                 label = { Text("Mevcut Şifre") },
                 singleLine = true,
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 textStyle = LkTypography.getBody()
             )
-            Spacer(Modifier.height(12.dp))
+
             OutlinedTextField(
                 value = viewModel.deleteConfirmation,
                 onValueChange = { viewModel.onDeleteConfirmationChange(it) },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Onay için: HESABIMI SİL") },
+                label = { Text("Onaylamak için 'HESABIMI SİL' yazınız") },
                 singleLine = true,
                 textStyle = LkTypography.getBody()
             )
-            Spacer(Modifier.height(24.dp))
+
+            Spacer(Modifier.height(8.dp))
+
             if (viewModel.deleteLoading) {
-                CircularProgressIndicator(
-                    Modifier.align(Alignment.CenterHorizontally),
-                    color = LkPrimary
-                )
+                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = LkDanger)
+                }
             } else {
                 LkButton(
                     text = "Hesabımı Kalıcı Olarak Sil",
@@ -72,14 +80,29 @@ fun DeleteAccountScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
             }
+
             viewModel.notice?.let {
-                Spacer(Modifier.height(16.dp))
-                Text(
-                    it,
-                    style = LkTypography.getBodySmall(),
-                    color = if (viewModel.noticeIsError) LkDanger else LkPrimary,
-                    textAlign = TextAlign.Center
-                )
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    backgroundColor = if (viewModel.noticeIsError) LkDanger.copy(alpha = 0.15f) else LkSuccess.copy(alpha = 0.15f),
+                    elevation = 0.dp
+                ) {
+                    Row(
+                        Modifier.fillMaxWidth().padding(12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = it,
+                            style = LkTypography.getBodySmall(),
+                            color = if (viewModel.noticeIsError) LkDanger else LkSuccess,
+                            modifier = Modifier.weight(1f)
+                        )
+                        TextButton(onClick = { viewModel.clearNotice() }) {
+                            Text("Tamam", color = LkTextPrimary)
+                        }
+                    }
+                }
             }
         }
     }

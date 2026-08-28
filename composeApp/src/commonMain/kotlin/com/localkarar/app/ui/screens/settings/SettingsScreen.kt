@@ -5,6 +5,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -16,6 +18,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.localkarar.app.settings.SettingsViewModel
+import com.localkarar.app.settings.roleLabel
 import com.localkarar.app.ui.components.LkPageLayout
 import com.localkarar.app.ui.theme.*
 
@@ -23,13 +27,52 @@ import com.localkarar.app.ui.theme.*
 fun SettingsScreen(
     userName: String,
     userEmail: String,
+    userRole: String? = null,
+    userAvatarUrl: String? = null,
+    activeWorkspaceId: String? = null,
+    viewModel: SettingsViewModel? = null,
     onOpenProfile: () -> Unit,
     onOpenWorkspaces: () -> Unit,
+    onOpenWorkspaceSettings: ((String) -> Unit)? = null,
     onOpenPassword: () -> Unit,
     onOpenEmail: () -> Unit,
+    onOpenConsents: () -> Unit,
     onOpenDeleteAccount: () -> Unit,
+    onLogoutAll: (() -> Unit)? = null,
     onLogout: () -> Unit
 ) {
+    var showLogoutAllDialog by remember { mutableStateOf(false) }
+
+    if (showLogoutAllDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutAllDialog = false },
+            title = { Text("Diğer Cihazlardan Çık", style = LkTypography.getBodyStrong(), color = LkTextPrimary) },
+            text = {
+                Text(
+                    "Bu cihaz haricindeki tüm diğer cihaz ve tarayıcılardaki aktif oturumlarınız sonlandırılacaktır. Devam etmek istiyor musunuz?",
+                    style = LkTypography.getBodySmall(),
+                    color = LkTextSecondary
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showLogoutAllDialog = false
+                        onLogoutAll?.invoke()
+                    }
+                ) {
+                    Text("Oturumları Kapat", color = LkPrimary, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogoutAllDialog = false }) {
+                    Text("Vazgeç", color = LkTextSecondary)
+                }
+            },
+            backgroundColor = LkSurfacePanel
+        )
+    }
+
     LkPageLayout(title = "Ayarlar", onBack = null) {
         Column(
             Modifier
@@ -38,7 +81,7 @@ fun SettingsScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Profile Card
+            // Profile Header Card
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -54,20 +97,44 @@ fun SettingsScreen(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(44.dp)
-                            .clip(LkShapes.FULL)
-                            .background(LkSurfaceSignature),
+                            .size(48.dp)
+                            .clip(CircleShape)
+                            .background(LkSurfaceSignature)
+                            .border(1.dp, LkLineStrong, CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = userName.take(1).uppercase().ifBlank { "U" },
                             style = LkTypography.getSectionTitle(),
-                            color = LkPrimary
+                            color = LkPrimary,
+                            fontWeight = FontWeight.Bold
                         )
                     }
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
-                        Text(userName, style = LkTypography.getBodyStrong(), color = LkTextPrimary, fontWeight = FontWeight.Bold)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = userName,
+                                style = LkTypography.getBodyStrong(),
+                                color = LkTextPrimary,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(LkPrimary.copy(alpha = 0.15f))
+                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                            ) {
+                                Text(
+                                    text = roleLabel(userRole),
+                                    style = LkTypography.getMicro(),
+                                    color = LkPrimary,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+                        Spacer(Modifier.height(2.dp))
                         Text(userEmail, style = LkTypography.getBodySmall(), color = LkTextSecondary)
                     }
                     Icon(
@@ -79,31 +146,38 @@ fun SettingsScreen(
                 }
             }
 
-            // Section: Profil ve İşletme
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                SectionHeader("PROFİL VE İŞLETME")
-                SettingItem(
-                    label = "Profil Bilgileri",
-                    description = "Kişisel detaylar ve tercihler",
-                    icon = Icons.Default.Person,
-                    onClick = onOpenProfile
-                )
-                SettingItem(
-                    label = "İşletmelerim",
-                    description = "Bağlı işletmeleri görüntüle veya değiştir",
-                    icon = Icons.Default.Business,
-                    onClick = onOpenWorkspaces
-                )
+            viewModel?.notice?.let {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    backgroundColor = if (viewModel.noticeIsError) LkDanger.copy(alpha = 0.15f) else LkSuccess.copy(alpha = 0.15f),
+                    elevation = 0.dp
+                ) {
+                    Row(
+                        Modifier.fillMaxWidth().padding(12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = it,
+                            style = LkTypography.getBodySmall(),
+                            color = if (viewModel.noticeIsError) LkDanger else LkSuccess,
+                            modifier = Modifier.weight(1f)
+                        )
+                        TextButton(onClick = { viewModel.clearNotice() }) {
+                            Text("Tamam", color = LkTextPrimary)
+                        }
+                    }
+                }
             }
 
-            // Section: Güvenlik ve Gizlilik
+            // Section: Hesap
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                SectionHeader("GÜVENLİK VE GİZLİLİK")
+                SectionHeader("HESAP")
                 SettingItem(
-                    label = "Şifre Değiştir",
-                    description = "Giriş şifrenizi güncelleyin",
-                    icon = Icons.Default.Lock,
-                    onClick = onOpenPassword
+                    label = "Profil Bilgileri",
+                    description = "Görünen ad ve profil fotoğrafı",
+                    icon = Icons.Default.Person,
+                    onClick = onOpenProfile
                 )
                 SettingItem(
                     label = "E-posta Değiştir",
@@ -111,28 +185,58 @@ fun SettingsScreen(
                     icon = Icons.Default.Email,
                     onClick = onOpenEmail
                 )
+                SettingItem(
+                    label = "Şifre Değiştir",
+                    description = "Giriş şifrenizi güncelleyin (en az 10 karakter)",
+                    icon = Icons.Default.Lock,
+                    onClick = onOpenPassword
+                )
             }
 
-            // Section: Tercihler & Uygulama
+            // Section: İşletme
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                SectionHeader("UYGULAMA VE TERCİHLER")
+                SectionHeader("İŞLETME")
                 SettingItem(
-                    label = "Dil / Language",
-                    description = "Türkçe (Varsayılan)",
-                    icon = Icons.Default.Language,
-                    onClick = { /* Default */ }
+                    label = "İşletmelerim",
+                    description = "Bağlı işletmeleri görüntüle veya değiştir",
+                    icon = Icons.Default.Business,
+                    onClick = onOpenWorkspaces
                 )
+                if (activeWorkspaceId != null && onOpenWorkspaceSettings != null) {
+                    SettingItem(
+                        label = "İşletme Ayarları",
+                        description = "Para birimi, saat dilimi ve bildirimler",
+                        icon = Icons.Default.Tune,
+                        onClick = { onOpenWorkspaceSettings(activeWorkspaceId) }
+                    )
+                }
+            }
+
+            // Section: Gizlilik ve Yasal
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                SectionHeader("GİZLİLİK VE YASAL")
                 SettingItem(
-                    label = "Sürüm",
-                    description = "LocalKarar Native v2.0.0 (Compose Multiplatform)",
-                    icon = Icons.Default.Info,
-                    onClick = { /* Info */ }
+                    label = "Yasal Bilgiler ve Onaylar",
+                    description = "Kullanım koşulları, KVKK ve onay durumu",
+                    icon = Icons.Default.Description,
+                    onClick = onOpenConsents
+                )
+            }
+
+            // Section: Oturum
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                SectionHeader("OTURUM")
+                SettingItem(
+                    label = "Diğer Cihazlardaki Oturumları Kapat",
+                    description = "Bu cihaz haricindeki tüm açık oturumları sonlandır",
+                    icon = Icons.Default.Devices,
+                    onClick = { showLogoutAllDialog = true }
                 )
             }
 
             // Section: Hesap İşlemleri
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                SectionHeader("HESAP")
+                SectionHeader("HESAP İŞLEMLERİ")
                 SettingItem(
                     label = "Hesabımı Sil",
                     description = "Tüm verileriniz kalıcı olarak silinir",
@@ -152,26 +256,32 @@ fun SettingsScreen(
                     contentColor = LkDanger
                 ),
                 shape = LkShapes.MD,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp)
-                    .border(1.dp, LkLineStrong, LkShapes.MD)
+                border = ButtonDefaults.outlinedBorder.copy(
+                    brush = androidx.compose.ui.graphics.SolidColor(LkDanger.copy(alpha = 0.5f))
+                ),
+                elevation = ButtonDefaults.elevation(0.dp),
+                modifier = Modifier.fillMaxWidth().height(48.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.Logout,
-                    contentDescription = null,
-                    tint = LkDanger,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    text = "Çıkış Yap",
-                    style = LkTypography.getBodyStrong(),
-                    color = LkDanger
-                )
+                Row(
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ExitToApp,
+                        contentDescription = "Çıkış Yap",
+                        tint = LkDanger,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        "Çıkış Yap",
+                        style = LkTypography.getBodyStrong(),
+                        color = LkDanger
+                    )
+                }
             }
 
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(16.dp))
         }
     }
 }
@@ -180,10 +290,10 @@ fun SettingsScreen(
 private fun SectionHeader(title: String) {
     Text(
         text = title,
-        style = LkTypography.getMetadata(),
-        color = LkPrimary,
+        style = LkTypography.getMicro(),
+        color = LkTextSecondary,
         fontWeight = FontWeight.Bold,
-        modifier = Modifier.padding(start = 4.dp, bottom = 2.dp)
+        modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp)
     )
 }
 
@@ -199,27 +309,31 @@ private fun SettingItem(
         modifier = Modifier
             .fillMaxWidth()
             .clip(LkShapes.MD)
-            .border(1.dp, LkLineSoft, LkShapes.MD)
+            .border(
+                1.dp,
+                if (danger) LkDanger.copy(alpha = 0.3f) else LkLineSoft,
+                LkShapes.MD
+            )
             .clickable(onClick = onClick),
         backgroundColor = LkSurfacePanel,
         elevation = 0.dp
     ) {
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
+            Modifier.fillMaxWidth().padding(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(34.dp)
+                    .size(36.dp)
                     .clip(LkShapes.SM)
-                    .background(if (danger) LkSurfaceSunken else LkSurfaceSunken),
+                    .background(if (danger) LkDanger.copy(alpha = 0.1f) else LkSurfaceSignature),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = icon,
-                    contentDescription = null,
+                    contentDescription = label,
                     tint = if (danger) LkDanger else LkPrimary,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(20.dp)
                 )
             }
             Spacer(Modifier.width(12.dp))
@@ -228,7 +342,7 @@ private fun SettingItem(
                     text = label,
                     style = LkTypography.getBody(),
                     color = if (danger) LkDanger else LkTextPrimary,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.SemiBold
                 )
                 Text(
                     text = description,
@@ -239,7 +353,7 @@ private fun SettingItem(
             Icon(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = null,
-                tint = LkTextSecondary,
+                tint = if (danger) LkDanger.copy(alpha = 0.6f) else LkTextSecondary,
                 modifier = Modifier.size(18.dp)
             )
         }

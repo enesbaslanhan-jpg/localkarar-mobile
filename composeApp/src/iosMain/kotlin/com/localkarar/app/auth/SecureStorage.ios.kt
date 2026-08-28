@@ -10,31 +10,54 @@ actual class SecureStorage {
     private val service = "com.localkarar.app"
 
     actual fun saveToken(token: String) {
-        val data = (token as NSString).dataUsingEncoding(NSUTF8StringEncoding)
-        
-        val query = mapOf(
-            kSecClass to kSecClassGenericPassword,
-            kSecAttrService to service,
-            kSecAttrAccount to account,
-            kSecValueData to data
-        )
-
-        // Delete any existing token before saving a new one
-        SecItemDelete(query as CFDictionaryRef)
-        
-        // Save the new token
-        SecItemAdd(query as CFDictionaryRef, null)
+        saveKeychainItem(account, token)
     }
 
     actual fun readToken(): String? {
+        return readKeychainItem(account)
+    }
+
+    actual fun clearToken() {
+        deleteKeychainItem(account)
+    }
+
+    actual fun saveRefreshToken(refreshToken: String) {
+        saveKeychainItem("refresh_token", refreshToken)
+    }
+
+    actual fun readRefreshToken(): String? {
+        return readKeychainItem("refresh_token")
+    }
+
+    actual fun clearRefreshToken() {
+        deleteKeychainItem("refresh_token")
+    }
+
+    actual fun clearAll() {
+        deleteKeychainItem(account)
+        deleteKeychainItem("refresh_token")
+    }
+
+    private fun saveKeychainItem(itemAccount: String, value: String) {
+        val data = (value as NSString).dataUsingEncoding(NSUTF8StringEncoding)
         val query = mapOf(
             kSecClass to kSecClassGenericPassword,
             kSecAttrService to service,
-            kSecAttrAccount to account,
+            kSecAttrAccount to itemAccount,
+            kSecValueData to data
+        )
+        SecItemDelete(query as CFDictionaryRef)
+        SecItemAdd(query as CFDictionaryRef, null)
+    }
+
+    private fun readKeychainItem(itemAccount: String): String? {
+        val query = mapOf(
+            kSecClass to kSecClassGenericPassword,
+            kSecAttrService to service,
+            kSecAttrAccount to itemAccount,
             kSecReturnData to true,
             kSecMatchLimit to kSecMatchLimitOne
         )
-
         var result: String? = null
         memScoped {
             val resultPtr = alloc<CFTypeRefVar>()
@@ -50,11 +73,11 @@ actual class SecureStorage {
         return result
     }
 
-    actual fun clearToken() {
+    private fun deleteKeychainItem(itemAccount: String) {
         val query = mapOf(
             kSecClass to kSecClassGenericPassword,
             kSecAttrService to service,
-            kSecAttrAccount to account
+            kSecAttrAccount to itemAccount
         )
         SecItemDelete(query as CFDictionaryRef)
     }

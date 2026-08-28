@@ -1,16 +1,22 @@
 package com.localkarar.app.ui.screens.news
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -22,14 +28,61 @@ import com.localkarar.app.ui.components.LkButtonVariant
 import com.localkarar.app.ui.components.LkPageLayout
 import com.localkarar.app.ui.theme.*
 
+fun categoryIcon(category: String?): ImageVector {
+    return when (category?.uppercase()) {
+        "FINANS" -> Icons.Default.AccountBalance
+        "MEVZUAT" -> Icons.Default.Gavel
+        "VERGI" -> Icons.Default.Receipt
+        "IS_DUNYASI" -> Icons.Default.Business
+        "DIJITALLESME" -> Icons.Default.Smartphone
+        "DESTEK" -> Icons.Default.Handshake
+        "GENEL_EKONOMI" -> Icons.Default.TrendingUp
+        else -> Icons.Default.Article
+    }
+}
+
+fun categoryLabel(category: String?): String {
+    return when (category?.uppercase()) {
+        "FINANS" -> "Finans"
+        "MEVZUAT" -> "Mevzuat"
+        "VERGI" -> "Vergi"
+        "IS_DUNYASI" -> "İş Dünyası"
+        "DIJITALLESME" -> "Dijitalleşme"
+        "DESTEK" -> "Destek"
+        "GENEL_EKONOMI" -> "Genel Ekonomi"
+        else -> category ?: "Genel"
+    }
+}
+
+fun importanceLabel(importance: String?): String {
+    return when (importance?.uppercase()) {
+        "CRITICAL" -> "Kritik"
+        "HIGH" -> "Yüksek Öncelik"
+        "MEDIUM" -> "Önemli"
+        "LOW" -> "Bilgi"
+        else -> importance ?: ""
+    }
+}
+
+fun importanceColor(importance: String?): Color {
+    return when (importance?.uppercase()) {
+        "CRITICAL" -> LkDanger
+        "HIGH" -> Color(0xFFF97316) // Orange
+        "MEDIUM" -> LkWarning
+        "LOW" -> LkTextSecondary
+        else -> LkTextSecondary
+    }
+}
+
 @Composable
 fun NewsFeedScreen(
     viewModel: NewsViewModel,
-    onOpenArticle: (String) -> Unit
+    onOpenArticle: (String) -> Unit,
+    onBack: (() -> Unit)? = null
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    LkPageLayout(title = "Haberler", onBack = null) {
+    LkPageLayout(title = "Haberler", onBack = onBack) {
         Column(Modifier.fillMaxSize()) {
             CategoryRow(
                 categories = viewModel.categories,
@@ -48,7 +101,7 @@ fun NewsFeedScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
-                        Text(s.message, color = LkDanger)
+                        Text(s.message, color = LkDanger, style = LkTypography.getBody())
                         Spacer(Modifier.height(12.dp))
                         LkButton(text = "Tekrar Dene", variant = LkButtonVariant.SECONDARY, onClick = { viewModel.refresh() })
                     }
@@ -57,15 +110,18 @@ fun NewsFeedScreen(
                     if (s.articles.isEmpty() && !s.loading) {
                         Column(
                             Modifier.fillMaxSize().padding(48.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
                         ) {
-                            Text("Bu kategoride haber yok", style = LkTypography.getBody())
+                            Icon(Icons.Default.Article, contentDescription = null, tint = LkTextSecondary, modifier = Modifier.size(48.dp))
+                            Spacer(Modifier.height(12.dp))
+                            Text("Bu kategoride henüz haber bulunmuyor.", style = LkTypography.getBody(), color = LkTextSecondary)
                         }
                     } else {
                         LazyColumn(
                             Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             items(s.articles, key = { it.id }) { article ->
                                 NewsCard(
@@ -79,7 +135,7 @@ fun NewsFeedScreen(
                                         Modifier.fillMaxWidth().padding(8.dp),
                                         horizontalArrangement = Arrangement.Center
                                     ) {
-                                        CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp, color = LkPrimary)
+                                        CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp, color = LkPrimary)
                                     }
                                 }
                             } else if (viewModel.canLoadMore()) {
@@ -88,7 +144,7 @@ fun NewsFeedScreen(
                                         text = "Daha Fazla Yükle",
                                         variant = LkButtonVariant.SECONDARY,
                                         onClick = { viewModel.loadMore() },
-                                        modifier = Modifier.fillMaxWidth().padding(8.dp)
+                                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
                                     )
                                 }
                             }
@@ -115,15 +171,31 @@ private fun CategoryRow(
             val isSelected = value == selected
             Box(
                 modifier = Modifier
-                    .background(if (isSelected) LkPrimary else LkSurfaceSunken, LkShapes.MD)
+                    .clip(LkShapes.MD)
+                    .background(if (isSelected) LkPrimary else LkSurfacePanel)
+                    .border(
+                        1.dp,
+                        if (isSelected) LkPrimary else LkLineSoft,
+                        LkShapes.MD
+                    )
                     .clickable { onSelect(value) }
                     .padding(horizontal = 12.dp, vertical = 8.dp)
             ) {
-                Text(
-                    label,
-                    style = LkTypography.getMicro(),
-                    color = if (isSelected) LkOnPrimary else LkTextSecondary
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = categoryIcon(value),
+                        contentDescription = null,
+                        tint = if (isSelected) LkOnPrimary else LkTextSecondary,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        label,
+                        style = LkTypography.getMicro(),
+                        color = if (isSelected) LkOnPrimary else LkTextSecondary,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                    )
+                }
             }
         }
     }
@@ -135,96 +207,98 @@ private fun NewsCard(
     onClick: () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(LkShapes.MD)
+            .border(1.dp, LkLineSoft, LkShapes.MD)
+            .clickable(onClick = onClick),
         backgroundColor = LkSurfacePanel,
         elevation = 0.dp
     ) {
         Column(Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    categoryLabel(article.category),
-                    style = LkTypography.getMicro(),
-                    color = LkPrimary,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    article.sourceName,
-                    style = LkTypography.getMicro(),
-                    color = LkTextSecondary
-                )
-                Spacer(Modifier.weight(1f))
-                article.importance?.let {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = categoryIcon(article.category),
+                        contentDescription = null,
+                        tint = LkPrimary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(Modifier.width(6.dp))
                     Text(
-                        importanceLabel(it),
+                        categoryLabel(article.category),
                         style = LkTypography.getMicro(),
-                        color = importanceColor(it)
+                        color = LkPrimary,
+                        fontWeight = FontWeight.Bold
                     )
                 }
+
+                article.importance?.let { imp ->
+                    if (imp.isNotBlank() && imp.uppercase() != "LOW") {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(importanceColor(imp).copy(alpha = 0.15f))
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                importanceLabel(imp),
+                                style = LkTypography.getMicro(),
+                                color = importanceColor(imp),
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                }
             }
+
             Spacer(Modifier.height(8.dp))
+
             Text(
                 article.title,
                 style = LkTypography.getBodyStrong(),
-                maxLines = 3,
+                color = LkTextPrimary,
+                fontWeight = FontWeight.Bold,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
-            article.summary?.let {
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    it,
-                    style = LkTypography.getBodySmall(),
-                    color = LkTextSecondary,
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis
-                )
+
+            article.summary?.let { summary ->
+                if (summary.isNotBlank()) {
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        summary,
+                        style = LkTypography.getBodySmall(),
+                        color = LkTextSecondary,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
+
             Spacer(Modifier.height(10.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
+
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Text(
-                    LkDateUtils.formatDateTime(article.sourcePublishedAt),
+                    "${article.sourceName} • ${LkDateUtils.formatDateTime(article.sourcePublishedAt)}",
                     style = LkTypography.getMicro(),
                     color = LkTextSecondary
                 )
-                Spacer(Modifier.weight(1f))
-                Text(
-                    "Detay →",
-                    style = LkTypography.getMicro(),
-                    color = LkPrimary
+                Icon(
+                    imageVector = Icons.Default.ChevronRight,
+                    contentDescription = "Detay",
+                    tint = LkTextSecondary,
+                    modifier = Modifier.size(16.dp)
                 )
             }
         }
-    }
-}
-
-fun categoryLabel(category: String): String {
-    return when (category) {
-        "FINANS" -> "Finans"
-        "MEVZUAT" -> "Mevzuat"
-        "VERGI" -> "Vergi"
-        "IS_DUNYASI" -> "İş Dünyası"
-        "DIJITALLESME" -> "Dijitalleşme"
-        "DESTEK" -> "Destek"
-        "GENEL_EKONOMI" -> "Genel Ekonomi"
-        else -> category
-    }
-}
-
-fun importanceLabel(importance: String): String {
-    return when (importance) {
-        "CRITICAL" -> "Kritik"
-        "HIGH" -> "Yüksek"
-        "MEDIUM" -> "Orta"
-        "LOW" -> "Düşük"
-        else -> importance
-    }
-}
-
-fun importanceColor(importance: String): Color {
-    return when (importance) {
-        "CRITICAL" -> LkDanger
-        "HIGH" -> LkWarning
-        "MEDIUM" -> Color(0xFFF9A825)
-        else -> LkTextMuted
     }
 }

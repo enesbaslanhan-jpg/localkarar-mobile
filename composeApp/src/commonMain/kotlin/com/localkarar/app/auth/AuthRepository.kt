@@ -84,6 +84,7 @@ class AuthRepository(
 
             val loginResponse = response.body<LoginResponse>()
             secureStorage.saveToken(loginResponse.token)
+            loginResponse.refreshToken?.let { secureStorage.saveRefreshToken(it) }
             _sessionState.value = SessionState.Authenticated(loginResponse.user)
             Result.success(loginResponse.user)
         } catch (e: ApiError.Unauthorized) {
@@ -117,6 +118,7 @@ class AuthRepository(
 
             val registerResponse = response.body<LoginResponse>()
             secureStorage.saveToken(registerResponse.token)
+            registerResponse.refreshToken?.let { secureStorage.saveRefreshToken(it) }
             _sessionState.value = SessionState.Authenticated(registerResponse.user)
             Result.success(registerResponse.user)
         } catch (e: ApiError.NetworkUnavailable) {
@@ -133,7 +135,7 @@ class AuthRepository(
         return try {
             val response = httpClient.post("/auth/password-reset/request") {
                 contentType(ContentType.Application.Json)
-                setBody(PasswordResetRequest(email.trim()))
+                setBody(PasswordResetRequest(email = email.trim().lowercase()))
             }
             Result.success(response.status.isSuccess())
         } catch (e: ApiError.NetworkUnavailable) {
@@ -156,6 +158,7 @@ class AuthRepository(
 
             val authResponse = response.body<LoginResponse>()
             secureStorage.saveToken(authResponse.token)
+            authResponse.refreshToken?.let { secureStorage.saveRefreshToken(it) }
             _sessionState.value = SessionState.Authenticated(authResponse.user)
             Result.success(authResponse.user)
         } catch (e: ApiError.NetworkUnavailable) {
@@ -195,15 +198,38 @@ class AuthRepository(
         }
     }
 
+    suspend fun serverLogout() {
+        val refreshToken = secureStorage.readRefreshToken()
+        try {
+            if (!refreshToken.isNullOrBlank()) {
+                httpClient.post("/auth/logout") {
+                    contentType(ContentType.Application.Json)
+                    setBody(RefreshTokenRequest(refreshToken))
+                }
+            }
+        } catch (_: Exception) {
+            // Ignore network errors on logout
+        } finally {
+            logout()
+        }
+    }
+
     fun logout() {
-        secureStorage.clearToken()
+        secureStorage.clearAll()
         _sessionState.value = SessionState.Unauthenticated
     }
 
-    fun applyNewSession(token: String, user: UserDto) {
+    fun applyNewSession(token: String, user: UserDto, refreshToken: String? = null) {
         if (token.isNotBlank()) {
             secureStorage.saveToken(token)
         }
+        if (!refreshToken.isNullOrBlank()) {
+            secureStorage.saveRefreshToken(refreshToken)
+        }
+        _sessionState.value = SessionState.Authenticated(user)
+    }
+
+    fun updateUser(user: UserDto) {
         _sessionState.value = SessionState.Authenticated(user)
     }
 }

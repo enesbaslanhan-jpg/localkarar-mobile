@@ -84,6 +84,11 @@ fun CommunityFeedScreen(
                     }
                 }
             }
+            if (onOpenProductCenter != null) {
+                IconButton(onClick = onOpenProductCenter) {
+                    Icon(Icons.Default.Apps, contentDescription = "Ürünler", tint = LkPrimary)
+                }
+            }
         }
     ) {
         Column(Modifier.fillMaxSize()) {

@@ -52,5 +52,6 @@ sealed interface Destination {
     object Profile : Destination
     object PasswordChange : Destination
     object EmailChange : Destination
+    object LegalConsents : Destination
     object DeleteAccount : Destination
 }
