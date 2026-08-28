@@ -20,9 +20,9 @@ sealed interface Destination {
     data class DecisionSession(val sessionId: String) : Destination
 
     data class FormulaDetail(
-    val formula: FormulaDto,
-    val historicalCalculation: FormulaCalculationDto? = null
-) : Destination
+        val formula: FormulaDto,
+        val historicalCalculation: FormulaCalculationDto? = null
+    ) : Destination
     data class FinancialModelDetail(val code: String) : Destination
     data class ModelRuns(val workspaceId: String, val modelCode: String? = null) : Destination
     data class RunDetail(val workspaceId: String, val runId: String) : Destination
@@ -44,6 +44,10 @@ sealed interface Destination {
     data class Conversation(val conversationId: Int) : Destination
     data class NewsDetail(val articleId: String) : Destination
     data class CommunityPost(val postId: String) : Destination
+    data class CommunityProfile(val userId: Int) : Destination
+    data class CommunityFollowers(val userId: Int, val mode: String) : Destination
+    data class CommunityThreadDetail(val threadId: String) : Destination
+    object CommunityNotifications : Destination
 
     object Profile : Destination
     object PasswordChange : Destination

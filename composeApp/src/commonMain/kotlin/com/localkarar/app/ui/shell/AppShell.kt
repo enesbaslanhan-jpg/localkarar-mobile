@@ -85,8 +85,15 @@ import com.localkarar.app.ui.screens.news.NewsFeedScreen
 import com.localkarar.app.ui.screens.news.NewsDetailScreen
 import com.localkarar.app.community.CommunityRepository
 import com.localkarar.app.community.CommunityViewModel
+import com.localkarar.app.community.SocialViewModel
+import com.localkarar.app.community.ThreadsViewModel
+import com.localkarar.app.community.CommunityNotificationsViewModel
 import com.localkarar.app.ui.screens.community.CommunityFeedScreen
 import com.localkarar.app.ui.screens.community.CommunityPostDetailScreen
+import com.localkarar.app.ui.screens.community.FollowersScreen
+import com.localkarar.app.ui.screens.community.ThreadDetailScreen
+import com.localkarar.app.ui.screens.community.ProfileScreen as CommunityProfileScreen
+import com.localkarar.app.ui.screens.community.NotificationsScreen as CommunityNotificationsScreen
 import com.localkarar.app.settings.SettingsRepository
 import com.localkarar.app.settings.SettingsViewModel
 import com.localkarar.app.ui.screens.settings.SettingsScreen
@@ -259,6 +266,11 @@ private fun ScreenContent(
 ) {
     val onBack = { navController.popBackStack(); Unit }
     val activeWorkspaceId by activeWorkspaceStore.activeWorkspaceId.collectAsState()
+
+    val communityViewModel = remember { CommunityViewModel(communityRepository) }
+    val socialViewModel = remember { SocialViewModel(communityRepository) }
+    val threadsViewModel = remember { ThreadsViewModel(communityRepository) }
+    val notificationsViewModel = remember { CommunityNotificationsViewModel(communityRepository) }
 
     when (destination) {
         Destination.Login -> { /* Handled at app root */ }
@@ -538,16 +550,66 @@ private fun ScreenContent(
             NewsDetailScreen(articleId = destination.articleId, viewModel = viewModel)
         }
         Destination.Community -> {
-            val viewModel = remember { CommunityViewModel(communityRepository) }
             CommunityFeedScreen(
-                viewModel = viewModel,
+                communityViewModel = communityViewModel,
+                socialViewModel = socialViewModel,
+                threadsViewModel = threadsViewModel,
+                notificationsViewModel = notificationsViewModel,
+                currentUserId = user.id,
                 onOpenPost = { postId -> navController.navigateTo(Destination.CommunityPost(postId)) },
+                onOpenProfile = { userId -> navController.navigateTo(Destination.CommunityProfile(userId)) },
+                onOpenThread = { threadId -> navController.navigateTo(Destination.CommunityThreadDetail(threadId)) },
+                onOpenNotifications = { navController.navigateTo(Destination.CommunityNotifications) },
+                onOpenFollowers = { userId, mode -> navController.navigateTo(Destination.CommunityFollowers(userId, mode)) },
                 onOpenProductCenter = onOpenProductCenter
             )
         }
         is Destination.CommunityPost -> {
-            val viewModel = remember { CommunityViewModel(communityRepository) }
-            CommunityPostDetailScreen(postId = destination.postId, viewModel = viewModel)
+            CommunityPostDetailScreen(
+                postId = destination.postId,
+                viewModel = communityViewModel,
+                currentUserId = user.id,
+                onBack = onBack,
+                onOpenProfile = { userId -> navController.navigateTo(Destination.CommunityProfile(userId)) },
+                onOpenPost = { postId -> navController.navigateTo(Destination.CommunityPost(postId)) }
+            )
+        }
+        is Destination.CommunityProfile -> {
+            CommunityProfileScreen(
+                userId = destination.userId,
+                socialViewModel = socialViewModel,
+                communityViewModel = communityViewModel,
+                onBack = onBack,
+                onOpenFollowers = { userId, mode -> navController.navigateTo(Destination.CommunityFollowers(userId, mode)) },
+                onOpenPost = { postId -> navController.navigateTo(Destination.CommunityPost(postId)) },
+                onOpenProfile = { userId -> navController.navigateTo(Destination.CommunityProfile(userId)) }
+            )
+        }
+        is Destination.CommunityFollowers -> {
+            FollowersScreen(
+                userId = destination.userId,
+                mode = destination.mode,
+                viewModel = socialViewModel,
+                onBack = onBack,
+                onOpenProfile = { userId -> navController.navigateTo(Destination.CommunityProfile(userId)) }
+            )
+        }
+        is Destination.CommunityThreadDetail -> {
+            ThreadDetailScreen(
+                threadId = destination.threadId,
+                viewModel = threadsViewModel,
+                currentUserId = user.id,
+                onBack = onBack
+            )
+        }
+        Destination.CommunityNotifications -> {
+            CommunityNotificationsScreen(
+                viewModel = notificationsViewModel,
+                onBack = onBack,
+                onOpenPost = { postId -> navController.navigateTo(Destination.CommunityPost(postId)) },
+                onOpenProfile = { userId -> navController.navigateTo(Destination.CommunityProfile(userId)) },
+                onOpenThread = { threadId -> navController.navigateTo(Destination.CommunityThreadDetail(threadId)) }
+            )
         }
         Destination.Settings -> {
             val viewModel = remember { SettingsViewModel(settingsRepository) }
