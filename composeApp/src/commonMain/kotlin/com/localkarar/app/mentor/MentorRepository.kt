@@ -15,6 +15,7 @@ import com.localkarar.app.network.dto.RenameConversationRequestDto
 import com.localkarar.app.network.dto.SendMessageRequestDto
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.plugins.expectSuccess
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
@@ -44,18 +45,24 @@ class MentorRepository(
     private val json = Json { ignoreUnknownKeys = true }
     private val base = "$baseUrl/mentor"
 
-    private suspend fun errorMessage(response: HttpResponse): String {
+    private suspend fun errorDetails(response: HttpResponse): Pair<String?, String> {
         return try {
             val text = response.bodyAsText()
-            if (text.isBlank()) return "Sunucu hatası (${response.status.value})"
+            if (text.isBlank()) return null to "Sunucu hatası (${response.status.value})"
             val element = json.parseToJsonElement(text).jsonObject
-            (element["message"]?.jsonPrimitive?.content)
-                ?: (element["error"]?.jsonObject?.get("message")?.jsonPrimitive?.content)
+            val error = element["error"]?.jsonObject
+            val code = error?.get("code")?.jsonPrimitive?.content
+                ?: element["code"]?.jsonPrimitive?.content
+            val message = element["message"]?.jsonPrimitive?.content
+                ?: error?.get("message")?.jsonPrimitive?.content
                 ?: "Sunucu hatası (${response.status.value})"
+            code to message
         } catch (_: Exception) {
-            "Sunucu hatası (${response.status.value})"
+            null to "Sunucu hatası (${response.status.value})"
         }
     }
+
+    private suspend fun errorMessage(response: HttpResponse): String = errorDetails(response).second
 
     suspend fun listConversations(archived: Boolean = false): Result<List<ConversationListItemDto>> {
         return try {
@@ -177,14 +184,17 @@ class MentorRepository(
         val job = launch {
             try {
                 client.preparePost(url) {
+                    // SSE endpoints must expose their 4xx response body so RATE_LIMIT and
+                    // CONCURRENT_LIMIT remain distinguishable to the UI.
+                    expectSuccess = false
                     contentType(ContentType.Application.Json)
                     if (bodyObject != null) {
                         setBody(bodyObject)
                     }
                 }.execute { response ->
                     if (!response.status.isSuccess()) {
-                        val code = if (response.status.value == 429) "RATE_LIMIT" else null
-                        trySend(MentorStreamEvent.StreamError(code, errorMessage(response)))
+                        val (code, message) = errorDetails(response)
+                        trySend(MentorStreamEvent.StreamError(code, message))
                         close()
                         return@execute
                     }

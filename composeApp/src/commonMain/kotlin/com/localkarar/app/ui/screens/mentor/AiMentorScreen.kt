@@ -27,6 +27,7 @@ import com.localkarar.app.network.dto.MemoryDto
 import com.localkarar.app.ui.components.LkButton
 import com.localkarar.app.ui.components.LkButtonVariant
 import com.localkarar.app.ui.components.LkPageLayout
+import com.localkarar.app.ui.shell.SystemBackHandler
 import com.localkarar.app.ui.theme.*
 
 @Composable
@@ -43,6 +44,16 @@ fun AiMentorScreen(
     var conversationToRename by remember { mutableStateOf<ConversationListItemDto?>(null) }
     var renameText by remember { mutableStateOf("") }
     var conversationToDelete by remember { mutableStateOf<ConversationListItemDto?>(null) }
+
+    SystemBackHandler(
+        enabled = showMemorySheet || conversationToRename != null || conversationToDelete != null
+    ) {
+        when {
+            conversationToDelete != null -> conversationToDelete = null
+            conversationToRename != null -> conversationToRename = null
+            showMemorySheet -> showMemorySheet = false
+        }
+    }
 
     LkPageLayout(
         title = "AI Mentor",

@@ -147,6 +147,10 @@ fun AppShell(
     val coroutineScope = rememberCoroutineScope()
     var sheetState by remember { mutableStateOf<ShellSheetState>(ShellSheetState.Closed) }
 
+    SystemBackHandler(enabled = backStack.size > 1 && !bottomSheetState.isVisible) {
+        navController.popBackStack()
+    }
+
     val openProductCenter = {
         sheetState = ShellSheetState.ProductCenter
         coroutineScope.launch { bottomSheetState.show() }

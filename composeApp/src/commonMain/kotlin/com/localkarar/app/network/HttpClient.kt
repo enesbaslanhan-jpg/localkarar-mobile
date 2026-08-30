@@ -149,7 +149,10 @@ fun createHttpClient(
         HttpResponseValidator {
             validateResponse { response ->
                 val contentType = response.contentType()
-                if (contentType != null && !contentType.match(ContentType.Application.Json)) {
+                val isSupportedResponse = contentType == null ||
+                    contentType.match(ContentType.Application.Json) ||
+                    contentType.match(ContentType.Text.EventStream)
+                if (!isSupportedResponse) {
                     println("API_ERROR: Expected JSON but got ${contentType.contentType}/${contentType.contentSubtype} for ${response.request.url}")
                     throw ApiError.ServerError("Beklenmeyen yanıt formatı alındı. (Sunucu Hatası)")
                 }
