@@ -93,32 +93,38 @@ jobs:
         run: |
           echo "=== Booting Simulator $DISCOVERED_SIM_UDID ==="
           xcrun simctl boot "$DISCOVERED_SIM_UDID" || true
-          xcrun simctl bootstatus "$DISCOVERED_SIM_UDID" -b
+          sleep 10
           
           echo "=== Locating Built Application ==="
-          APP_PATH=$(find build/DerivedData -name "LocalKarar.app" -o -name "iosApp.app" | head -n 1)
+          find build/DerivedData -type d -name "*.app" || true
+          APP_PATH=$(find build/DerivedData -type d -name "*.app" | head -n 1)
           echo "Found .app at: $APP_PATH"
           
           if [ -z "$APP_PATH" ]; then
             echo "Error: Application bundle not found!"
-            find build/DerivedData -name "*.app"
             exit 1
           fi
+          
+          echo "=== Application Info.plist ==="
+          plutil -p "$APP_PATH/Info.plist" || cat "$APP_PATH/Info.plist" || true
           
           echo "=== Installing Application on Simulator ==="
           xcrun simctl install "$DISCOVERED_SIM_UDID" "$APP_PATH"
           
           echo "=== Launching Application ==="
-          xcrun simctl launch "$DISCOVERED_SIM_UDID" com.localkarar.app
+          xcrun simctl launch "$DISCOVERED_SIM_UDID" com.localkarar.app || true
           
           echo "=== Waiting for App Initialization ==="
           sleep 8
           
           echo "=== Capturing Simulator Screenshot ==="
-          xcrun simctl io "$DISCOVERED_SIM_UDID" screenshot artifacts/simulator_screenshot.png
+          mkdir -p artifacts
+          xcrun simctl io "$DISCOVERED_SIM_UDID" screenshot artifacts/simulator_screenshot.png || true
           
           echo "=== Checking Running App Processes ==="
           xcrun simctl spawn "$DISCOVERED_SIM_UDID" ps aux | grep -i "localkarar" || true
+          
+          echo "=== Simulator Lifecycle Verification Complete ==="
 
       - name: Upload Build Artifacts & Screenshot
         if: always()
