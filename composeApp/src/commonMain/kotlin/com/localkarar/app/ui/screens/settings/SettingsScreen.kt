@@ -48,11 +48,13 @@ fun SettingsScreen(
             onDismissRequest = { showLogoutAllDialog = false },
             title = { Text("Diğer Cihazlardan Çık", style = LkTypography.getBodyStrong(), color = LkTextPrimary) },
             text = {
-                Text(
-                    "Bu cihaz haricindeki tüm diğer cihaz ve tarayıcılardaki aktif oturumlarınız sonlandırılacaktır. Devam etmek istiyor musunuz?",
-                    style = LkTypography.getBodySmall(),
-                    color = LkTextSecondary
-                )
+                Column(Modifier.verticalScroll(rememberScrollState())) {
+                    Text(
+                        "Bu cihaz haricindeki tüm diğer cihaz ve tarayıcılardaki aktif oturumlarınız sonlandırılacaktır. Devam etmek istiyor musunuz?",
+                        style = LkTypography.getBodySmall(),
+                        color = LkTextSecondary
+                    )
+                }
             },
             confirmButton = {
                 TextButton(

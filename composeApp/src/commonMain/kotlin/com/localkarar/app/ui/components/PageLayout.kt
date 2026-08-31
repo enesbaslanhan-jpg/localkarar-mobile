@@ -30,7 +30,6 @@ fun LkPageLayout(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column {
-                        Spacer(modifier = Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
                         TopAppBar(
                             title = { Text(title, style = LkTypography.getSectionTitle()) },
                             backgroundColor = LkSurfaceCanvas,

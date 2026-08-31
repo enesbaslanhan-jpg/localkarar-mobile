@@ -33,7 +33,6 @@ fun LkAppHeader(
             .fillMaxWidth()
             .background(LkSurfaceCanvas)
     ) {
-        Spacer(modifier = Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
         Row(
             modifier = Modifier
                 .fillMaxWidth()
