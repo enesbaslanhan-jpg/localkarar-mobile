@@ -8,10 +8,11 @@ sealed interface Destination {
     object Home : Destination
     object Courses : Destination
     data class DecisionTools(val initialFilter: String = "all") : Destination
+    data class DecisionTool(val code: String) : Destination
     object AiMentor : Destination
     object Calculations : Destination
     object News : Destination
-    object Community : Destination
+    data class Community(val initialTab: String = "feed") : Destination
     object Workspaces : Destination
     object Settings : Destination
 

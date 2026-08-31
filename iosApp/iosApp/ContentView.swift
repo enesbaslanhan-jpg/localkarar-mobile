@@ -14,5 +14,13 @@ struct ContentView: View {
     var body: some View {
         ComposeView()
             .ignoresSafeArea(.keyboard) // Compose has own keyboard handler
+            .onOpenURL { url in
+                _ = DeepLinkDispatcher.shared.submit(rawUrl: url.absoluteString)
+            }
+            .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { userActivity in
+                if let url = userActivity.webpageURL {
+                    _ = DeepLinkDispatcher.shared.submit(rawUrl: url.absoluteString)
+                }
+            }
     }
 }

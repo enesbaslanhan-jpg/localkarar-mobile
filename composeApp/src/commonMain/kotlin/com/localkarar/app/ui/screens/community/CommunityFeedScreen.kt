@@ -46,6 +46,7 @@ fun CommunityFeedScreen(
     threadsViewModel: ThreadsViewModel,
     notificationsViewModel: CommunityNotificationsViewModel,
     currentUserId: Int? = null,
+    initialTab: String = "feed",
     onOpenPost: (String) -> Unit,
     onOpenProfile: (Int) -> Unit,
     onOpenThread: (String) -> Unit,
@@ -53,7 +54,13 @@ fun CommunityFeedScreen(
     onOpenFollowers: (Int, String) -> Unit,
     onOpenProductCenter: (() -> Unit)? = null
 ) {
-    var currentSubTab by remember { mutableStateOf(CommunityInternalTab.FEED) }
+    val startingTab = when (initialTab.lowercase()) {
+        "people", "kisiler", "members" -> CommunityInternalTab.MEMBERS
+        "threads", "sohbetler", "chats" -> CommunityInternalTab.CHATS
+        "profile", "profil" -> CommunityInternalTab.PROFILE
+        else -> CommunityInternalTab.FEED
+    }
+    var currentSubTab by remember(initialTab) { mutableStateOf(startingTab) }
     val unreadNotifs = notificationsViewModel.unreadCount
 
     LkPageLayout(

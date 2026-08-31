@@ -37,7 +37,7 @@ fun MenuBottomSheet(
         MenuItem("Hesaplamalar") { onNavigate(Destination.Calculations) }
         MenuItem("İşletme Takibi") { onNavigate(Destination.Workspaces) }
         MenuItem("Haberler") { onNavigate(Destination.News) }
-        MenuItem("Topluluk") { onNavigate(Destination.Community) }
+        MenuItem("Topluluk") { onNavigate(Destination.Community()) }
 
         Divider(color = LkLineSoft, modifier = Modifier.padding(vertical = LkSpacing.Space2))
 

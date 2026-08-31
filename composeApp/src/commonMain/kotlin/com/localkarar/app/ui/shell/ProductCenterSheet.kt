@@ -104,7 +104,7 @@ fun ProductCenterSheet(
                     title = "Topluluk",
                     description = "Paylaşımlar ve etkileşim",
                     icon = Icons.Default.Groups,
-                    destination = Destination.Community
+                    destination = Destination.Community()
                 ),
                 ProductItem(
                     title = "Profil",

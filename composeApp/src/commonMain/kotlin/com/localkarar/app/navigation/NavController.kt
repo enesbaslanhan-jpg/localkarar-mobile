@@ -18,6 +18,7 @@ object DestinationCodec {
             is Destination.CourseDetail -> "course_detail:${destination.courseId}"
             is Destination.LessonReader -> "lesson_reader:${destination.courseId}:${destination.lessonId}"
             is Destination.DecisionTools -> "decision_tools:${destination.initialFilter}"
+            is Destination.DecisionTool -> "decision_tool:${destination.code}"
             is Destination.DecisionSession -> "decision_session:${destination.sessionId}"
             Destination.AiMentor -> "ai_mentor"
             is Destination.Conversation -> "conversation:${destination.conversationId}"
@@ -42,7 +43,7 @@ object DestinationCodec {
             is Destination.Contacts -> "contacts:${destination.workspaceId}"
             is Destination.Activity -> "activity:${destination.workspaceId}"
             is Destination.WorkspaceSettings -> "workspace_settings:${destination.workspaceId}"
-            Destination.Community -> "community"
+            is Destination.Community -> if (destination.initialTab == "feed") "community" else "community:${destination.initialTab}"
             is Destination.CommunityPost -> "community_post:${destination.postId}"
             is Destination.CommunityProfile -> "community_profile:${destination.userId}"
             is Destination.CommunityFollowers -> "community_followers:${destination.userId}:${destination.mode}"
@@ -67,6 +68,7 @@ object DestinationCodec {
                 "course_detail" -> Destination.CourseDetail(parts[1].toInt())
                 "lesson_reader" -> Destination.LessonReader(parts[1].toInt(), parts[2].toInt())
                 "decision_tools" -> Destination.DecisionTools(parts.getOrElse(1) { "all" })
+                "decision_tool" -> Destination.DecisionTool(parts[1])
                 "decision_session" -> Destination.DecisionSession(parts[1])
                 "ai_mentor" -> Destination.AiMentor
                 "conversation" -> Destination.Conversation(parts[1].toInt())
@@ -91,7 +93,7 @@ object DestinationCodec {
                 "contacts" -> Destination.Contacts(parts[1])
                 "activity" -> Destination.Activity(parts[1])
                 "workspace_settings" -> Destination.WorkspaceSettings(parts[1])
-                "community" -> Destination.Community
+                "community" -> if (parts.size > 1 && parts[1].isNotBlank()) Destination.Community(parts[1]) else Destination.Community("feed")
                 "community_post" -> Destination.CommunityPost(parts[1])
                 "community_profile" -> Destination.CommunityProfile(parts[1].toInt())
                 "community_followers" -> Destination.CommunityFollowers(parts[1].toInt(), parts[2])
@@ -149,7 +151,7 @@ class NavController(initialStack: List<Destination> = listOf(Destination.Home)) 
             Destination.Home,
             Destination.Workspaces,
             is Destination.WorkspaceHome,
-            Destination.Community,
+            is Destination.Community,
             Destination.Calculations,
             Destination.Settings -> true
             else -> false

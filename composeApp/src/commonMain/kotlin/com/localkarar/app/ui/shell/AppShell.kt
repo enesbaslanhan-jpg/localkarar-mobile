@@ -29,9 +29,12 @@ import com.localkarar.app.home.DashboardRepository
 import com.localkarar.app.courses.CourseRepository
 import com.localkarar.app.decision.DecisionRepository
 import com.localkarar.app.decision.DecisionToolsViewModel
+import com.localkarar.app.decision.DecisionToolViewModel
 import com.localkarar.app.decision.DecisionSessionViewModel
 import com.localkarar.app.ui.screens.decision.DecisionToolsScreen
+import com.localkarar.app.ui.screens.decision.DecisionToolScreen
 import com.localkarar.app.ui.screens.decision.DecisionSessionScreen
+import com.localkarar.app.navigation.deeplink.PendingDeepLinkStore
 import com.localkarar.app.courses.CoursesViewModel
 import com.localkarar.app.courses.CourseDetailViewModel
 import com.localkarar.app.courses.LessonReaderViewModel
@@ -184,8 +187,17 @@ fun AppShell(
     val sessionStoreOwner = remember(user.id) { ScopedViewModelStoreOwner() }
     DisposableEffect(user.id) {
         onDispose {
+            PendingDeepLinkStore.clear()
             sessionStoreOwner.clear()
             navController.clearAllStores()
+        }
+    }
+
+    val pendingDeepLink by PendingDeepLinkStore.pendingFlow.collectAsState()
+    LaunchedEffect(pendingDeepLink) {
+        val target = PendingDeepLinkStore.consume()
+        if (target != null) {
+            navController.navigateTo(target.toDestination())
         }
     }
 
@@ -298,7 +310,7 @@ private fun ScreenContent(
         Destination.Login,
         Destination.Home,
         Destination.Workspaces,
-        Destination.Community,
+        is Destination.Community,
         Destination.Calculations,
         Destination.Settings,
         Destination.Courses,
@@ -324,7 +336,7 @@ private fun ScreenContent(
             onNavigateToCalculations = { navController.navigateTo(Destination.Calculations) },
             onNavigateToMentor = { navController.navigateTo(Destination.AiMentor) },
             onNavigateToDecisions = { navController.navigateTo(Destination.DecisionTools()) },
-            onNavigateToDecisionDetail = { code -> navController.navigateTo(Destination.DecisionSession(code)) },
+            onNavigateToDecisionDetail = { code -> navController.navigateTo(Destination.DecisionTool(code)) },
             onNavigateToWorkspaces = { navController.navigateTo(Destination.Workspaces) },
             onNavigateToTracker = { workspaceId -> navController.navigateTo(Destination.Records(workspaceId)) },
             onNavigateToEnrollments = { navController.navigateTo(Destination.Courses) }
@@ -369,6 +381,18 @@ private fun ScreenContent(
             DecisionToolsScreen(
                 viewModel = viewModel,
                 onNavigateToSession = { sessionId -> navController.navigateTo(Destination.DecisionSession(sessionId)) },
+                onBack = onBack
+            )
+        }
+        is Destination.DecisionTool -> {
+            val viewModel = viewModel(key = "decision_tool:${destination.code}") {
+                DecisionToolViewModel(destination.code, decisionRepository)
+            }
+            DecisionToolScreen(
+                viewModel = viewModel,
+                onSessionReady = { sessionId ->
+                    navController.navigateTo(Destination.DecisionSession(sessionId))
+                },
                 onBack = onBack
             )
         }
@@ -603,13 +627,14 @@ private fun ScreenContent(
                 onBack = onBack
             )
         }
-        Destination.Community -> {
+        is Destination.Community -> {
             CommunityFeedScreen(
                 communityViewModel = communityViewModel,
                 socialViewModel = socialViewModel,
                 threadsViewModel = threadsViewModel,
                 notificationsViewModel = notificationsViewModel,
                 currentUserId = user.id,
+                initialTab = destination.initialTab,
                 onOpenPost = { postId -> navController.navigateTo(Destination.CommunityPost(postId)) },
                 onOpenProfile = { userId -> navController.navigateTo(Destination.CommunityProfile(userId)) },
                 onOpenThread = { threadId -> navController.navigateTo(Destination.CommunityThreadDetail(threadId)) },
@@ -743,7 +768,7 @@ private val PRIMARY_NAV_ITEMS = listOf(
     NavItem("İşletme Takibi", Icons.Default.Business) { activeId ->
         if (activeId != null) Destination.WorkspaceHome(activeId) else Destination.Workspaces
     },
-    NavItem("Topluluk", Icons.Default.Groups) { Destination.Community },
+    NavItem("Topluluk", Icons.Default.Groups) { Destination.Community() },
     NavItem("Hesaplamalar", Icons.Default.Calculate) { Destination.Calculations },
     NavItem("Ayarlar", Icons.Default.Settings) { Destination.Settings }
 )

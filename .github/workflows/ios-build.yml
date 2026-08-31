@@ -6,6 +6,7 @@ on:
       - feature/m7-ios-platform-build
       - feature/m8-adaptive-ui-polish
       - feature/m9-lifecycle-state
+      - feature/m10a-deep-links
       - main
   workflow_dispatch:
 
