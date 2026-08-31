@@ -67,12 +67,13 @@ jobs:
       - name: Compile Kotlin iOS Simulator Target
         run: |
           echo "=== Compiling Kotlin iosSimulatorArm64 ==="
-          ./gradlew :composeApp:compileKotlinIosSimulatorArm64 --info --stacktrace
+          mkdir -p artifacts
+          ./gradlew :composeApp:compileKotlinIosSimulatorArm64 --stacktrace 2>&1 | tee artifacts/gradle_compile.log
 
       - name: Link Kotlin iOS Debug Framework
         run: |
           echo "=== Linking Debug Framework iosSimulatorArm64 ==="
-          ./gradlew :composeApp:linkDebugFrameworkIosSimulatorArm64 --info --stacktrace
+          ./gradlew :composeApp:linkDebugFrameworkIosSimulatorArm64 --stacktrace 2>&1 | tee artifacts/gradle_link.log
 
       - name: Build Xcode Simulator Application
         run: |
@@ -86,7 +87,7 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
-            clean build
+            clean build 2>&1 | tee artifacts/xcode_build.log
 
       - name: Boot Simulator, Install and Launch App
         run: |
@@ -114,7 +115,6 @@ jobs:
           sleep 8
           
           echo "=== Capturing Simulator Screenshot ==="
-          mkdir -p artifacts
           xcrun simctl io "$DISCOVERED_SIM_UDID" screenshot artifacts/simulator_screenshot.png
           
           echo "=== Checking Running App Processes ==="
@@ -126,6 +126,6 @@ jobs:
         with:
           name: ios-build-evidence
           path: |
-            artifacts/simulator_screenshot.png
+            artifacts/*
             build/DerivedData/Logs/Build/*.xcactivitylog
           if-no-files-found: warn
