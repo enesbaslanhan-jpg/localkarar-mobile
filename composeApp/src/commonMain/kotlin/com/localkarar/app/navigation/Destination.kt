@@ -20,7 +20,7 @@ sealed interface Destination {
     data class DecisionSession(val sessionId: String) : Destination
 
     data class FormulaDetail(
-        val formula: FormulaDto,
+        val formulaId: String,
         val historicalCalculation: FormulaCalculationDto? = null
     ) : Destination
     data class FinancialModelDetail(val code: String) : Destination

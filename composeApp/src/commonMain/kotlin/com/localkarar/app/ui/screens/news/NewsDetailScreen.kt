@@ -11,6 +11,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Launch
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -21,6 +23,7 @@ import com.localkarar.app.core.openExternalUrl
 import com.localkarar.app.news.NewsViewModel
 import com.localkarar.app.ui.components.LkButton
 import com.localkarar.app.ui.components.LkInfoPanel
+import com.localkarar.app.ui.components.LkLoadingState
 import com.localkarar.app.ui.components.LkPageLayout
 import com.localkarar.app.ui.theme.*
 
@@ -30,9 +33,15 @@ fun NewsDetailScreen(
     viewModel: NewsViewModel,
     onBack: () -> Unit
 ) {
+    val uiState by viewModel.uiState.collectAsState()
     val article = viewModel.articleById(articleId)
 
     LkPageLayout(title = "Haber Detayı", onBack = onBack) {
+        if (article == null && uiState is NewsViewModel.UiState.Loading) {
+            LkLoadingState()
+            return@LkPageLayout
+        }
+
         if (article == null) {
             Column(
                 Modifier.fillMaxSize().padding(24.dp),
@@ -45,6 +54,8 @@ fun NewsDetailScreen(
                 Spacer(Modifier.height(6.dp))
                 Text("Haber listesini yenileyip tekrar deneyin.", style = LkTypography.getBodySmall(), color = LkTextSecondary)
                 Spacer(Modifier.height(16.dp))
+                LkButton(text = "Yenile", onClick = { viewModel.refresh() })
+                Spacer(Modifier.height(8.dp))
                 LkButton(text = "Haberlere Dön", onClick = onBack)
             }
             return@LkPageLayout

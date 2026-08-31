@@ -13,8 +13,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.localkarar.app.navigation.Destination
 import com.localkarar.app.navigation.NavController
+import com.localkarar.app.navigation.rememberNavController
 import com.localkarar.app.ui.screens.home.HomeScreen
 import com.localkarar.app.ui.theme.*
 import kotlinx.coroutines.launch
@@ -129,7 +131,7 @@ fun AppShell(
     onNewSession: (String, UserDto) -> Unit,
     onLogout: () -> Unit
 ) {
-    val navController = remember { NavController(Destination.Home) }
+    val navController = rememberNavController(Destination.Home)
     val backStack by navController.backStack.collectAsState()
     val currentDestination = backStack.last()
     val activeWorkspaceId by activeWorkspaceStore.activeWorkspaceId.collectAsState()
@@ -273,12 +275,12 @@ private fun ScreenContent(
     val onBack = { navController.popBackStack(); Unit }
     val activeWorkspaceId by activeWorkspaceStore.activeWorkspaceId.collectAsState()
 
-    val communityViewModel = remember { CommunityViewModel(communityRepository) }
-    val socialViewModel = remember { SocialViewModel(communityRepository) }
-    val threadsViewModel = remember { ThreadsViewModel(communityRepository) }
-    val notificationsViewModel = remember { CommunityNotificationsViewModel(communityRepository) }
-    val newsViewModel = remember { NewsViewModel(newsRepository) }
-    val settingsViewModel = remember { SettingsViewModel(settingsRepository) }
+    val communityViewModel = viewModel(key = "community_main") { CommunityViewModel(communityRepository) }
+    val socialViewModel = viewModel(key = "community_social") { SocialViewModel(communityRepository) }
+    val threadsViewModel = viewModel(key = "community_threads") { ThreadsViewModel(communityRepository) }
+    val notificationsViewModel = viewModel(key = "community_notifs") { CommunityNotificationsViewModel(communityRepository) }
+    val newsViewModel = viewModel(key = "news_main") { NewsViewModel(newsRepository) }
+    val settingsViewModel = viewModel(key = "settings_main") { SettingsViewModel(settingsRepository) }
 
     when (destination) {
         Destination.Login -> { /* Handled at app root */ }
@@ -295,7 +297,7 @@ private fun ScreenContent(
             onNavigateToEnrollments = { navController.navigateTo(Destination.Courses) }
         )
         Destination.Courses -> {
-            val viewModel = remember { CoursesViewModel(courseRepository, dashboardRepository) }
+            val viewModel = viewModel(key = "courses_main") { CoursesViewModel(courseRepository, dashboardRepository) }
             CoursesScreen(
                 viewModel = viewModel,
                 onNavigateToCourseDetail = { courseId -> navController.navigateTo(Destination.CourseDetail(courseId)) },
@@ -303,7 +305,9 @@ private fun ScreenContent(
             )
         }
         is Destination.CourseDetail -> {
-            val viewModel = remember(destination.courseId) { CourseDetailViewModel(courseRepository, destination.courseId) }
+            val viewModel = viewModel(key = "course_detail:${destination.courseId}") {
+                CourseDetailViewModel(courseRepository, destination.courseId)
+            }
             CourseDetailScreen(
                 viewModel = viewModel,
                 onNavigateToLesson = { cId, lId -> navController.navigateTo(Destination.LessonReader(cId, lId)) },
@@ -311,7 +315,7 @@ private fun ScreenContent(
             )
         }
         is Destination.LessonReader -> {
-            val viewModel = remember(destination.courseId, destination.lessonId) {
+            val viewModel = viewModel(key = "lesson_reader:${destination.courseId}:${destination.lessonId}") {
                 LessonReaderViewModel(courseRepository, destination.courseId, destination.lessonId)
             }
             LessonReaderScreen(
@@ -321,7 +325,7 @@ private fun ScreenContent(
             )
         }
         is Destination.DecisionTools -> {
-            val viewModel = remember { DecisionToolsViewModel(decisionRepository) }
+            val viewModel = viewModel(key = "decision_tools") { DecisionToolsViewModel(decisionRepository) }
             LaunchedEffect(destination.initialFilter) {
                 if (viewModel.uiState.value is com.localkarar.app.decision.DecisionToolsUiState.Content) {
                     viewModel.updateStatusFilter(destination.initialFilter)
@@ -336,15 +340,17 @@ private fun ScreenContent(
             )
         }
         is Destination.DecisionSession -> {
-            val viewModel = remember(destination.sessionId) { DecisionSessionViewModel(destination.sessionId, decisionRepository) }
+            val viewModel = viewModel(key = "decision_session:${destination.sessionId}") {
+                DecisionSessionViewModel(destination.sessionId, decisionRepository)
+            }
             DecisionSessionScreen(
                 viewModel = viewModel,
                 onBack = onBack
             )
         }
         Destination.AiMentor -> {
-            val viewModel = remember { MentorViewModel(mentorRepository) }
-            val memoryViewModel = remember { MemoryViewModel(mentorRepository) }
+            val viewModel = viewModel(key = "mentor_main") { MentorViewModel(mentorRepository) }
+            val memoryViewModel = viewModel(key = "mentor_memory") { MemoryViewModel(mentorRepository) }
             AiMentorScreen(
                 viewModel = viewModel,
                 memoryViewModel = memoryViewModel,
@@ -353,7 +359,7 @@ private fun ScreenContent(
             )
         }
         is Destination.Conversation -> {
-            val viewModel = remember(destination.conversationId) {
+            val viewModel = viewModel(key = "conversation:${destination.conversationId}") {
                 ConversationViewModel(mentorRepository, destination.conversationId)
             }
             ConversationScreen(
@@ -363,14 +369,14 @@ private fun ScreenContent(
             )
         }
         Destination.Calculations -> {
-            val viewModel = remember(activeWorkspaceId) {
+            val viewModel = viewModel(key = "calculations:${activeWorkspaceId ?: "none"}") {
                 CalculationsViewModel(calculationsRepository, workspaceRepository, activeWorkspaceId)
             }
             CalculationsScreen(
                 viewModel = viewModel,
                 onCalculationSelected = { item ->
                     if (item.supportsQuickCalculation && item.formula != null) {
-                        navController.navigateTo(Destination.FormulaDetail(item.formula!!))
+                        navController.navigateTo(Destination.FormulaDetail(item.formula!!.id))
                     } else if (item.supportsDetailedAnalysis && item.definition.modelCode != null) {
                         navController.navigateTo(Destination.FinancialModelDetail(item.definition.modelCode!!))
                     }
@@ -384,13 +390,13 @@ private fun ScreenContent(
             )
         }
         is Destination.FormulaDetail -> {
-            val viewModel = remember(destination.formula.id) {
-                FormulaCalculatorViewModel(destination.formula, calculationsRepository, destination.historicalCalculation)
+            val viewModel = viewModel(key = "formula_calculator:${destination.formulaId}") {
+                FormulaCalculatorViewModel(destination.formulaId, calculationsRepository, destination.historicalCalculation)
             }
             FormulaDetailScreen(viewModel = viewModel, onBack = onBack)
         }
         is Destination.FinancialModelDetail -> {
-            val viewModel = remember(destination.code) {
+            val viewModel = viewModel(key = "financial_model:${destination.code}:${activeWorkspaceId ?: "none"}") {
                 FinancialModelViewModel(destination.code, activeWorkspaceId, calculationsRepository)
             }
             FinancialModelScreen(
@@ -404,7 +410,7 @@ private fun ScreenContent(
             )
         }
         is Destination.ModelRuns -> {
-            val viewModel = remember(destination.workspaceId, destination.modelCode) {
+            val viewModel = viewModel(key = "model_runs:${destination.workspaceId}:${destination.modelCode ?: ""}") {
                 ModelRunsViewModel(destination.workspaceId, destination.modelCode, calculationsRepository)
             }
             ModelRunsScreen(
@@ -414,13 +420,15 @@ private fun ScreenContent(
             )
         }
         is Destination.RunDetail -> {
-            val viewModel = remember(destination.workspaceId, destination.runId) {
+            val viewModel = viewModel(key = "run_detail:${destination.workspaceId}:${destination.runId}") {
                 RunDetailViewModel(destination.workspaceId, destination.runId, calculationsRepository)
             }
             RunDetailScreen(viewModel = viewModel, onBack = onBack)
         }
         Destination.Workspaces -> {
-            val viewModel = remember { WorkspacesViewModel(workspaceRepository, activeWorkspaceStore) }
+            val viewModel = viewModel(key = "workspaces_main") {
+                WorkspacesViewModel(workspaceRepository, activeWorkspaceStore)
+            }
             WorkspacesScreen(
                 viewModel = viewModel,
                 activeWorkspaceId = activeWorkspaceId,
@@ -429,7 +437,7 @@ private fun ScreenContent(
             )
         }
         is Destination.WorkspaceHome -> {
-            val viewModel = remember(destination.workspaceId) {
+            val viewModel = viewModel(key = "workspace_home:${destination.workspaceId}") {
                 WorkspaceHomeViewModel(destination.workspaceId, workspaceRepository)
             }
             WorkspaceHomeScreen(
@@ -451,7 +459,7 @@ private fun ScreenContent(
             )
         }
         is Destination.Orders -> {
-            val viewModel = remember(destination.workspaceId) {
+            val viewModel = viewModel(key = "orders:${destination.workspaceId}") {
                 com.localkarar.app.workspaces.OrdersViewModel(workspaceRepository)
             }
             OrdersScreen(
@@ -461,7 +469,7 @@ private fun ScreenContent(
             )
         }
         is Destination.Products -> {
-            val viewModel = remember(destination.workspaceId) {
+            val viewModel = viewModel(key = "products:${destination.workspaceId}") {
                 com.localkarar.app.workspaces.ProductsViewModel(workspaceRepository)
             }
             ProductsScreen(
@@ -471,7 +479,7 @@ private fun ScreenContent(
             )
         }
         is Destination.Records -> {
-            val viewModel = remember(destination.workspaceId) {
+            val viewModel = viewModel(key = "records:${destination.workspaceId}") {
                 RecordsViewModel(destination.workspaceId, workspaceRepository)
             }
             RecordsScreen(
@@ -482,7 +490,7 @@ private fun ScreenContent(
             )
         }
         is Destination.RecordDetail -> {
-            val viewModel = remember(destination.workspaceId, destination.recordId) {
+            val viewModel = viewModel(key = "record_detail:${destination.workspaceId}:${destination.recordId}") {
                 RecordDetailViewModel(destination.workspaceId, destination.recordId, workspaceRepository)
             }
             RecordDetailScreen(
@@ -492,7 +500,7 @@ private fun ScreenContent(
             )
         }
         is Destination.RecordEdit -> {
-            val viewModel = remember(destination.workspaceId, destination.recordId) {
+            val viewModel = viewModel(key = "record_edit:${destination.workspaceId}:${destination.recordId ?: "new"}") {
                 RecordEditViewModel(destination.workspaceId, destination.recordId, workspaceRepository)
             }
             RecordEditScreen(
@@ -503,7 +511,7 @@ private fun ScreenContent(
             )
         }
         is Destination.Calendar -> {
-            val viewModel = remember(destination.workspaceId) {
+            val viewModel = viewModel(key = "calendar:${destination.workspaceId}") {
                 CalendarViewModel(destination.workspaceId, workspaceRepository)
             }
             CalendarScreen(
@@ -513,37 +521,37 @@ private fun ScreenContent(
             )
         }
         is Destination.Documents -> {
-            val viewModel = remember(destination.workspaceId) {
+            val viewModel = viewModel(key = "documents:${destination.workspaceId}") {
                 DocumentsViewModel(destination.workspaceId, workspaceRepository)
             }
             DocumentsScreen(viewModel = viewModel, onBack = onBack)
         }
         is Destination.Team -> {
-            val viewModel = remember(destination.workspaceId) {
+            val viewModel = viewModel(key = "team:${destination.workspaceId}") {
                 TeamViewModel(destination.workspaceId, workspaceRepository)
             }
             TeamScreen(viewModel = viewModel, onBack = onBack)
         }
         is Destination.Contacts -> {
-            val viewModel = remember(destination.workspaceId) {
+            val viewModel = viewModel(key = "contacts:${destination.workspaceId}") {
                 ContactsViewModel(destination.workspaceId, workspaceRepository)
             }
             ContactsScreen(viewModel = viewModel, onBack = onBack)
         }
         is Destination.Notifications -> {
-            val viewModel = remember(destination.workspaceId) {
+            val viewModel = viewModel(key = "notifications:${destination.workspaceId}") {
                 NotificationsViewModel(destination.workspaceId, workspaceRepository)
             }
             NotificationsScreen(viewModel = viewModel, onBack = onBack)
         }
         is Destination.Activity -> {
-            val viewModel = remember(destination.workspaceId) {
+            val viewModel = viewModel(key = "activity:${destination.workspaceId}") {
                 ActivityViewModel(destination.workspaceId, workspaceRepository)
             }
             ActivityScreen(viewModel = viewModel, onBack = onBack)
         }
         is Destination.WorkspaceSettings -> {
-            val viewModel = remember(destination.workspaceId) {
+            val viewModel = viewModel(key = "workspace_settings:${destination.workspaceId}") {
                 WorkspaceSettingsViewModel(destination.workspaceId, workspaceRepository)
             }
             WorkspaceSettingsScreen(viewModel = viewModel, onBack = onBack)

@@ -17,6 +17,7 @@ import com.localkarar.app.ui.components.LkButton
 import com.localkarar.app.ui.components.LkChip
 import com.localkarar.app.ui.components.LkErrorState
 import com.localkarar.app.ui.components.LkInfoPanel
+import com.localkarar.app.ui.components.LkLoadingState
 import com.localkarar.app.ui.components.LkNumericField
 import com.localkarar.app.ui.components.LkPageLayout
 import com.localkarar.app.ui.components.LkResultRow
@@ -104,6 +105,7 @@ fun FormulaDetailScreen(
 
     LkPageLayout(title = "Hızlı Hesaplama", onBack = onBack) {
         when (val state = uiState) {
+            is FormulaCalculatorUiState.Loading -> LkLoadingState()
             is FormulaCalculatorUiState.Error -> LkErrorState(
                 message = state.message,
                 onRetry = null

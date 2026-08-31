@@ -117,7 +117,7 @@ fun CalculationsScreen(
                                 history = state.history,
                                 catalog = state.catalog,
                                 onHistorySelected = { item, calculationItem ->
-                                    navController.navigateTo(Destination.FormulaDetail(calculationItem.formula!!, item))
+                                    navController.navigateTo(Destination.FormulaDetail(calculationItem.formula!!.id, item))
                                 }
                             )
                         }
@@ -394,7 +394,7 @@ private fun FinansalGorunumTab(
                 if (formula != null) {
                     FinansalGorunumHistoryRow(
                         item = calc,
-                        onClick = { navController.navigateTo(Destination.FormulaDetail(formula, calc)) }
+                        onClick = { navController.navigateTo(Destination.FormulaDetail(calc.formulaId, calc)) }
                     )
                 }
             }

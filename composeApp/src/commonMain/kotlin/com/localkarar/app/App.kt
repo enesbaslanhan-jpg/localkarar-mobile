@@ -12,9 +12,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.localkarar.app.auth.AuthRepository
 import com.localkarar.app.auth.AuthViewModel
 import com.localkarar.app.auth.SecureStorage
@@ -61,7 +63,7 @@ fun App(secureStorage: SecureStorage) {
     val authRepository = remember {
         AuthRepository(httpClient, secureStorage).also { authRepoHolder = it }
     }
-    val authViewModel = remember { AuthViewModel(authRepository) }
+    val authViewModel = viewModel(key = "auth_root") { AuthViewModel(authRepository) }
 
     val dashboardRepository = remember { DashboardRepository(httpClient, secureStorage) }
     val courseRepository = remember { CourseRepository(httpClient, secureStorage) }
@@ -69,7 +71,7 @@ fun App(secureStorage: SecureStorage) {
     val activeWorkspaceStore = remember { ActiveWorkspaceStore() }
     val workspaceRepository = remember { WorkspaceRepository(SafeApiClient(httpClient, "İşletme")) }
     
-    val homeViewModel = remember { 
+    val homeViewModel = viewModel(key = "home_root") { 
         HomeViewModel(
             dashboardRepository,
             workspaceRepository,
@@ -84,7 +86,7 @@ fun App(secureStorage: SecureStorage) {
     val communityRepository = remember { CommunityRepository(httpClient) }
     val settingsRepository = remember { SettingsRepository(httpClient) }
 
-    var authRoute by remember { mutableStateOf(AuthRoute.LOGIN) }
+    var authRoute by rememberSaveable { mutableStateOf(AuthRoute.LOGIN) }
 
     LocalKararTheme {
         val sessionState by authViewModel.sessionState.collectAsState()

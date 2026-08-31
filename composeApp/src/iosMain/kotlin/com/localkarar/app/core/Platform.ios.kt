@@ -85,7 +85,7 @@ actual fun rememberFilePicker(onFilePicked: (PickedFile?) -> Unit): () -> Unit {
 
             val picker = UIDocumentPickerViewController(
                 documentTypes = listOf("public.item", "public.content", "public.data"),
-                inMode = UIDocumentPickerModeImport
+                inMode = UIDocumentPickerMode.UIDocumentPickerModeImport
             ).apply {
                 this.delegate = delegate
                 this.allowsMultipleSelection = false
