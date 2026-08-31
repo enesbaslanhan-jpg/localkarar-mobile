@@ -3,6 +3,8 @@ package com.localkarar.app.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.ViewModelStoreOwner
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -109,12 +111,35 @@ object DestinationCodec {
     }
 }
 
+class ScopedViewModelStoreOwner : ViewModelStoreOwner {
+    override val viewModelStore: ViewModelStore = ViewModelStore()
+
+    fun clear() {
+        viewModelStore.clear()
+    }
+}
+
 class NavController(initialStack: List<Destination> = listOf(Destination.Home)) {
     private val _backStack = MutableStateFlow(if (initialStack.isNotEmpty()) initialStack else listOf(Destination.Home))
     val backStack: StateFlow<List<Destination>> = _backStack.asStateFlow()
 
+    private val destinationStores = mutableMapOf<String, ScopedViewModelStoreOwner>()
+
     val currentDestination: Destination
         get() = _backStack.value.last()
+
+    fun getStoreOwner(destination: Destination): ScopedViewModelStoreOwner {
+        val key = DestinationCodec.encode(destination)
+        return destinationStores.getOrPut(key) { ScopedViewModelStoreOwner() }
+    }
+
+    private fun pruneStores(remainingStack: List<Destination>) {
+        val activeKeys = remainingStack.map { DestinationCodec.encode(it) }.toSet()
+        val removedKeys = destinationStores.keys - activeKeys
+        for (k in removedKeys) {
+            destinationStores.remove(k)?.clear()
+        }
+    }
 
     fun navigateTo(destination: Destination) {
         val currentStack = _backStack.value
@@ -131,7 +156,9 @@ class NavController(initialStack: List<Destination> = listOf(Destination.Home)) 
         }
         
         if (isPrimaryRoot) {
-            _backStack.value = listOf(destination)
+            val newStack = listOf(destination)
+            _backStack.value = newStack
+            pruneStores(newStack)
         } else {
             _backStack.value = currentStack + destination
         }
@@ -140,14 +167,23 @@ class NavController(initialStack: List<Destination> = listOf(Destination.Home)) 
     fun popBackStack(): Boolean {
         val currentStack = _backStack.value
         if (currentStack.size > 1) {
-            _backStack.value = currentStack.dropLast(1)
+            val newStack = currentStack.dropLast(1)
+            _backStack.value = newStack
+            pruneStores(newStack)
             return true
         }
         return false
     }
 
     fun resetTo(destination: Destination) {
-        _backStack.value = listOf(destination)
+        val newStack = listOf(destination)
+        _backStack.value = newStack
+        pruneStores(newStack)
+    }
+
+    fun clearAllStores() {
+        destinationStores.values.forEach { it.clear() }
+        destinationStores.clear()
     }
 
     companion object {

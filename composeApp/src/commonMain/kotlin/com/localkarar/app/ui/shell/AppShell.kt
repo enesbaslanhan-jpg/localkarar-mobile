@@ -13,9 +13,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.localkarar.app.navigation.Destination
 import com.localkarar.app.navigation.NavController
+import com.localkarar.app.navigation.ScopedViewModelStoreOwner
 import com.localkarar.app.navigation.rememberNavController
 import com.localkarar.app.ui.screens.home.HomeScreen
 import com.localkarar.app.ui.theme.*
@@ -179,73 +181,83 @@ fun AppShell(
         }
     }
 
-    ModalBottomSheetLayout(
-        sheetState = bottomSheetState,
-        sheetBackgroundColor = Color.Transparent,
-        sheetElevation = 0.dp,
-        sheetContent = {
-            when (val state = sheetState) {
-                is ShellSheetState.ProductCenter -> {
-                    ProductCenterSheet(
-                        activeWorkspaceId = activeWorkspaceId,
-                        onNavigate = { closeSheetAndNavigate(it) },
-                        onClose = { closeSheet() }
-                    )
-                }
-                is ShellSheetState.WorkspaceSections -> {
-                    WorkspaceSectionSheet(
-                        workspaceId = state.workspaceId,
-                        workspaceName = null,
-                        currentSectionId = state.currentSectionId,
-                        onNavigate = { closeSheetAndNavigate(it) },
-                        onOpenAllWorkspaces = { closeSheetAndNavigate(Destination.Workspaces) },
-                        onClose = { closeSheet() }
-                    )
-                }
-                ShellSheetState.Closed -> {
-                    Spacer(modifier = Modifier.height(1.dp))
+    val sessionStoreOwner = remember(user.id) { ScopedViewModelStoreOwner() }
+    DisposableEffect(user.id) {
+        onDispose {
+            sessionStoreOwner.clear()
+            navController.clearAllStores()
+        }
+    }
+
+    CompositionLocalProvider(LocalViewModelStoreOwner provides sessionStoreOwner) {
+        ModalBottomSheetLayout(
+            sheetState = bottomSheetState,
+            sheetBackgroundColor = Color.Transparent,
+            sheetElevation = 0.dp,
+            sheetContent = {
+                when (val state = sheetState) {
+                    is ShellSheetState.ProductCenter -> {
+                        ProductCenterSheet(
+                            activeWorkspaceId = activeWorkspaceId,
+                            onNavigate = { closeSheetAndNavigate(it) },
+                            onClose = { closeSheet() }
+                        )
+                    }
+                    is ShellSheetState.WorkspaceSections -> {
+                        WorkspaceSectionSheet(
+                            workspaceId = state.workspaceId,
+                            workspaceName = null,
+                            currentSectionId = state.currentSectionId,
+                            onNavigate = { closeSheetAndNavigate(it) },
+                            onOpenAllWorkspaces = { closeSheetAndNavigate(Destination.Workspaces) },
+                            onClose = { closeSheet() }
+                        )
+                    }
+                    ShellSheetState.Closed -> {
+                        Spacer(modifier = Modifier.height(1.dp))
+                    }
                 }
             }
-        }
-    ) {
-        Scaffold(
-            bottomBar = {
-                if (currentDestination !is Destination.LessonReader) {
-                    LkBottomNavigation(
-                        currentDestination = currentDestination,
-                        activeWorkspaceId = activeWorkspaceId,
-                        onNavigate = { navController.navigateTo(it) }
+        ) {
+            Scaffold(
+                bottomBar = {
+                    if (currentDestination !is Destination.LessonReader) {
+                        LkBottomNavigation(
+                            currentDestination = currentDestination,
+                            activeWorkspaceId = activeWorkspaceId,
+                            onNavigate = { navController.navigateTo(it) }
+                        )
+                    }
+                },
+                backgroundColor = LkSurfaceCanvas,
+                modifier = Modifier.fillMaxSize()
+            ) { paddingValues ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                ) {
+                    ScreenContent(
+                        destination = currentDestination,
+                        navController = navController,
+                        user = user,
+                        homeViewModel = homeViewModel,
+                        dashboardRepository = dashboardRepository,
+                        courseRepository = courseRepository,
+                        decisionRepository = decisionRepository,
+                        calculationsRepository = calculationsRepository,
+                        activeWorkspaceStore = activeWorkspaceStore,
+                        workspaceRepository = workspaceRepository,
+                        mentorRepository = mentorRepository,
+                        newsRepository = newsRepository,
+                        communityRepository = communityRepository,
+                        settingsRepository = settingsRepository,
+                        onOpenProductCenter = { openProductCenter() },
+                        onOpenWorkspaceSections = { wsId, secId -> openWorkspaceSections(wsId, secId) },
+                        onNewSession = onNewSession,
+                        onLogout = onLogout
                     )
                 }
-            },
-            backgroundColor = LkSurfaceCanvas,
-            modifier = Modifier.fillMaxSize()
-        ) { paddingValues ->
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-            ) {
-                ScreenContent(
-                    destination = currentDestination,
-                    navController = navController,
-                    user = user,
-                    homeViewModel = homeViewModel,
-                    dashboardRepository = dashboardRepository,
-                    courseRepository = courseRepository,
-                    decisionRepository = decisionRepository,
-                    calculationsRepository = calculationsRepository,
-                    activeWorkspaceStore = activeWorkspaceStore,
-                    workspaceRepository = workspaceRepository,
-                    mentorRepository = mentorRepository,
-                    newsRepository = newsRepository,
-                    communityRepository = communityRepository,
-                    settingsRepository = settingsRepository,
-                    onOpenProductCenter = { openProductCenter() },
-                    onOpenWorkspaceSections = { wsId, secId -> openWorkspaceSections(wsId, secId) },
-                    onNewSession = onNewSession,
-                    onLogout = onLogout
-                )
             }
         }
     }
@@ -282,7 +294,28 @@ private fun ScreenContent(
     val newsViewModel = viewModel(key = "news_main") { NewsViewModel(newsRepository) }
     val settingsViewModel = viewModel(key = "settings_main") { SettingsViewModel(settingsRepository) }
 
-    when (destination) {
+    val isRootScreen = when (destination) {
+        Destination.Login,
+        Destination.Home,
+        Destination.Workspaces,
+        Destination.Community,
+        Destination.Calculations,
+        Destination.Settings,
+        Destination.Courses,
+        is Destination.DecisionTools,
+        Destination.AiMentor,
+        Destination.News -> true
+        else -> false
+    }
+
+    val currentStoreOwner = if (isRootScreen) {
+        LocalViewModelStoreOwner.current ?: navController.getStoreOwner(destination)
+    } else {
+        navController.getStoreOwner(destination)
+    }
+
+    CompositionLocalProvider(LocalViewModelStoreOwner provides currentStoreOwner) {
+        when (destination) {
         Destination.Login -> { /* Handled at app root */ }
         Destination.Home -> HomeScreen(
             viewModel = homeViewModel,
@@ -686,6 +719,7 @@ private fun ScreenContent(
                 onBack = onBack
             )
         }
+    }
     }
 }
 
