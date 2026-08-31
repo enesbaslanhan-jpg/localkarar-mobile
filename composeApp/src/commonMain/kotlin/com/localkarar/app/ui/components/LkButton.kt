@@ -26,7 +26,8 @@ enum class LkButtonVariant {
     PRIMARY,
     SECONDARY,
     QUIET,
-    GHOST
+    GHOST,
+    DANGER
 }
 
 @Composable
@@ -42,6 +43,7 @@ fun LkButton(
         LkButtonVariant.SECONDARY -> LkSurfaceRaised
         LkButtonVariant.QUIET -> LkSurfaceSunken
         LkButtonVariant.GHOST -> Color.Transparent
+        LkButtonVariant.DANGER -> LkSurfaceSunken
     }
 
     val contentColor = when (variant) {
@@ -49,11 +51,14 @@ fun LkButton(
         LkButtonVariant.SECONDARY -> LkTextPrimary
         LkButtonVariant.QUIET -> LkTextSecondary
         LkButtonVariant.GHOST -> LkPrimary
+        LkButtonVariant.DANGER -> com.localkarar.app.ui.theme.LkDanger
     }
 
-    val borderStroke = if (variant == LkButtonVariant.SECONDARY) {
-        BorderStroke(1.dp, LkLineStrong)
-    } else null
+    val borderStroke = when (variant) {
+        LkButtonVariant.SECONDARY -> BorderStroke(1.dp, LkLineStrong)
+        LkButtonVariant.DANGER -> BorderStroke(1.dp, com.localkarar.app.ui.theme.LkDanger.copy(alpha = 0.5f))
+        else -> null
+    }
 
     Button(
         onClick = onClick,

@@ -25,7 +25,8 @@ import com.localkarar.app.home.HomeViewModel
 import com.localkarar.app.network.dto.BusinessRecordDto
 import com.localkarar.app.network.dto.DecisionHistorySessionDto
 import com.localkarar.app.network.dto.TrackerSummaryDto
-import com.localkarar.app.network.dto.DashboardResponse
+import com.localkarar.app.ui.components.LkButton
+import com.localkarar.app.ui.components.LkButtonVariant
 import com.localkarar.app.ui.components.LkErrorState
 import com.localkarar.app.ui.components.LkLoadingState
 import com.localkarar.app.ui.components.LkPageLayout
@@ -136,16 +137,28 @@ private fun DashboardContent(
             Text("Kontrol Merkezi", style = LkTypography.getPageTitle(), color = LkTextPrimary)
             Text("Bugün işletmenizde ne önemli?", style = LkTypography.getBody(), color = LkTextSecondary)
             Spacer(modifier = Modifier.height(LkSpacing.Space4))
-            Row(horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space3)) {
-                OutlinedButton(onClick = onNavigateToCalculations, modifier = Modifier.weight(1f)) {
-                    Text("Hesapla", style = LkTypography.getBodySmall(), maxLines = 1)
-                }
-                OutlinedButton(onClick = onNavigateToMentor, modifier = Modifier.weight(1f)) {
-                    Text("Mentor", style = LkTypography.getBodySmall(), maxLines = 1)
-                }
-                Button(onClick = onNavigateToDecisions, modifier = Modifier.weight(1f)) {
-                    Text("Karar Ver", style = LkTypography.getBodySmall(), maxLines = 1)
-                }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2)
+            ) {
+                LkButton(
+                    text = "Hesapla",
+                    variant = LkButtonVariant.SECONDARY,
+                    onClick = onNavigateToCalculations,
+                    modifier = Modifier.weight(1f)
+                )
+                LkButton(
+                    text = "Mentor",
+                    variant = LkButtonVariant.SECONDARY,
+                    onClick = onNavigateToMentor,
+                    modifier = Modifier.weight(1f)
+                )
+                LkButton(
+                    text = "Karar Ver",
+                    variant = LkButtonVariant.PRIMARY,
+                    onClick = onNavigateToDecisions,
+                    modifier = Modifier.weight(1f)
+                )
             }
         }
 
@@ -222,27 +235,50 @@ private fun StatusPanel(tracker: TrackerSummaryDto?, onNavigateToWorkspaces: () 
             Spacer(modifier = Modifier.height(LkSpacing.Space6))
             
             if (tracker != null) {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Column {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space3)
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text("Tahsilat", style = LkTypography.getBodySmall(), color = LkTextSecondary)
-                        Text(formatMoney(tracker.nextThirtyDays.receivable), style = LkTypography.getMetric(), color = LkTextPrimary)
+                        Text(
+                            text = formatMoney(tracker.nextThirtyDays.receivable),
+                            style = LkTypography.getSectionTitle().copy(fontWeight = FontWeight.Bold),
+                            color = LkTextPrimary,
+                            maxLines = 1,
+                            softWrap = false
+                        )
                         Text("30 gün", style = LkTypography.getMicro(), color = LkTextSecondary)
                     }
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text("Ödeme", style = LkTypography.getBodySmall(), color = LkTextSecondary)
-                        Text(formatMoney(tracker.nextThirtyDays.payable), style = LkTypography.getMetric(), color = LkTextPrimary)
+                        Text(
+                            text = formatMoney(tracker.nextThirtyDays.payable),
+                            style = LkTypography.getSectionTitle().copy(fontWeight = FontWeight.Bold),
+                            color = LkTextPrimary,
+                            maxLines = 1,
+                            softWrap = false
+                        )
                         Text("30 gün", style = LkTypography.getMicro(), color = LkTextSecondary)
                     }
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text("Net görünüm", style = LkTypography.getBodySmall(), color = LkTextSecondary)
-                        Text(formatMoney(net), style = LkTypography.getMetric(), color = if (net < 0) LkDanger else LkTextPrimary)
+                        Text(
+                            text = formatMoney(net),
+                            style = LkTypography.getSectionTitle().copy(fontWeight = FontWeight.Bold),
+                            color = if (net < 0) LkDanger else LkTextPrimary,
+                            maxLines = 1,
+                            softWrap = false
+                        )
                         Text(if (net < 0) "Planlama gerekli" else "Olumlu", style = LkTypography.getMicro(), color = LkTextSecondary)
                     }
                 }
             } else {
-                OutlinedButton(onClick = onNavigateToWorkspaces) {
-                    Text("İşletmeyi kur")
-                }
+                LkButton(
+                    text = "İşletmeyi kur",
+                    variant = LkButtonVariant.SECONDARY,
+                    onClick = onNavigateToWorkspaces
+                )
             }
         }
     }

@@ -193,7 +193,9 @@ fun LkDecisionInput(
                     placeholder = question.description,
                     error = error,
                     enabled = !isUnknown,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = if (question.type in listOf("days", "months", "count", "integer")) KeyboardType.Number else KeyboardType.Decimal
+                    ),
                     trailingContent = question.suffix?.let {
                         {
                             Text(

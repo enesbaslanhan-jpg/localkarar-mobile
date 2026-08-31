@@ -11,6 +11,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.localkarar.app.navigation.Destination
 import com.localkarar.app.navigation.NavController
@@ -741,7 +742,9 @@ private fun LkBottomNavigation(
                         text = item.label,
                         style = LkTypography.getMicro(),
                         color = if (selected) LkPrimary else LkTextSecondary,
-                        maxLines = 1
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis
                     )
                 },
                 selectedContentColor = LkPrimary,

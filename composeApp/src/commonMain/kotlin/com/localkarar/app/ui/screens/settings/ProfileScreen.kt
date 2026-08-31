@@ -23,6 +23,8 @@ import com.localkarar.app.auth.UserDto
 import com.localkarar.app.core.rememberFilePicker
 import com.localkarar.app.settings.SettingsViewModel
 import com.localkarar.app.settings.roleLabel
+import com.localkarar.app.ui.components.LkButton
+import com.localkarar.app.ui.components.LkButtonVariant
 import com.localkarar.app.ui.components.LkPageLayout
 import com.localkarar.app.ui.theme.*
 
@@ -72,28 +74,18 @@ fun ProfileScreen(
                 if (viewModel.avatarLoading) {
                     CircularProgressIndicator(color = LkPrimary, modifier = Modifier.size(24.dp))
                 } else {
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        OutlinedButton(
-                            onClick = { launchFilePicker() },
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                backgroundColor = LkSurfacePanel,
-                                contentColor = LkTextPrimary
-                            ),
-                            border = ButtonDefaults.outlinedBorder.copy(brush = androidx.compose.ui.graphics.SolidColor(LkLineStrong))
-                        ) {
-                            Text("Fotoğrafı Değiştir", style = LkTypography.getBodySmall())
-                        }
+                    Row(horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space3)) {
+                        LkButton(
+                            text = "Fotoğrafı Değiştir",
+                            variant = LkButtonVariant.SECONDARY,
+                            onClick = { launchFilePicker() }
+                        )
                         if (!currentUser.avatarUrl.isNullOrBlank()) {
-                            OutlinedButton(
-                                onClick = { viewModel.removeAvatar { _, u -> onNewSession("", u) } },
-                                colors = ButtonDefaults.outlinedButtonColors(
-                                    backgroundColor = LkSurfacePanel,
-                                    contentColor = LkDanger
-                                ),
-                                border = ButtonDefaults.outlinedBorder.copy(brush = androidx.compose.ui.graphics.SolidColor(LkDanger.copy(alpha = 0.5f)))
-                            ) {
-                                Text("Kaldır", style = LkTypography.getBodySmall())
-                            }
+                            LkButton(
+                                text = "Kaldır",
+                                variant = LkButtonVariant.DANGER,
+                                onClick = { viewModel.removeAvatar { _, u -> onNewSession("", u) } }
+                            )
                         }
                     }
                 }
