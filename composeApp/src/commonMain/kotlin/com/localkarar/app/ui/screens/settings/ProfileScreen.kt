@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,7 +37,7 @@ fun ProfileScreen(
     onBack: () -> Unit
 ) {
     val currentUser = viewModel.user ?: user
-    var isEditingName by remember { mutableStateOf(false) }
+    var isEditingName by rememberSaveable { mutableStateOf(false) }
 
     val launchFilePicker = rememberFilePicker { file ->
         if (file != null) {

@@ -172,8 +172,8 @@ fun CreateThreadSheet(
                 }
                 Spacer(Modifier.width(8.dp))
                 LkButton(
-                    text = if (isGroup) "Grubu Başlat" else "Sohbet Başlat",
-                    enabled = viewModel.selectedMemberIds.isNotEmpty(),
+                    text = if (viewModel.isCreatingThread) "Oluşturuluyor..." else if (isGroup) "Grubu Başlat" else "Sohbet Başlat",
+                    enabled = viewModel.selectedMemberIds.isNotEmpty() && !viewModel.isCreatingThread,
                     onClick = {
                         viewModel.createThread { threadId ->
                             onThreadCreated(threadId)

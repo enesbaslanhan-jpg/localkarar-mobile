@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.localkarar.app.core.LkDateUtils
@@ -38,7 +39,7 @@ fun RecordEditScreen(
     onBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    var actionError by remember { mutableStateOf<String?>(null) }
+    var actionError by rememberSaveable { mutableStateOf<String?>(null) }
 
     LkPageLayout(title = if (isEdit) "Kaydı Düzenle" else "Yeni Kayıt", onBack = onBack) {
         when (val state = uiState) {
@@ -50,17 +51,17 @@ fun RecordEditScreen(
             is RecordEditUiState.Content -> {
                 val initial = state.record
 
-                var type by remember(initial?.id) { mutableStateOf(initial?.type ?: "payment") }
-                var title by remember(initial?.id) { mutableStateOf(initial?.title ?: "") }
-                var description by remember(initial?.id) { mutableStateOf(initial?.description ?: "") }
-                var direction by remember(initial?.id) { mutableStateOf(initial?.direction ?: "neutral") }
-                var amount by remember(initial?.id) { mutableStateOf(initial?.amount?.let { LkFormatting.formatNumber(it) } ?: "") }
-                var currency by remember(initial?.id) { mutableStateOf(initial?.currency ?: "TRY") }
-                var priority by remember(initial?.id) { mutableStateOf(initial?.priority ?: "normal") }
-                var dueDate by remember(initial?.id) { mutableStateOf(LkDateUtils.parseDate(initial?.dueAt)) }
-                var contactId by remember(initial?.id) { mutableStateOf(initial?.contactId) }
-                var assignedToId by remember(initial?.id) { mutableStateOf(initial?.assignedToId) }
-                var recurrence by remember(initial?.id) { mutableStateOf(initial?.recurrenceRule) }
+                var type by rememberSaveable(initial?.id) { mutableStateOf(initial?.type ?: "payment") }
+                var title by rememberSaveable(initial?.id) { mutableStateOf(initial?.title ?: "") }
+                var description by rememberSaveable(initial?.id) { mutableStateOf(initial?.description ?: "") }
+                var direction by rememberSaveable(initial?.id) { mutableStateOf(initial?.direction ?: "neutral") }
+                var amount by rememberSaveable(initial?.id) { mutableStateOf(initial?.amount?.let { LkFormatting.formatNumber(it) } ?: "") }
+                var currency by rememberSaveable(initial?.id) { mutableStateOf(initial?.currency ?: "TRY") }
+                var priority by rememberSaveable(initial?.id) { mutableStateOf(initial?.priority ?: "normal") }
+                var dueDate by rememberSaveable(initial?.id) { mutableStateOf(LkDateUtils.parseDate(initial?.dueAt)) }
+                var contactId by rememberSaveable(initial?.id) { mutableStateOf(initial?.contactId) }
+                var assignedToId by rememberSaveable(initial?.id) { mutableStateOf(initial?.assignedToId) }
+                var recurrence by rememberSaveable(initial?.id) { mutableStateOf(initial?.recurrenceRule) }
 
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),

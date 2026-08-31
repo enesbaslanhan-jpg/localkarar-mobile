@@ -65,6 +65,8 @@ class ThreadsViewModel(
         private set
     var isLoadingPeople by mutableStateOf(false)
         private set
+    var isCreatingThread by mutableStateOf(false)
+        private set
 
     var notice by mutableStateOf<String?>(null)
         private set
@@ -169,6 +171,8 @@ class ThreadsViewModel(
     }
 
     fun createThread(onCreated: (String) -> Unit) {
+        if (isCreatingThread) return
+
         val memberIds = selectedMemberIds.toList()
         if (memberIds.isEmpty()) {
             notice = "En az bir kişi seçmelisiniz"
@@ -177,13 +181,21 @@ class ThreadsViewModel(
 
         val name = if (newThreadName.isNotBlank()) newThreadName.trim() else null
 
+        isCreatingThread = true
         viewModelScope.launch {
-            repository.createThread(memberIds = memberIds, name = name).onSuccess { thread ->
-                showCreateThreadSheet = false
-                notice = "Sohbet başlatıldı"
-                loadThreads()
-                onCreated(thread.id)
-            }.onFailure { e ->
+            try {
+                repository.createThread(memberIds = memberIds, name = name).onSuccess { thread ->
+                    isCreatingThread = false
+                    showCreateThreadSheet = false
+                    notice = "Sohbet başlatıldı"
+                    loadThreads()
+                    onCreated(thread.id)
+                }.onFailure { e ->
+                    isCreatingThread = false
+                    notice = e.message ?: "Sohbet oluşturulamadı"
+                }
+            } catch (e: Exception) {
+                isCreatingThread = false
                 notice = e.message ?: "Sohbet oluşturulamadı"
             }
         }

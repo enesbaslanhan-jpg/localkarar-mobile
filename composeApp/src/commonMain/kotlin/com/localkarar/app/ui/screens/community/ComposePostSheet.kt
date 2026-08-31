@@ -234,8 +234,9 @@ fun ComposePostSheet(
                 }
                 Spacer(Modifier.width(8.dp))
                 LkButton(
-                    text = "Paylaş",
-                    onClick = { viewModel.submitPost() }
+                    text = if (viewModel.isSubmittingPost) "Paylaşılıyor..." else "Paylaş",
+                    onClick = { viewModel.submitPost() },
+                    enabled = !viewModel.isSubmittingPost && !viewModel.isUploadingMedia
                 )
             }
         }

@@ -59,6 +59,8 @@ class CommunityViewModel(
         private set
     var quoteTargetPost by mutableStateOf<CommunityPostDto?>(null)
         private set
+    var isSubmittingPost by mutableStateOf(false)
+        private set
 
     private var nextCursor: String? = null
 
@@ -262,6 +264,8 @@ class CommunityViewModel(
     }
 
     fun submitPost(onSuccess: (String?) -> Unit = {}) {
+        if (isSubmittingPost) return
+
         val metin = metinInput.trim()
         val media = attachedMedia
         val parentId = replyTargetPost?.id
@@ -272,24 +276,33 @@ class CommunityViewModel(
             return
         }
 
+        isSubmittingPost = true
         viewModelScope.launch {
-            repository.createPost(
-                metin = metin,
-                mediaId = media?.id,
-                parentId = parentId,
-                quotedPostId = quotedPostId
-            ).onSuccess { res ->
-                composing = false
-                attachedMedia = null
-                replyTargetPost = null
-                quoteTargetPost = null
-                notice = "Paylaşımın yayımlandı."
-                refreshFeed()
-                if (parentId != null) {
-                    loadPostDetail(parentId)
+            try {
+                repository.createPost(
+                    metin = metin,
+                    mediaId = media?.id,
+                    parentId = parentId,
+                    quotedPostId = quotedPostId
+                ).onSuccess { res ->
+                    isSubmittingPost = false
+                    composing = false
+                    metinInput = ""
+                    attachedMedia = null
+                    replyTargetPost = null
+                    quoteTargetPost = null
+                    notice = "Paylaşımın yayımlandı."
+                    refreshFeed()
+                    if (parentId != null) {
+                        loadPostDetail(parentId)
+                    }
+                    onSuccess(res.post?.id)
+                }.onFailure { e ->
+                    isSubmittingPost = false
+                    notice = e.message ?: "Paylaşım oluşturulamadı"
                 }
-                onSuccess(res.post?.id)
-            }.onFailure { e ->
+            } catch (e: Exception) {
+                isSubmittingPost = false
                 notice = e.message ?: "Paylaşım oluşturulamadı"
             }
         }
