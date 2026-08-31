@@ -152,6 +152,12 @@ class AuthViewModel(
     }
 
     fun logout() {
-        authRepository.logout()
+        viewModelScope.launch {
+            authRepository.serverLogout()
+        }
+    }
+
+    fun expireSession() {
+        authRepository.expireSession()
     }
 }

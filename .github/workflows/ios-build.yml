@@ -7,6 +7,7 @@ on:
       - feature/m8-adaptive-ui-polish
       - feature/m9-lifecycle-state
       - feature/m10a-deep-links
+      - feature/m10c-android-fcm
       - main
   workflow_dispatch:
 

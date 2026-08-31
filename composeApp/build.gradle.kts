@@ -9,6 +9,14 @@ plugins {
     alias(libs.plugins.kotlinSerialization)
 }
 
+// The Firebase config belongs at composeApp/google-services.json. Keep local,
+// CI, and open-source builds functional when a real provider config is absent.
+val googleServicesConfig = layout.projectDirectory.file("google-services.json").asFile
+val isGoogleServicesConfigured = googleServicesConfig.isFile
+if (isGoogleServicesConfigured) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
 kotlin {
     androidTarget {
         @OptIn(ExperimentalKotlinGradlePluginApi::class)
@@ -32,8 +40,11 @@ kotlin {
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
+            implementation(libs.androidx.core.ktx)
             implementation(libs.ktor.client.android)
             implementation(libs.androidx.security.crypto)
+            implementation(project.dependencies.platform(libs.firebase.bom))
+            implementation(libs.firebase.messaging)
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -60,6 +71,11 @@ kotlin {
         commonTest.dependencies {
             implementation(kotlin("test"))
         }
+        androidInstrumentedTest.dependencies {
+            implementation(libs.junit)
+            implementation(libs.androidx.test.junit)
+            implementation(libs.androidx.espresso.core)
+        }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
         }
@@ -80,6 +96,8 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
         versionName = "1.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("Boolean", "GOOGLE_SERVICES_CONFIGURED", isGoogleServicesConfigured.toString())
     }
     packaging {
         resources {

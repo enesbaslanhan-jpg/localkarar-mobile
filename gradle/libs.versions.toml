@@ -20,6 +20,8 @@ kotlinx-serialization = "1.7.3"
 security-crypto = "1.1.0-alpha06"
 kotlin = "2.4.10"
 markdown-renderer = "0.26.0"
+firebase-bom = "34.18.0"
+google-services = "4.5.0"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -56,6 +58,10 @@ androidx-security-crypto = { module = "androidx.security:security-crypto", versi
 # Markdown
 multiplatform-markdown-renderer = { module = "com.mikepenz:multiplatform-markdown-renderer-m2", version.ref = "markdown-renderer" }
 
+# Firebase Android (main modules; KTX modules are no longer published in BoM 34+)
+firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebase-bom" }
+firebase-messaging = { module = "com.google.firebase:firebase-messaging" }
+
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
 androidLibrary = { id = "com.android.library", version.ref = "agp" }
@@ -63,3 +69,4 @@ kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref =
 composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "compose-plugin" }
 composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+googleServices = { id = "com.google.gms.google-services", version.ref = "google-services" }

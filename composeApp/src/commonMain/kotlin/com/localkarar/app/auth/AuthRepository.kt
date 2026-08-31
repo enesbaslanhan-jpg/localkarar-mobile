@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import com.localkarar.app.network.ApiError
+import kotlinx.coroutines.withTimeoutOrNull
 
 sealed class SessionState {
     object CheckingSession : SessionState()
@@ -17,7 +18,9 @@ sealed class SessionState {
 
 class AuthRepository(
     private val httpClient: HttpClient,
-    private val secureStorage: SecureStorage
+    private val secureStorage: SecureStorage,
+    private val beforeExplicitLogout: suspend () -> Unit = {},
+    private val onSessionCleared: () -> Unit = {}
 ) {
     private val _sessionState = MutableStateFlow<SessionState>(SessionState.CheckingSession)
     val sessionState: StateFlow<SessionState> = _sessionState.asStateFlow()
@@ -47,8 +50,7 @@ class AuthRepository(
                 }
                 HttpStatusCode.Unauthorized,
                 HttpStatusCode.Forbidden -> {
-                    secureStorage.clearToken()
-                    _sessionState.value = SessionState.Unauthenticated
+                    expireSession()
                 }
                 else -> {
                     // Recoverable server error, keep token in secure storage
@@ -56,8 +58,7 @@ class AuthRepository(
                 }
             }
         } catch (e: ApiError.Unauthorized) {
-            secureStorage.clearToken()
-            _sessionState.value = SessionState.Unauthenticated
+            expireSession()
         } catch (e: ApiError.NetworkUnavailable) {
             // Offline: Preserve token so user doesn't lose credentials when offline
             _sessionState.value = SessionState.Unauthenticated
@@ -201,14 +202,25 @@ class AuthRepository(
     suspend fun serverLogout() {
         val refreshToken = secureStorage.readRefreshToken()
         try {
-            if (!refreshToken.isNullOrBlank()) {
-                httpClient.post("/auth/logout") {
-                    contentType(ContentType.Application.Json)
-                    setBody(RefreshTokenRequest(refreshToken))
-                }
+            // Device ownership must be revoked while the authenticated Ktor client
+            // can still load the JWT. Failure or timeout never blocks local logout.
+            try {
+                withTimeoutOrNull(3_000L) { beforeExplicitLogout() }
+            } catch (_: Exception) {
+                // Best effort: local logout continues below.
             }
-        } catch (_: Exception) {
-            // Ignore network errors on logout
+            try {
+                withTimeoutOrNull(3_000L) {
+                    if (!refreshToken.isNullOrBlank()) {
+                        httpClient.post("/auth/logout") {
+                            contentType(ContentType.Application.Json)
+                            setBody(RefreshTokenRequest(refreshToken))
+                        }
+                    }
+                }
+            } catch (_: Exception) {
+                // Best effort: local logout continues below.
+            }
         } finally {
             logout()
         }
@@ -216,8 +228,11 @@ class AuthRepository(
 
     fun logout() {
         secureStorage.clearAll()
+        onSessionCleared()
         _sessionState.value = SessionState.Unauthenticated
     }
+
+    fun expireSession() = logout()
 
     fun applyNewSession(token: String, user: UserDto, refreshToken: String? = null) {
         if (token.isNotBlank()) {

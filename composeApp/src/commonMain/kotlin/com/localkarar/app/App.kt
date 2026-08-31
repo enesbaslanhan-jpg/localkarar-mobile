@@ -41,6 +41,7 @@ import com.localkarar.app.ui.ResetPasswordScreen
 import com.localkarar.app.ui.shell.AppShell
 import com.localkarar.app.ui.theme.LocalKararTheme
 import com.localkarar.app.ui.theme.LkSurfaceCanvas
+import com.localkarar.app.push.PushLifecycleManager
 
 private enum class AuthRoute {
     LOGIN,
@@ -52,16 +53,29 @@ private enum class AuthRoute {
 @Composable
 fun App(secureStorage: SecureStorage) {
     var authRepoHolder: AuthRepository? = null
+    var pushLifecycleHolder: PushLifecycleManager? = null
     val httpClient = remember {
         createHttpClient(
             secureStorage = secureStorage,
             onUserUpdated = { user -> authRepoHolder?.updateUser(user) },
-            onSessionExpired = { authRepoHolder?.logout() }
+            onSessionExpired = {
+                pushLifecycleHolder?.clearSession()
+                authRepoHolder?.expireSession()
+            }
         )
     }
 
+    val pushLifecycleManager = remember {
+        PushLifecycleManager(httpClient).also { pushLifecycleHolder = it }
+    }
+
     val authRepository = remember {
-        AuthRepository(httpClient, secureStorage).also { authRepoHolder = it }
+        AuthRepository(
+            httpClient = httpClient,
+            secureStorage = secureStorage,
+            beforeExplicitLogout = { pushLifecycleManager.unregisterBeforeLogout() },
+            onSessionCleared = { pushLifecycleManager.clearSession() }
+        ).also { authRepoHolder = it }
     }
     val authViewModel = viewModel(key = "auth_root") { AuthViewModel(authRepository) }
 
@@ -144,6 +158,7 @@ fun App(secureStorage: SecureStorage) {
                     }
                 }
                 is SessionState.Authenticated -> {
+                    pushLifecycleManager.BindAuthenticatedSession(state.user.id)
                     AppShell(
                         user = state.user,
                         homeViewModel = homeViewModel,
