@@ -1,0 +1,131 @@
+name: iOS Platform & Simulator Build
+
+on:
+  push:
+    branches:
+      - feature/m7-ios-platform-build
+      - main
+  workflow_dispatch:
+
+jobs:
+  ios-build-and-verify:
+    name: macOS iOS Build & Simulator Verification
+    runs-on: macos-14
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      - name: Toolchain & System Discovery
+        run: |
+          echo "=== System Information ==="
+          uname -a
+          uname -m
+          sw_vers
+          echo "=== Java Version ==="
+          java -version
+          echo "=== Xcode Version ==="
+          xcodebuild -version
+          echo "=== Available SDKs ==="
+          xcodebuild -showsdks
+
+      - name: Discover and Select iOS Simulator
+        id: sim_discovery
+        run: |
+          echo "=== Discovering Available iOS Simulators ==="
+          xcrun simctl list runtimes
+          xcrun simctl list devices available
+          
+          # Find first available iPhone simulator
+          SIM_LINE=$(xcrun simctl list devices available | grep -i "iPhone" | head -n 1)
+          echo "Selected simulator raw line: $SIM_LINE"
+          
+          SIM_UDID=$(echo "$SIM_LINE" | grep -o -E '[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}' | head -n 1)
+          SIM_NAME=$(echo "$SIM_LINE" | sed -E 's/^[[:space:]]*//; s/[[:space:]]*\([0-9A-Fa-f-]+\).*//')
+          
+          if [ -z "$SIM_UDID" ]; then
+            echo "Failed to dynamically discover iPhone simulator UDID. Listing all available devices:"
+            xcrun simctl list devices available
+            exit 1
+          fi
+          
+          echo "DISCOVERED_SIM_NAME=$SIM_NAME" >> $GITHUB_ENV
+          echo "DISCOVERED_SIM_UDID=$SIM_UDID" >> $GITHUB_ENV
+          echo "Discovered Simulator Name: $SIM_NAME"
+          echo "Discovered Simulator UDID: $SIM_UDID"
+
+      - name: Compile Kotlin iOS Simulator Target
+        run: |
+          echo "=== Compiling Kotlin iosSimulatorArm64 ==="
+          ./gradlew :composeApp:compileKotlinIosSimulatorArm64 --stacktrace
+
+      - name: Link Kotlin iOS Debug Framework
+        run: |
+          echo "=== Linking Debug Framework iosSimulatorArm64 ==="
+          ./gradlew :composeApp:linkDebugFrameworkIosSimulatorArm64 --stacktrace
+
+      - name: Build Xcode Simulator Application
+        run: |
+          echo "=== Building Xcode Project for Simulator (UDID: $DISCOVERED_SIM_UDID) ==="
+          xcodebuild -project iosApp/iosApp.xcodeproj \
+            -scheme iosApp \
+            -sdk iphonesimulator \
+            -destination "id=$DISCOVERED_SIM_UDID" \
+            -configuration Debug \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            clean build
+
+      - name: Boot Simulator, Install and Launch App
+        run: |
+          echo "=== Booting Simulator $DISCOVERED_SIM_UDID ==="
+          xcrun simctl boot "$DISCOVERED_SIM_UDID" || true
+          xcrun simctl bootstatus "$DISCOVERED_SIM_UDID" -b
+          
+          echo "=== Locating Built Application ==="
+          APP_PATH=$(find build/DerivedData -name "LocalKarar.app" -o -name "iosApp.app" | head -n 1)
+          echo "Found .app at: $APP_PATH"
+          
+          if [ -z "$APP_PATH" ]; then
+            echo "Error: Application bundle not found!"
+            find build/DerivedData -name "*.app"
+            exit 1
+          fi
+          
+          echo "=== Installing Application on Simulator ==="
+          xcrun simctl install "$DISCOVERED_SIM_UDID" "$APP_PATH"
+          
+          echo "=== Launching Application ==="
+          xcrun simctl launch "$DISCOVERED_SIM_UDID" com.localkarar.app
+          
+          echo "=== Waiting for App Initialization ==="
+          sleep 8
+          
+          echo "=== Capturing Simulator Screenshot ==="
+          mkdir -p artifacts
+          xcrun simctl io "$DISCOVERED_SIM_UDID" screenshot artifacts/simulator_screenshot.png
+          
+          echo "=== Checking Running App Processes ==="
+          xcrun simctl spawn "$DISCOVERED_SIM_UDID" ps aux | grep -i "localkarar" || true
+
+      - name: Upload Build Artifacts & Screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build-evidence
+          path: |
+            artifacts/simulator_screenshot.png
+            build/DerivedData/Logs/Build/*.xcactivitylog
+          if-no-files-found: warn
