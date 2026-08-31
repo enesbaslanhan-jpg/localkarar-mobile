@@ -44,8 +44,8 @@ The Android implementation, config-absent fallback, unit/framework tests, instal
 | Generated config-less BuildConfig | Debug and release generated `GOOGLE_SERVICES_CONFIGURED = false`; `VERSION_NAME = "1.0"` |
 | Common/JVM tests | 17 tests passed in debug and 17 in release; includes 7 push parser tests and request-body ownership test |
 | Android debug/release Kotlin compile | Passed |
-| iOS simulator Kotlin compile | Passed on Windows host |
-| iOS link/Xcode build | Not executable on Windows; Gradle link task was host-skipped. `ios-build.yml` now includes the M10C branch for macOS compile/link/Xcode regression |
+| iOS simulator Kotlin compile | Passed locally on Windows and on the GitHub Actions macOS runner |
+| iOS link/Xcode/simulator regression | GitHub Actions run `33445954169` passed Kotlin compile, debug framework link, Xcode simulator build, simulator boot/install/launch, and artifact upload for commit `c082ee2` |
 | Clean Android build | `clean :composeApp:assembleDebug :composeApp:compileDebugAndroidTestKotlin` passed |
 | Android framework tests | 2/2 passed on Pixel_8 Android 15 AVD using `AndroidJUnitRunner` |
 | APK install | Streamed install succeeded on `emulator-5554` |
@@ -59,4 +59,3 @@ The Android implementation, config-absent fallback, unit/framework tests, instal
 ## Remaining gate for COMPLETE_END_TO_END_VERIFIED
 
 Provide the real Firebase Android app config at `composeApp/google-services.json`, use a Firebase-capable signed build/device, authenticate a real user, verify `PUT /devices/:installationId`, deliver each locked payload through the authoritative backend/FCM HTTP v1 chain, validate foreground/background/terminated tap routing, and capture provider/backend/device evidence. Until that chain is proven, the truthful status remains `FUNCTIONAL_REAL_FCM_CONFIG_PENDING`.
-
