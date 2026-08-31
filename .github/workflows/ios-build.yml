@@ -67,12 +67,12 @@ jobs:
       - name: Compile Kotlin iOS Simulator Target
         run: |
           echo "=== Compiling Kotlin iosSimulatorArm64 ==="
-          ./gradlew :composeApp:compileKotlinIosSimulatorArm64 --stacktrace
+          ./gradlew :composeApp:compileKotlinIosSimulatorArm64 --info --stacktrace
 
       - name: Link Kotlin iOS Debug Framework
         run: |
           echo "=== Linking Debug Framework iosSimulatorArm64 ==="
-          ./gradlew :composeApp:linkDebugFrameworkIosSimulatorArm64 --stacktrace
+          ./gradlew :composeApp:linkDebugFrameworkIosSimulatorArm64 --info --stacktrace
 
       - name: Build Xcode Simulator Application
         run: |
