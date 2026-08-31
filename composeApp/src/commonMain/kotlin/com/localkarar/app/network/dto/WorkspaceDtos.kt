@@ -99,7 +99,7 @@ data class BusinessInvitationDto(
     val id: String,
     val email: String,
     val role: String,
-    val status: String,
+    val invitedBy: String? = null,
     val expiresAt: String? = null,
     val createdAt: String? = null
 )
@@ -112,7 +112,8 @@ data class UpdateMemberRoleRequestDto(
 @Serializable
 data class BusinessContactDto(
     val id: String,
-    val type: String = "other",
+    val workspaceId: String,
+    val type: String = "customer",
     val name: String,
     val legalName: String? = null,
     val contactPerson: String? = null,
@@ -121,8 +122,8 @@ data class BusinessContactDto(
     val city: String? = null,
     val address: String? = null,
     val notes: String? = null,
-    val status: String? = null,
-    val createdAt: String? = null
+    val createdAt: String? = null,
+    val updatedAt: String? = null
 )
 
 @Serializable
@@ -139,64 +140,42 @@ data class ContactInputDto(
 )
 
 @Serializable
-data class TrackerSummaryDto(
-    val counts: TrackerCountsDto = TrackerCountsDto(),
-    val nextThirtyDays: NextThirtyDaysDto = NextThirtyDaysDto(),
-    val upcoming: List<BusinessRecordDto> = emptyList()
+data class RecordContactRefDto(
+    val id: String,
+    val name: String
 )
 
 @Serializable
-data class TrackerCountsDto(
-    val open: Int = 0,
-    val overdue: Int = 0,
-    val dueToday: Int = 0,
-    val shipments: Int = 0,
-    val deferred: Int = 0
-)
-
-@Serializable
-data class NextThirtyDaysDto(
-    val payable: Double = 0.0,
-    val receivable: Double = 0.0,
-    val net: Double = 0.0
+data class RecordAssigneeRefDto(
+    val id: Int,
+    val name: String
 )
 
 @Serializable
 data class BusinessRecordDto(
     val id: String,
     val workspaceId: String,
-    val type: String = "other",
+    val type: String,
     val title: String,
     val description: String? = null,
     val direction: String = "neutral",
     val amount: Double? = null,
     val currency: String = "TRY",
-    val priority: String = "normal",
     val status: String = "open",
+    val priority: String = "normal",
     val dueAt: String? = null,
-    val contactId: String? = null,
-    val contact: ContactRefDto? = null,
-    val assignedToId: Int? = null,
-    val assignedTo: AssigneeRefDto? = null,
-    val recurrenceRule: String? = null,
-    val metadata: JsonElement? = null,
-    val createdAt: String? = null,
-    val updatedAt: String? = null,
+    val originalDueAt: String? = null,
     val completedAt: String? = null,
     val cancelledAt: String? = null,
-    val reason: String? = null
-)
-
-@Serializable
-data class ContactRefDto(
-    val id: String,
-    val name: String
-)
-
-@Serializable
-data class AssigneeRefDto(
-    val id: Int,
-    val name: String
+    val contactId: String? = null,
+    val contact: RecordContactRefDto? = null,
+    val assignedToId: Int? = null,
+    val assignedTo: RecordAssigneeRefDto? = null,
+    val recurrenceRule: String? = null,
+    val parentRecordId: String? = null,
+    val metadata: Map<String, JsonElement> = emptyMap(),
+    val createdAt: String? = null,
+    val updatedAt: String? = null
 )
 
 @Serializable
@@ -211,7 +190,8 @@ data class RecordInputDto(
     val dueAt: String? = null,
     val contactId: String? = null,
     val assignedToId: Int? = null,
-    val recurrenceRule: String? = null
+    val recurrenceRule: String? = null,
+    val metadata: Map<String, JsonElement>? = null
 )
 
 @Serializable
@@ -222,27 +202,50 @@ data class RecordUpdateDto(
     val direction: String? = null,
     val amount: Double? = null,
     val currency: String? = null,
+    val status: String? = null,
     val priority: String? = null,
     val dueAt: String? = null,
     val contactId: String? = null,
     val assignedToId: Int? = null,
     val recurrenceRule: String? = null,
-    val status: String? = null,
-    val reason: String? = null
-)
-
-@Serializable
-data class RecordListResponseDto(
-    val records: List<BusinessRecordDto> = emptyList(),
-    val total: Int = 0,
-    val limit: Int = 0,
-    val offset: Int = 0
+    val reason: String? = null,
+    val metadata: Map<String, JsonElement>? = null
 )
 
 @Serializable
 data class DeferRecordRequestDto(
     val dueAt: String,
     val reason: String
+)
+
+@Serializable
+data class RecordListResponseDto(
+    val records: List<BusinessRecordDto> = emptyList(),
+    val total: Int = 0
+)
+
+@Serializable
+data class TrackerSummaryDto(
+    val counts: TrackerCountsDto = TrackerCountsDto(),
+    val nextThirtyDays: TrackerWindowDto = TrackerWindowDto(),
+    val upcoming: List<BusinessRecordDto> = emptyList(),
+    val overdue: List<BusinessRecordDto> = emptyList()
+)
+
+@Serializable
+data class TrackerCountsDto(
+    val open: Int = 0,
+    val overdue: Int = 0,
+    val dueToday: Int = 0,
+    val shipments: Int = 0,
+    val deferred: Int = 0
+)
+
+@Serializable
+data class TrackerWindowDto(
+    val payable: Double = 0.0,
+    val receivable: Double = 0.0,
+    val net: Double = 0.0
 )
 
 @Serializable
@@ -363,4 +366,114 @@ data class DocumentMetadataDto(
     val category: String? = null,
     val documentDate: String? = null,
     val dueDate: String? = null
+)
+
+// ============================================================================
+// CANONICAL MARKETPLACE COMMERCE DTOs (/marketplace & /integrations)
+// ============================================================================
+
+@Serializable
+data class SyncMarketplaceRequestDto(
+    val workspaceId: String
+)
+
+@Serializable
+data class IntegrationStatusDto(
+    val connected: Boolean = true,
+    val provider: String = "TRENDYOL",
+    val lastSyncedAt: String? = null
+)
+
+@Serializable
+data class OrderItemDto(
+    val id: String? = null,
+    val productId: String? = null,
+    val title: String,
+    val sku: String? = null,
+    val barcode: String? = null,
+    val quantity: Int = 1,
+    val unitPrice: Double? = null,
+    val totalPrice: Double? = null,
+    val imageUrl: String? = null
+)
+
+@Serializable
+data class OrderDto(
+    val id: String,
+    val workspaceId: String,
+    val orderNumber: String,
+    val provider: String = "TRENDYOL", // TRENDYOL, HEPSIBURADA, N11, SHOPIFY, WOOCOMMERCE
+    val status: String = "CREATED", // CREATED, PROCESSING, SHIPPED, DELIVERED, CANCELLED, RETURNED, PARTIALLY_RETURNED, UNKNOWN
+    val customerName: String? = null,
+    val orderDate: String? = null,
+    val deliveryDate: String? = null,
+    val grossAmount: Double? = null,
+    val commission: Double? = null,
+    val shipping: Double? = null,
+    val refund: Double? = null,
+    val netContribution: Double? = null,
+    val currency: String = "TRY",
+    val itemsCount: Int = 1,
+    val items: List<OrderItemDto> = emptyList(),
+    val lastSyncedAt: String? = null
+)
+
+@Serializable
+data class OrderSyncResponseDto(
+    val success: Boolean = true,
+    val syncedCount: Int = 0,
+    val lastSyncedAt: String? = null,
+    val message: String? = null
+)
+
+@Serializable
+data class OrderListResponseDto(
+    val orders: List<OrderDto> = emptyList(),
+    val total: Int = 0,
+    val lastSyncedAt: String? = null,
+    val integrationConnected: Boolean = true
+)
+
+@Serializable
+data class ProductDto(
+    val id: String,
+    val workspaceId: String,
+    val provider: String = "TRENDYOL", // TRENDYOL, HEPSIBURADA, N11, SHOPIFY, WOOCOMMERCE
+    val title: String,
+    val sku: String,
+    val barcode: String? = null,
+    val imageUrl: String? = null,
+    val salePrice: Double? = null,
+    val listPrice: Double? = null,
+    val currency: String = "TRY",
+    val stock: Int = 0,
+    val onSale: Boolean = true,
+    // Performance window metrics (7d, 30d, 90d)
+    val unitsSold: Int = 0,
+    val orderCount: Int = 0,
+    val grossSales: Double? = null,
+    val returnRate: Double? = null, // percentage 0.0 - 100.0
+    // Local editable settings
+    val internalNote: String? = null,
+    val tags: List<String> = emptyList(),
+    val lowStockThresholdOverride: Int? = null,
+    val isFavorite: Boolean = false,
+    val lastSyncedAt: String? = null
+)
+
+@Serializable
+data class UpdateProductSettingsRequestDto(
+    val workspaceId: String,
+    val internalNote: String? = null,
+    val tags: List<String>? = null,
+    val lowStockThresholdOverride: Int? = null,
+    val isFavorite: Boolean? = null
+)
+
+@Serializable
+data class ProductListResponseDto(
+    val products: List<ProductDto> = emptyList(),
+    val total: Int = 0,
+    val lastSyncedAt: String? = null,
+    val integrationConnected: Boolean = true
 )

@@ -23,25 +23,18 @@ class AuthRepository(
     val sessionState: StateFlow<SessionState> = _sessionState.asStateFlow()
 
     /**
-     * Restores session on app start.
+     * Restores session on app startup.
      *
-     * Semantics:
-     *  - No token stored → Unauthenticated (never had a session)
+     * Rules:
+     *  - No token stored → Unauthenticated (no fake demo users or mock tokens)
      *  - Token present + GET /auth/me returns 200 → Authenticated
-     *  - Token present + 401/403 (invalid/expired token) → clear token → Unauthenticated
-     *  - Token present + network error / timeout / backend unreachable → keep token →
-     *    Unauthenticated with preserved token so retry on next launch is possible.
-     *    The user can log in again; the token is NOT wiped just because the network is down.
-     *
-     * This prevents offline startup from silently destroying valid sessions.
+     *  - Token present + 401/403 (invalid/expired) → clear token → Unauthenticated
+     *  - Token present + network error / timeout → keep token → Unauthenticated (can retry next time)
      */
     suspend fun restoreSession() {
         val token = secureStorage.readToken()
         if (token.isNullOrBlank()) {
-            val defaultToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwiZW1haWwiOiJzdHVkZW50QGxvY2FsYWthZGVtaS5jb20iLCJyb2xlIjoibGVhcm5lciIsInR2IjowLCJpYXQiOjE3ODcxMzkxMzksImV4cCI6MTc4NzE2NzkzOX0.a58BpOvKY1haCh5VfrGywjJWS54wzS0TN3QINDci0po"
-            val defaultUser = UserDto(id = 2, email = "student@localakademi.com", name = "Demo Student", role = "learner")
-            secureStorage.saveToken(defaultToken)
-            _sessionState.value = SessionState.Authenticated(defaultUser)
+            _sessionState.value = SessionState.Unauthenticated
             return
         }
 
@@ -54,28 +47,23 @@ class AuthRepository(
                 }
                 HttpStatusCode.Unauthorized,
                 HttpStatusCode.Forbidden -> {
-                    // Explicit auth failure — token is invalid/expired. Wipe it.
                     secureStorage.clearToken()
                     _sessionState.value = SessionState.Unauthenticated
                 }
                 else -> {
-                    // Unexpected server error — do NOT wipe token; treat as recoverable.
+                    // Recoverable server error, keep token in secure storage
                     _sessionState.value = SessionState.Unauthenticated
                 }
             }
         } catch (e: ApiError.Unauthorized) {
-            // Thrown by HttpResponseValidator on 401 — explicit auth rejection.
             secureStorage.clearToken()
             _sessionState.value = SessionState.Unauthenticated
         } catch (e: ApiError.NetworkUnavailable) {
-            // Offline — DO NOT erase the token. User can retry next launch.
+            // Offline: Preserve token so user doesn't lose credentials when offline
             _sessionState.value = SessionState.Unauthenticated
         } catch (e: ApiError.Timeout) {
-            // Backend unreachable — same as offline. Preserve token.
             _sessionState.value = SessionState.Unauthenticated
         } catch (e: Exception) {
-            // Any other unexpected error (serialization, etc.) — preserve token,
-            // but mark as unauthenticated so the user can attempt login again.
             _sessionState.value = SessionState.Unauthenticated
         }
     }
@@ -87,28 +75,161 @@ class AuthRepository(
                 setBody(request)
             }
 
+            if (response.status == HttpStatusCode.Unauthorized) {
+                return Result.failure(Exception("E-posta adresi veya şifre hatalı."))
+            }
+            if (response.status == HttpStatusCode.UnprocessableEntity) {
+                return Result.failure(Exception("Geçersiz giriş bilgileri."))
+            }
+
             val loginResponse = response.body<LoginResponse>()
             secureStorage.saveToken(loginResponse.token)
+            loginResponse.refreshToken?.let { secureStorage.saveRefreshToken(it) }
             _sessionState.value = SessionState.Authenticated(loginResponse.user)
             Result.success(loginResponse.user)
+        } catch (e: ApiError.Unauthorized) {
+            Result.failure(Exception("E-posta adresi veya şifre hatalı."))
+        } catch (e: ApiError.NetworkUnavailable) {
+            Result.failure(Exception("İnternet bağlantısı kurulamadı. Lütfen bağlantınızı kontrol edin."))
+        } catch (e: ApiError.Timeout) {
+            Result.failure(Exception("Sunucu yanıt vermedi. Lütfen daha sonra tekrar deneyin."))
         } catch (e: Exception) {
-            Result.failure(e)
+            val msg = e.message ?: "Giriş yapılırken bir hata oluştu."
+            Result.failure(Exception(if (msg.contains("401")) "E-posta adresi veya şifre hatalı." else msg))
+        }
+    }
+
+    suspend fun register(request: RegisterRequest): Result<UserDto> {
+        return try {
+            val response = httpClient.post("/auth/register") {
+                contentType(ContentType.Application.Json)
+                setBody(request)
+            }
+
+            if (response.status == HttpStatusCode.BadRequest) {
+                return Result.failure(Exception("Bu e-posta adresi zaten kullanımda."))
+            }
+            if (response.status == HttpStatusCode.Forbidden) {
+                return Result.failure(Exception("Kayıtlar şu an kapalı veya davetiyelidir."))
+            }
+            if (response.status == HttpStatusCode.UnprocessableEntity) {
+                return Result.failure(Exception("Kayıt bilgileri geçersiz. Lütfen alanları kontrol edin."))
+            }
+
+            val registerResponse = response.body<LoginResponse>()
+            secureStorage.saveToken(registerResponse.token)
+            registerResponse.refreshToken?.let { secureStorage.saveRefreshToken(it) }
+            _sessionState.value = SessionState.Authenticated(registerResponse.user)
+            Result.success(registerResponse.user)
+        } catch (e: ApiError.NetworkUnavailable) {
+            Result.failure(Exception("İnternet bağlantısı kurulamadı. Lütfen bağlantınızı kontrol edin."))
+        } catch (e: ApiError.Timeout) {
+            Result.failure(Exception("Sunucu yanıt vermedi. Lütfen daha sonra tekrar deneyin."))
+        } catch (e: Exception) {
+            val msg = e.message ?: "Kayıt işlemi sırasında bir hata oluştu."
+            Result.failure(Exception(if (msg.contains("already in use") || msg.contains("400")) "Bu e-posta adresi zaten kullanımda." else msg))
+        }
+    }
+
+    suspend fun requestPasswordReset(email: String): Result<Boolean> {
+        return try {
+            val response = httpClient.post("/auth/password-reset/request") {
+                contentType(ContentType.Application.Json)
+                setBody(PasswordResetRequest(email = email.trim().lowercase()))
+            }
+            Result.success(response.status.isSuccess())
+        } catch (e: ApiError.NetworkUnavailable) {
+            Result.failure(Exception("İnternet bağlantısı kurulamadı."))
+        } catch (e: Exception) {
+            Result.success(true) // Anti-enumeration: always report success on client
+        }
+    }
+
+    suspend fun confirmPasswordReset(token: String, newPassword: String): Result<UserDto> {
+        return try {
+            val response = httpClient.post("/auth/password-reset/confirm") {
+                contentType(ContentType.Application.Json)
+                setBody(PasswordResetConfirmRequest(token = token.trim(), newPassword = newPassword))
+            }
+
+            if (response.status == HttpStatusCode.BadRequest) {
+                return Result.failure(Exception("Sıfırlama bağlantısı geçersiz ya da süresi dolmuş."))
+            }
+
+            val authResponse = response.body<LoginResponse>()
+            secureStorage.saveToken(authResponse.token)
+            authResponse.refreshToken?.let { secureStorage.saveRefreshToken(it) }
+            _sessionState.value = SessionState.Authenticated(authResponse.user)
+            Result.success(authResponse.user)
+        } catch (e: ApiError.NetworkUnavailable) {
+            Result.failure(Exception("İnternet bağlantısı kurulamadı."))
+        } catch (e: Exception) {
+            Result.failure(Exception(e.message ?: "Şifre sıfırlama işlemi başarısız oldu."))
+        }
+    }
+
+    suspend fun requestEmailVerification(): Result<Boolean> {
+        return try {
+            val response = httpClient.post("/auth/email/verify-request")
+            Result.success(response.status.isSuccess())
+        } catch (e: Exception) {
+            Result.failure(Exception("Doğrulama kodu gönderilemedi."))
+        }
+    }
+
+    suspend fun confirmEmailVerification(code: String): Result<Boolean> {
+        return try {
+            val response = httpClient.post("/auth/email/verify-confirm") {
+                contentType(ContentType.Application.Json)
+                setBody(EmailVerifyConfirmRequest(code = code.trim()))
+            }
+            if (response.status.isSuccess()) {
+                // Refresh user
+                val meResponse = httpClient.get("/auth/me")
+                if (meResponse.status == HttpStatusCode.OK) {
+                    _sessionState.value = SessionState.Authenticated(meResponse.body())
+                }
+                Result.success(true)
+            } else {
+                Result.failure(Exception("Geçersiz doğrulama kodu."))
+            }
+        } catch (e: Exception) {
+            Result.failure(Exception(e.message ?: "E-posta doğrulama başarısız oldu."))
+        }
+    }
+
+    suspend fun serverLogout() {
+        val refreshToken = secureStorage.readRefreshToken()
+        try {
+            if (!refreshToken.isNullOrBlank()) {
+                httpClient.post("/auth/logout") {
+                    contentType(ContentType.Application.Json)
+                    setBody(RefreshTokenRequest(refreshToken))
+                }
+            }
+        } catch (_: Exception) {
+            // Ignore network errors on logout
+        } finally {
+            logout()
         }
     }
 
     fun logout() {
-        secureStorage.clearToken()
+        secureStorage.clearAll()
         _sessionState.value = SessionState.Unauthenticated
     }
 
-    /**
-     * Applies a freshly issued token + user (e.g. after email change) without
-     * re-authenticating or clearing any state.
-     */
-    fun applyNewSession(token: String, user: UserDto) {
+    fun applyNewSession(token: String, user: UserDto, refreshToken: String? = null) {
         if (token.isNotBlank()) {
             secureStorage.saveToken(token)
         }
+        if (!refreshToken.isNullOrBlank()) {
+            secureStorage.saveRefreshToken(refreshToken)
+        }
+        _sessionState.value = SessionState.Authenticated(user)
+    }
+
+    fun updateUser(user: UserDto) {
         _sessionState.value = SessionState.Authenticated(user)
     }
 }

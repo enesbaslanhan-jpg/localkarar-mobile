@@ -1,36 +1,18 @@
 package com.localkarar.app.network
 
 /**
- * API environment configuration.
+ * API environment configuration for Android, iOS and Production.
  *
- * Environment is resolved at build time on Android via BuildConfig.IS_RELEASE.
- * On other platforms it defaults to Development.
- *
- * Production API URL:
- *   Must be set to the real backend before shipping. Currently documented as a
- *   required configuration point. Debug builds always use the local emulator URL.
- *
- * SECURITY RULE:
- *   Debug cleartext http://10.0.2.2:3000 is ONLY permitted in debug builds.
- *   The Android network_security_config.xml enforces this at the OS level.
- *   Release builds must use HTTPS.
+ * Semantic states:
+ *  - DEBUG_ANDROID → http://10.0.2.2:3000 (Android emulator host loopback)
+ *  - DEBUG_IOS     → http://localhost:3000 (iOS simulator host loopback)
+ *  - PRODUCTION    → https://api.localkarar.com (Real HTTPS backend)
  */
+const val PRODUCTION_API_URL = "https://api.localkarar.com"
+const val ANDROID_DEV_API_URL = "http://10.0.2.2:3000"
+const val IOS_DEV_API_URL = "http://localhost:3000"
+const val DEVELOPMENT_API_URL = ANDROID_DEV_API_URL
+
 object ApiConfig {
-    /**
-     * Returns the base URL for the current build environment.
-     *
-     * Android: resolved from BuildConfig.IS_RELEASE (set in build.gradle.kts).
-     * Other platforms: always Development until platform-specific overrides are added.
-     *
-     * To configure the production URL: set PRODUCTION_API_URL below.
-     * Do NOT set it to a localhost/emulator address.
-     */
     val baseUrl: String get() = AppEnvironmentProvider.baseUrl
 }
-
-// Production URL placeholder — must be replaced with the real backend before release.
-// Leaving this as a clearly identifiable constant makes it impossible to miss in CI/CD review.
-const val PRODUCTION_API_URL = "https://api.localkarar.com"
-
-// Development URL — Android emulator loopback to Windows host.
-const val DEVELOPMENT_API_URL = "http://10.0.2.2:3000"

@@ -62,7 +62,9 @@ data class CitationDto(
     val url: String? = null,
     val snippet: String? = null,
     val page: Int? = null,
-    val sourceType: String? = null
+    val sourceType: String? = null,
+    val knowledgeObjectCode: String? = null,
+    val code: String? = null
 )
 
 @Serializable
@@ -85,7 +87,8 @@ data class RenameConversationRequestDto(
 @Serializable
 data class SendMessageRequestDto(
     val message: String,
-    val knowledgeObjectCode: String? = null
+    val knowledgeObjectCode: String? = null,
+    val contextOverride: String? = null
 )
 
 @Serializable

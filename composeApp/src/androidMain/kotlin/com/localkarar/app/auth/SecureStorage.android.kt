@@ -28,4 +28,20 @@ actual class SecureStorage(context: Context) {
     actual fun clearToken() {
         sharedPreferences.edit().remove("auth_token").apply()
     }
+
+    actual fun saveRefreshToken(refreshToken: String) {
+        sharedPreferences.edit().putString("refresh_token", refreshToken).apply()
+    }
+
+    actual fun readRefreshToken(): String? {
+        return sharedPreferences.getString("refresh_token", null)
+    }
+
+    actual fun clearRefreshToken() {
+        sharedPreferences.edit().remove("refresh_token").apply()
+    }
+
+    actual fun clearAll() {
+        sharedPreferences.edit().remove("auth_token").remove("refresh_token").apply()
+    }
 }

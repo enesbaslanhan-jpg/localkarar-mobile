@@ -1,10 +1,9 @@
 package com.localkarar.app.mentor
 
-import kotlinx.coroutines.launch
 import com.localkarar.app.network.ApiConfig
-import com.localkarar.app.network.dto.ConversationListItemDto
 import com.localkarar.app.network.dto.ConversationDetailDto
 import com.localkarar.app.network.dto.ConversationDetailResponseDto
+import com.localkarar.app.network.dto.ConversationListItemDto
 import com.localkarar.app.network.dto.ConversationListResponseDto
 import com.localkarar.app.network.dto.CreateConversationRequestDto
 import com.localkarar.app.network.dto.MemoryDto
@@ -16,21 +15,25 @@ import com.localkarar.app.network.dto.RenameConversationRequestDto
 import com.localkarar.app.network.dto.SendMessageRequestDto
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.plugins.expectSuccess
+import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.patch
 import io.ktor.client.request.post
+import io.ktor.client.request.preparePost
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsChannel
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.utils.io.readUTF8Line
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -40,25 +43,31 @@ class MentorRepository(
     private val baseUrl: String = ApiConfig.baseUrl
 ) {
     private val json = Json { ignoreUnknownKeys = true }
-
     private val base = "$baseUrl/mentor"
 
-    private suspend fun errorMessage(response: io.ktor.client.statement.HttpResponse): String {
+    private suspend fun errorDetails(response: HttpResponse): Pair<String?, String> {
         return try {
             val text = response.bodyAsText()
-            if (text.isBlank()) return "Sunucu hatası (${response.status.value})"
+            if (text.isBlank()) return null to "Sunucu hatası (${response.status.value})"
             val element = json.parseToJsonElement(text).jsonObject
-            (element["message"]?.jsonPrimitive?.content)
-                ?: (element["error"]?.jsonObject?.get("message")?.jsonPrimitive?.content)
+            val error = element["error"]?.jsonObject
+            val code = error?.get("code")?.jsonPrimitive?.content
+                ?: element["code"]?.jsonPrimitive?.content
+            val message = element["message"]?.jsonPrimitive?.content
+                ?: error?.get("message")?.jsonPrimitive?.content
                 ?: "Sunucu hatası (${response.status.value})"
+            code to message
         } catch (_: Exception) {
-            "Sunucu hatası (${response.status.value})"
+            null to "Sunucu hatası (${response.status.value})"
         }
     }
 
-    suspend fun listConversations(): Result<List<ConversationListItemDto>> {
+    private suspend fun errorMessage(response: HttpResponse): String = errorDetails(response).second
+
+    suspend fun listConversations(archived: Boolean = false): Result<List<ConversationListItemDto>> {
         return try {
-            val response = client.get("$base/conversations")
+            val query = if (archived) "?archived=true" else "?archived=false"
+            val response = client.get("$base/conversations$query")
             if (response.status.isSuccess()) {
                 Result.success(response.body<ConversationListResponseDto>().conversations)
             } else {
@@ -69,11 +78,11 @@ class MentorRepository(
         }
     }
 
-    suspend fun createConversation(title: String): Result<ConversationDetailDto> {
+    suspend fun createConversation(title: String, contextSnapshot: String? = null): Result<ConversationDetailDto> {
         return try {
             val response = client.post("$base/conversations") {
                 contentType(ContentType.Application.Json)
-                setBody(CreateConversationRequestDto(title = title))
+                setBody(CreateConversationRequestDto(title = title, contextSnapshot = contextSnapshot))
             }
             if (response.status.isSuccess()) {
                 Result.success(response.body<ConversationDetailDto>())
@@ -116,7 +125,9 @@ class MentorRepository(
 
     suspend fun archiveConversation(id: Int): Result<Unit> {
         return try {
-            val response = client.patch("$base/conversations/$id/archive")
+            val response = client.patch("$base/conversations/$id/archive") {
+                setBody("{}")
+            }
             if (response.status.isSuccess()) Result.success(Unit)
             else Result.failure(Exception(errorMessage(response)))
         } catch (e: Exception) {
@@ -126,7 +137,9 @@ class MentorRepository(
 
     suspend fun unarchiveConversation(id: Int): Result<Unit> {
         return try {
-            val response = client.patch("$base/conversations/$id/unarchive")
+            val response = client.patch("$base/conversations/$id/unarchive") {
+                setBody("{}")
+            }
             if (response.status.isSuccess()) Result.success(Unit)
             else Result.failure(Exception(errorMessage(response)))
         } catch (e: Exception) {
@@ -136,7 +149,9 @@ class MentorRepository(
 
     suspend fun deleteConversation(id: Int): Result<Unit> {
         return try {
-            val response = client.delete("$base/conversations/$id")
+            val response = client.delete("$base/conversations/$id") {
+                setBody("{}")
+            }
             if (response.status.isSuccess()) Result.success(Unit)
             else Result.failure(Exception(errorMessage(response)))
         } catch (e: Exception) {
@@ -144,46 +159,85 @@ class MentorRepository(
         }
     }
 
-    fun streamMessage(conversationId: Int, message: String): Flow<MentorStreamEvent> = callbackFlow {
+    fun streamMessage(
+        conversationId: Int,
+        message: String,
+        knowledgeObjectCode: String? = null,
+        contextOverride: String? = null
+    ): Flow<MentorStreamEvent> = readSseStream(
+        url = "$base/conversations/$conversationId/messages/stream",
+        bodyObject = SendMessageRequestDto(
+            message = message,
+            knowledgeObjectCode = knowledgeObjectCode,
+            contextOverride = contextOverride
+        )
+    )
+
+    fun regenerateAssistantMessage(conversationId: Int, messageId: Int): Flow<MentorStreamEvent> = readSseStream(
+        url = "$base/conversations/$conversationId/messages/$messageId/regenerate",
+        bodyObject = null
+    )
+
+    fun editAndRegenerateUserMessage(conversationId: Int, messageId: Int, newMessage: String): Flow<MentorStreamEvent> = readSseStream(
+        url = "$base/conversations/$conversationId/messages/$messageId/edit-and-regenerate",
+        bodyObject = SendMessageRequestDto(message = newMessage)
+    )
+
+    private fun readSseStream(
+        url: String,
+        bodyObject: Any? = null
+    ): Flow<MentorStreamEvent> = callbackFlow {
         val job = launch {
             try {
-                val response = client.post("$base/conversations/$conversationId/messages/stream") {
-                    contentType(ContentType.Application.Json)
-                    setBody(SendMessageRequestDto(message = message))
-                }
-                if (!response.status.isSuccess()) {
-                    trySend(MentorStreamEvent.StreamError(null, errorMessage(response)))
-                    close()
-                    return@launch
-                }
-                val channel = response.bodyAsChannel()
-                var eventName = ""
-                val dataBuilder = StringBuilder()
-                while (!channel.isClosedForRead) {
-                    val line = channel.readUTF8Line() ?: break
-                    when {
-                        line.startsWith("event:") -> {
-                            eventName = line.removePrefix("event:").trim()
-                        }
-                        line.startsWith("data:") -> {
-                            if (dataBuilder.isNotEmpty()) dataBuilder.append('\n')
-                            dataBuilder.append(line.removePrefix("data:").trim())
-                        }
-                        line.isEmpty() -> {
-                            if (eventName.isNotEmpty()) {
-                                parseEvent(eventName, dataBuilder.toString())?.let { trySend(it) }
+                client.preparePost(url) {
+                    // SSE endpoints must expose their 4xx response body so RATE_LIMIT and
+                    // CONCURRENT_LIMIT remain distinguishable to the UI.
+                    expectSuccess = false
+                    if (bodyObject != null) {
+                        contentType(ContentType.Application.Json)
+                        setBody(bodyObject)
+                    } else {
+                        setBody("{}")
+                    }
+                }.execute { response ->
+                    if (!response.status.isSuccess()) {
+                        val (code, message) = errorDetails(response)
+                        trySend(MentorStreamEvent.StreamError(code, message))
+                        close()
+                        return@execute
+                    }
+                    val channel = response.bodyAsChannel()
+                    var eventName = ""
+                    val dataBuilder = StringBuilder()
+
+                    while (!channel.isClosedForRead) {
+                        val line = channel.readUTF8Line() ?: break
+                        when {
+                            line.startsWith("event:") -> {
+                                eventName = line.removePrefix("event:").trim()
                             }
-                            eventName = ""
-                            dataBuilder.clear()
+                            line.startsWith("data:") -> {
+                                if (dataBuilder.isNotEmpty()) dataBuilder.append('\n')
+                                dataBuilder.append(line.removePrefix("data:").trim())
+                            }
+                            line.isEmpty() -> {
+                                if (eventName.isNotEmpty()) {
+                                    parseEvent(eventName, dataBuilder.toString())?.let { trySend(it) }
+                                }
+                                eventName = ""
+                                dataBuilder.clear()
+                            }
                         }
                     }
-                }
-                if (eventName.isNotEmpty()) {
-                    parseEvent(eventName, dataBuilder.toString())?.let { trySend(it) }
+                    if (eventName.isNotEmpty()) {
+                        parseEvent(eventName, dataBuilder.toString())?.let { trySend(it) }
+                    }
                 }
                 close()
             } catch (e: Exception) {
-                trySend(MentorStreamEvent.StreamError(null, e.message ?: "Bağlantı hatası"))
+                if (e !is kotlinx.coroutines.CancellationException) {
+                    trySend(MentorStreamEvent.StreamError("NETWORK_ERROR", e.message ?: "Bağlantı hatası"))
+                }
                 close()
             }
         }
@@ -288,7 +342,9 @@ class MentorRepository(
 
     suspend fun deleteMemory(id: Int): Result<Unit> {
         return try {
-            val response = client.delete("$baseUrl/api/memory/$id")
+            val response = client.delete("$baseUrl/api/memory/$id") {
+                setBody("{}")
+            }
             if (response.status.isSuccess()) Result.success(Unit)
             else Result.failure(Exception(errorMessage(response)))
         } catch (e: Exception) {

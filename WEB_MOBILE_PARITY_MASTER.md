@@ -1,69 +1,72 @@
 # Web <-> Mobile Parity Master Matrix
 
-This document maps all LocalKarar Web routes to their corresponding Android Mobile destinations and tracks their parity status.
+This document maps all LocalKarar Web routes to their corresponding Mobile destinations and tracks their parity status under the locked **Native Primary Navigation (V1)** architecture.
 
 *Do NOT label ALIGNED before actual visual/runtime comparison.*
+
+---
+
+## 0. Native Primary Navigation Architecture (V1)
+
+**LOCKED PRIMARY BOTTOM NAVIGATION:**
+1. **Ana Sayfa** (`Destination.Home`)
+2. **İşletme Takibi** (`Destination.WorkspaceHome` / `Destination.Workspaces`)
+3. **Topluluk** (`Destination.Community`)
+4. **Hesaplamalar** (`Destination.Calculations`)
+5. **Ayarlar** (`Destination.Settings`)
+
+**GLOBAL PRODUCT CENTER (LAUNCHER MODAL):**
+Accessible from app header / launcher button with 4 semantic groups:
+- **KARAR VER:** Karar Araçları (`Destination.DecisionTools`), Hesaplamalar (`Destination.Calculations`)
+- **ÖĞREN:** Kurslar (`Destination.Courses`), AI Mentor (`Destination.AiMentor`)
+- **TAKİP ET:** Haberler (`Destination.News`), İşletme Takibi (`Destination.WorkspaceHome` / `Destination.Workspaces`)
+- **SOSYAL:** Topluluk (`Destination.Community`), Profil (`Destination.Profile`)
+
+---
 
 ## 1. Ana Sayfa (Dashboard)
 **WEB**
 - **Route:** `/app/dashboard`
 - **Component:** `Dashboard.jsx`
 - **Major Sections:** Bugünkü durum, business status, Tahsilat, Ödeme, Net görünüm, Sıradaki işler, Kaldığın yer, Son kararlar
-- **Order:** Status Header -> Quick Metrics -> Upcoming -> Continue Learning -> Recent Decisions
-- **Actions:** Continue Course, Open Decision, View All
-- **Data Source:** Backend API `/api/v1/dashboard/me` (to be verified)
-- **Labels:** Web terminology for financial status, learning state
-- **Visual Structure:** Metric cards, status alerts, rows for decisions
 
-**ANDROID**
-- **Destination:** `Destination.Home`
+**MOBILE**
+- **Destination:** `Destination.Home` (Primary Bottom Tab #1)
 - **Screen:** `HomeScreen`
-- **Major Sections:** Pending deep audit (Phase 4)
-- **Actions:** Pending deep audit
-- **State Variations:** Loading, Success, Error
-- **Data Source:** `SafeApiClient` fetching `/api/v1/dashboard/me` (to be verified)
-
-**STATUS:** `RUNTIME_GAP` / `STRUCTURAL_GAP` (Pending Phase 4 Audit)
+- **Major Sections:** Header with quick action buttons (Hesapla, Mentor, Karar Ver), StatusPanel, TasksPanel, ResumePanel, DecisionsPanel.
+- **State:** `FUNCTIONALLY_IMPLEMENTED`
 
 ---
 
-## 2. Kurslar (Courses)
+## 2. İşletme Takibi (Business Tracking & Workspace 11 Sections)
 **WEB**
-- **Route:** `/app/courses`, `/app/courses/:courseId/learn/:lessonId?`
-- **Component:** `CoursesPage.jsx`, `CoursePlayerPage.jsx`
-- **Major Sections:** Active learning hero, Progress bar, Category filters, Course catalog, Competency panel
-- **Actions:** Derse devam et, Filter, Start Course
-- **Data Source:** Backend `/api/v1/courses`
-- **Visual Structure:** Grid of course cards, hero section, side panel for competencies
+- **Route:** `/app/workspaces/:workspaceId/*`
+- **Component:** `WorkspaceLayout.jsx` and subcomponents
+- **11 Sections:** Genel Bakış, Kayıtlar, Siparişler, Ürünler, Belgeler, Bildirimler, Takvim, Ekip, Kişiler, Aktiviteler, Ayarlar
 
-**ANDROID**
-- **Destination:** `Destination.Courses`, `Destination.CourseDetail`, `Destination.LessonReader`
-- **Screen:** `CoursesScreen`, `CourseDetailScreen`, `LessonReaderScreen`
-- **Major Sections:** Pending deep audit (Phase 5 & 6)
-- **Actions:** Pending deep audit
-- **Data Source:** `SafeApiClient`
-
-**STATUS:** `STRUCTURAL_GAP` (Pending Phase 5 & 6 Audit)
+**MOBILE**
+- **Destination:** `Destination.WorkspaceHome` / `Destination.Workspaces` (Primary Bottom Tab #2)
+- **Selector:** Native `WorkspaceSectionSheet` modal grouping 11 sections into 5 domains:
+  - *GENEL:* Genel Bakış, Kayıtlar
+  - *TİCARET:* Siparişler, Ürünler (Commerce placeholders ready)
+  - *OPERASYON:* Belgeler, Takvim, Bildirimler
+  - *İNSANLAR:* Ekip, Kişiler
+  - *YÖNETİM:* Aktiviteler, İşletme Ayarları
+- **State:** `FUNCTIONALLY_IMPLEMENTED`
 
 ---
 
-## 3. Karar Araçları (Decision Tools)
+## 3. Topluluk (Community)
 **WEB**
-- **Route:** `/app/decision-checks`, `/app/decision-checks/:code`
-- **Component:** `DecisionCheckList.jsx`, `DecisionCheckSession.jsx`
-- **Major Sections:** Recommended tool, full list, categories, session state, Son oturumlar, Geçmiş kararlar
-- **Actions:** Devam Et, Sonucu Gör, Aracı Aç
-- **Data Source:** `/api/v1/decision-checks`
-- **Visual Structure:** Grid of tools, dynamic form based on schema, result panels
+- **Route:** `/app/community/topluluk`
+- **Component:** `CommunityPage.jsx`
+- **Major Sections:** Akış, Gönderi Detayı, Profil, Kişiler, Sohbetler
 
-**ANDROID**
-- **Destination:** `Destination.DecisionTools`, `Destination.DecisionSession`, `Destination.DecisionHistory`
-- **Screen:** `DecisionToolsScreen`, `DecisionSessionScreen`, `DecisionHistoryScreen`
-- **Major Sections:** Pending deep audit (Phase 7-11)
-- **Actions:** Pending deep audit
-- **Data Source:** `SafeApiClient`
-
-**STATUS:** `STRUCTURAL_GAP` / `DATA_GAP` (Pending Phase 7-11 Audit)
+**MOBILE**
+- **Destination:** `Destination.Community`, `Destination.CommunityPost` (Primary Bottom Tab #3)
+- **Screen:** `CommunityFeedScreen`, `CommunityPostDetailScreen`
+- **Internal Sub-tabs:** Akış (Feed with All/Official/User filters), Kişiler (Members), Sohbetler (Chats), Profil (User profile)
+- **State:** `FUNCTIONALLY_IMPLEMENTED`
 
 ---
 
@@ -71,128 +74,33 @@ This document maps all LocalKarar Web routes to their corresponding Android Mobi
 **WEB**
 - **Route:** `/app/calculations`, `/app/finance/models/:modelCode`
 - **Component:** `ToolsPage.jsx`, `FinancialModelWorkspace.jsx`
-- **Major Sections:** İçe aktar, Hesaplama başlat, Gelir gider tahsilat, Fatura ve belgeler, Ödeme takvimi
-- **Actions:** Hızlı hesap, Detaylı analiz, Open
-- **Data Source:** `/api/v1/financial-models` (or similar)
-- **Visual Structure:** Categories, calculator cards, dynamic workspace
 
-**ANDROID**
-- **Destination:** `Destination.Calculations`, `Destination.FinancialModelDetail`, `Destination.FormulaDetail`
-- **Screen:** `CalculationsScreen`, `FormulaDetailScreen`, `FinancialModelScreen`
-- **Major Sections:** 
-  - Katalog (unified catalog, category chips, quick workspace cards)
-  - Finansal Görünüm (tracker summary, open records, overdue, recent calculations)
-  - Geçmiş (formula history with clickable reopen)
-  - Hızlı Hesaplama (FormulaDetailScreen: dynamic inputs, validation, Turkish formatting, result labels, durum badge)
-  - Detaylı Analiz (FinancialModelScreen: 7 tabs - Çalışma Alanı, Girdiler, Senaryolar, Çıktılar, Kontroller, Kaynaklar, Değişiklikler; sensitivity, ethics, scenario comparison)
-- **Data Source:** `SafeApiClient` — GET `/api/formulas`, `/api/financial-models`, `/api/formula-calculations`, `/api/workspaces/:id/tracker/summary`, `/api/workspaces/:id/records`, POST `/api/formulas/:id/calculate`, POST `/api/workspaces/:id/financial-models/:code/runs`
-
-**STATUS:** `FUNCTIONALLY_IMPLEMENTED_VISUAL_QA_PENDING` — Unified catalog (34 items), 7 categories, correct mode badges, real Finansal Görünüm via tracker APIs, no Model Lab, quick workspace cards routed, Geçmiş functional with clickable reopen. Quick formula flow complete with dynamic inputs, validation, result labels, durum badge. Detailed model flow complete with 7 tabs, sensitivity display, ethics checks, scenario comparison. Build PASS. Runtime visual verification pending.
+**MOBILE**
+- **Destination:** `Destination.Calculations`, `Destination.FinancialModelDetail`, `Destination.FormulaDetail`, `Destination.ModelRuns`, `Destination.RunDetail` (Primary Bottom Tab #4)
+- **Screen:** `CalculationsScreen`, `FormulaDetailScreen`, `FinancialModelScreen`, `ModelRunsScreen`, `RunDetailScreen`
+- **Sections:** Katalog (34 unified calculations), Finansal Görünüm, Geçmiş (history with reopen), Quick formula flow, Detailed model flow (7 tabs)
+- **State:** `FUNCTIONALLY_IMPLEMENTED`
 
 ---
 
-## 5. İşletme Takibi (Business Tracking)
-**WEB**
-- **Route:** `/app/workspaces/:workspaceId/*`
-- **Component:** `WorkspaceLayout.jsx` and subcomponents
-- **Major Sections:** Genel Bakış, Kayıtlar, Belgeler, Bildirimler, Takvim, Ekip, Kişiler, Aktiviteler
-- **Actions:** Kayıt ekle, filter, search, upload
-- **Data Source:** `/api/v1/workspaces/...`
-- **Visual Structure:** Sidebar navigation (Web) mapped to tabs/sections (Mobile)
-
-**ANDROID**
-- **Destination:** `Destination.Workspaces`, `Destination.Records`, `Destination.Documents`, `Destination.Calendar`, etc.
-- **Screen:** `WorkspaceHomeScreen`, `RecordsScreen`, etc.
-- **Major Sections:** Pending deep audit (Phase 17-21)
-- **Data Source:** `SafeApiClient`
-
-**STATUS:** `STRUCTURAL_GAP` (Pending Phase 17-21 Audit)
-
----
-
-## 6. AI Mentor
-**WEB**
-- **Route:** `/app/mentor`
-- **Component:** `MentorPage.jsx`
-- **Major Sections:** Conversation list, message history, composer, memory panel, İşlem Önerileri
-- **Actions:** SSE streaming, copy, regenerate, feedback, Hafızayı Yönet
-- **Data Source:** `/api/v1/mentor` (Streaming)
-- **Visual Structure:** Chat interface, side panel for memory
-
-**ANDROID**
-- **Destination:** `Destination.AiMentor`, `Destination.Conversation`
-- **Screen:** `AiMentorScreen`
-- **Major Sections:** Pending deep audit (Phase 22 & 23)
-- **Data Source:** Ktor SSE plugin
-
-**STATUS:** `RUNTIME_GAP` (Pending Phase 22 & 23 Audit)
-
----
-
-## 7. Haberler (News)
-**WEB**
-- **Route:** `/app/community` (News mode)
-- **Component:** `NewsPage.jsx`
-- **Major Sections:** Featured article, list, topic filters, tags, official source
-- **Actions:** Filter, Open external
-- **Data Source:** `/api/v1/news`
-- **Visual Structure:** Article cards, featured hero
-
-**ANDROID**
-- **Destination:** `Destination.News`, `Destination.NewsDetail`
-- **Screen:** `NewsScreen`
-- **Major Sections:** Pending deep audit (Phase 24)
-- **Data Source:** `SafeApiClient`
-
-**STATUS:** `STRUCTURAL_GAP` (Pending Phase 24 Audit)
-
----
-
-## 8. Topluluk (Community)
-**WEB**
-- **Route:** `/app/community/topluluk`
-- **Component:** `CommunityPage.jsx`
-- **Major Sections:** Gönderi oluştur, feed, Gündemde, Katkı sağlayanlar
-- **Actions:** Post, interact (if supported)
-- **Data Source:** `/api/v1/community`
-- **Visual Structure:** Feed layout
-
-**ANDROID**
-- **Destination:** `Destination.Community`, `Destination.CommunityPost`
-- **Screen:** `CommunityScreen`
-- **Major Sections:** Pending deep audit (Phase 25)
-- **Data Source:** `SafeApiClient`
-
-**STATUS:** `STRUCTURAL_GAP` (Pending Phase 25 Audit)
-
----
-
-## 9. Ayarlar / Profil (Settings)
+## 5. Ayarlar (Settings)
 **WEB**
 - **Route:** `/app/settings`
 - **Component:** `SettingsPage.jsx`
-- **Major Sections:** Profil ve işletme, Bildirimler, Erişilebilirlik, Güvenlik, Veri ve gizlilik
-- **Actions:** Update profile, change photo, delete account
-- **Data Source:** `/api/v1/users/me`
 
-**ANDROID**
-- **Destination:** `Destination.Settings`, `Destination.Profile`, etc.
-- **Screen:** `SettingsScreen`
-- **Major Sections:** Pending deep audit (Phase 26 & 27)
-- **Data Source:** `SafeApiClient`
-
-**STATUS:** `STRUCTURAL_GAP` (Pending Phase 26 & 27 Audit)
+**MOBILE**
+- **Destination:** `Destination.Settings`, `Destination.Profile`, `Destination.PasswordChange`, `Destination.EmailChange`, `Destination.DeleteAccount` (Primary Bottom Tab #5)
+- **Screen:** `SettingsScreen`, `ProfileScreen`, `PasswordChangeScreen`, etc.
+- **Sections:** Profil ve İşletme, Güvenlik ve Gizlilik, Uygulama ve Tercihler, Hesap Silme, Çıkış Yap
+- **State:** `FUNCTIONALLY_IMPLEMENTED`
 
 ---
 
-## 10. Global Navigation & Search
-**WEB**
-- **Major Sections:** Top bar with Search, Sidebar for navigation
-- **Actions:** Search courses, tools, calculations
+## 6. Secondary Modules (Global Product Center & Contextual Access)
 
-**ANDROID**
-- **Major Sections:** Bottom Navigation (Home, Courses, Decision, Mentor, Menu)
-- **Actions:** Tab switching, Menu sheet
-- **Search:** Pending audit
-
-**STATUS:** `STRUCTURAL_GAP` (Pending Phase 28 & 29 Audit)
+| Module | Primary Destination | Header Launcher | Home Card / Shortcut |
+| :--- | :--- | :--- | :--- |
+| **Kurslar** | `Destination.Courses` | ÖĞREN → Kurslar | ResumePanel ("Kaldığın yer") |
+| **Karar Araçları** | `Destination.DecisionTools` | KARAR VER → Karar Araçları | Quick Action ("Karar Ver") + DecisionsPanel |
+| **AI Mentor** | `Destination.AiMentor` | ÖĞREN → AI Mentor | Quick Action ("Mentor") |
+| **Haberler** | `Destination.News` | TAKİP ET → Haberler | Contextual Links |

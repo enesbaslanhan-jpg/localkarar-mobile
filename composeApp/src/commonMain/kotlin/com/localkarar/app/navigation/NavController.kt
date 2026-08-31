@@ -15,15 +15,17 @@ class NavController(initialDestination: Destination) {
         val currentStack = _backStack.value
         if (currentStack.lastOrNull() == destination) return
         
-        val isRoot = when (destination) {
-            Destination.Home, 
-            Destination.Courses, 
-            is Destination.DecisionTools, 
-            Destination.AiMentor -> true
+        val isPrimaryRoot = when (destination) {
+            Destination.Home,
+            Destination.Workspaces,
+            is Destination.WorkspaceHome,
+            Destination.Community,
+            Destination.Calculations,
+            Destination.Settings -> true
             else -> false
         }
         
-        if (isRoot) {
+        if (isPrimaryRoot) {
             _backStack.value = listOf(destination)
         } else {
             _backStack.value = currentStack + destination

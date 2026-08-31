@@ -10,7 +10,9 @@ import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.localkarar.app.auth.AuthRepository
@@ -30,16 +32,35 @@ import com.localkarar.app.mentor.MentorRepository
 import com.localkarar.app.news.NewsRepository
 import com.localkarar.app.community.CommunityRepository
 import com.localkarar.app.settings.SettingsRepository
+import com.localkarar.app.ui.ForgotPasswordScreen
 import com.localkarar.app.ui.LoginScreen
+import com.localkarar.app.ui.RegisterScreen
+import com.localkarar.app.ui.ResetPasswordScreen
 import com.localkarar.app.ui.shell.AppShell
 import com.localkarar.app.ui.theme.LocalKararTheme
 import com.localkarar.app.ui.theme.LkSurfaceCanvas
 
+private enum class AuthRoute {
+    LOGIN,
+    REGISTER,
+    FORGOT_PASSWORD,
+    RESET_PASSWORD
+}
+
 @Composable
 fun App(secureStorage: SecureStorage) {
-    val httpClient = remember { createHttpClient(secureStorage) }
+    var authRepoHolder: AuthRepository? = null
+    val httpClient = remember {
+        createHttpClient(
+            secureStorage = secureStorage,
+            onUserUpdated = { user -> authRepoHolder?.updateUser(user) },
+            onSessionExpired = { authRepoHolder?.logout() }
+        )
+    }
 
-    val authRepository = remember { AuthRepository(httpClient, secureStorage) }
+    val authRepository = remember {
+        AuthRepository(httpClient, secureStorage).also { authRepoHolder = it }
+    }
     val authViewModel = remember { AuthViewModel(authRepository) }
 
     val dashboardRepository = remember { DashboardRepository(httpClient, secureStorage) }
@@ -63,9 +84,8 @@ fun App(secureStorage: SecureStorage) {
     val communityRepository = remember { CommunityRepository(httpClient) }
     val settingsRepository = remember { SettingsRepository(httpClient) }
 
-    // LocalKararTheme is the single authoritative theme provider.
-    // It wraps MaterialTheme internally in Theme.kt with LkTypography, LkShapes, and LkColors.
-    // Do NOT add a nested MaterialTheme() here — it resets typography/shapes to defaults.
+    var authRoute by remember { mutableStateOf(AuthRoute.LOGIN) }
+
     LocalKararTheme {
         val sessionState by authViewModel.sessionState.collectAsState()
 
@@ -82,7 +102,44 @@ fun App(secureStorage: SecureStorage) {
                     }
                 }
                 is SessionState.Unauthenticated -> {
-                    LoginScreen(viewModel = authViewModel)
+                    when (authRoute) {
+                        AuthRoute.LOGIN -> LoginScreen(
+                            viewModel = authViewModel,
+                            onNavigateToRegister = {
+                                authViewModel.clearErrors()
+                                authRoute = AuthRoute.REGISTER
+                            },
+                            onNavigateToForgotPassword = {
+                                authViewModel.clearErrors()
+                                authRoute = AuthRoute.FORGOT_PASSWORD
+                            }
+                        )
+                        AuthRoute.REGISTER -> RegisterScreen(
+                            viewModel = authViewModel,
+                            onNavigateToLogin = {
+                                authViewModel.clearErrors()
+                                authRoute = AuthRoute.LOGIN
+                            }
+                        )
+                        AuthRoute.FORGOT_PASSWORD -> ForgotPasswordScreen(
+                            viewModel = authViewModel,
+                            onNavigateToResetPassword = {
+                                authViewModel.clearErrors()
+                                authRoute = AuthRoute.RESET_PASSWORD
+                            },
+                            onNavigateToLogin = {
+                                authViewModel.clearErrors()
+                                authRoute = AuthRoute.LOGIN
+                            }
+                        )
+                        AuthRoute.RESET_PASSWORD -> ResetPasswordScreen(
+                            viewModel = authViewModel,
+                            onNavigateToLogin = {
+                                authViewModel.clearErrors()
+                                authRoute = AuthRoute.LOGIN
+                            }
+                        )
+                    }
                 }
                 is SessionState.Authenticated -> {
                     AppShell(
@@ -101,7 +158,10 @@ fun App(secureStorage: SecureStorage) {
                         onNewSession = { token, user ->
                             authRepository.applyNewSession(token, user)
                         },
-                        onLogout = { authViewModel.logout() }
+                        onLogout = { 
+                            authViewModel.logout()
+                            authRoute = AuthRoute.LOGIN
+                        }
                     )
                 }
             }

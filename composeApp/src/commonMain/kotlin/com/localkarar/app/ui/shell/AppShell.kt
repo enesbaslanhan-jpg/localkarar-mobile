@@ -2,6 +2,7 @@ package com.localkarar.app.ui.shell
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -59,6 +60,9 @@ import com.localkarar.app.workspaces.ActivityViewModel
 import com.localkarar.app.workspaces.WorkspaceSettingsViewModel
 import com.localkarar.app.ui.screens.workspaces.WorkspacesScreen
 import com.localkarar.app.ui.screens.workspaces.WorkspaceHomeScreen
+import com.localkarar.app.ui.screens.workspaces.WorkspaceSectionSheet
+import com.localkarar.app.ui.screens.workspaces.OrdersScreen
+import com.localkarar.app.ui.screens.workspaces.ProductsScreen
 import com.localkarar.app.ui.screens.workspaces.RecordsScreen
 import com.localkarar.app.ui.screens.workspaces.RecordDetailScreen
 import com.localkarar.app.ui.screens.workspaces.RecordEditScreen
@@ -81,16 +85,30 @@ import com.localkarar.app.ui.screens.news.NewsFeedScreen
 import com.localkarar.app.ui.screens.news.NewsDetailScreen
 import com.localkarar.app.community.CommunityRepository
 import com.localkarar.app.community.CommunityViewModel
+import com.localkarar.app.community.SocialViewModel
+import com.localkarar.app.community.ThreadsViewModel
+import com.localkarar.app.community.CommunityNotificationsViewModel
 import com.localkarar.app.ui.screens.community.CommunityFeedScreen
 import com.localkarar.app.ui.screens.community.CommunityPostDetailScreen
+import com.localkarar.app.ui.screens.community.FollowersScreen
+import com.localkarar.app.ui.screens.community.ThreadDetailScreen
+import com.localkarar.app.ui.screens.community.ProfileScreen as CommunityProfileScreen
+import com.localkarar.app.ui.screens.community.NotificationsScreen as CommunityNotificationsScreen
 import com.localkarar.app.settings.SettingsRepository
 import com.localkarar.app.settings.SettingsViewModel
 import com.localkarar.app.ui.screens.settings.SettingsScreen
 import com.localkarar.app.ui.screens.settings.ProfileScreen
 import com.localkarar.app.ui.screens.settings.PasswordChangeScreen
 import com.localkarar.app.ui.screens.settings.EmailChangeScreen
+import com.localkarar.app.ui.screens.settings.LegalConsentsScreen
 import com.localkarar.app.ui.screens.settings.DeleteAccountScreen
 import com.localkarar.app.auth.UserDto
+
+private sealed interface ShellSheetState {
+    object Closed : ShellSheetState
+    object ProductCenter : ShellSheetState
+    data class WorkspaceSections(val workspaceId: String, val currentSectionId: String) : ShellSheetState
+}
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
@@ -113,6 +131,7 @@ fun AppShell(
     val navController = remember { NavController(Destination.Home) }
     val backStack by navController.backStack.collectAsState()
     val currentDestination = backStack.last()
+    val activeWorkspaceId by activeWorkspaceStore.activeWorkspaceId.collectAsState()
 
     val homeUiState by homeViewModel.uiState.collectAsState()
     LaunchedEffect(homeUiState) {
@@ -121,17 +140,39 @@ fun AppShell(
         }
     }
 
-    val bottomSheetState = rememberModalBottomSheetState(ModalBottomSheetValue.Hidden)
+    val bottomSheetState = rememberModalBottomSheetState(
+        initialValue = ModalBottomSheetValue.Hidden,
+        skipHalfExpanded = true
+    )
     val coroutineScope = rememberCoroutineScope()
+    var sheetState by remember { mutableStateOf<ShellSheetState>(ShellSheetState.Closed) }
 
-    val openMenu = {
+    SystemBackHandler(enabled = backStack.size > 1 && !bottomSheetState.isVisible) {
+        navController.popBackStack()
+    }
+
+    val openProductCenter = {
+        sheetState = ShellSheetState.ProductCenter
         coroutineScope.launch { bottomSheetState.show() }
     }
 
-    val closeMenuAndNavigate = { dest: Destination ->
+    val openWorkspaceSections = { wsId: String, sectionId: String ->
+        sheetState = ShellSheetState.WorkspaceSections(wsId, sectionId)
+        coroutineScope.launch { bottomSheetState.show() }
+    }
+
+    val closeSheetAndNavigate = { dest: Destination ->
         coroutineScope.launch {
             bottomSheetState.hide()
+            sheetState = ShellSheetState.Closed
             navController.navigateTo(dest)
+        }
+    }
+
+    val closeSheet = {
+        coroutineScope.launch {
+            bottomSheetState.hide()
+            sheetState = ShellSheetState.Closed
         }
     }
 
@@ -140,11 +181,28 @@ fun AppShell(
         sheetBackgroundColor = Color.Transparent,
         sheetElevation = 0.dp,
         sheetContent = {
-            MenuBottomSheet(
-                firstName = user.name,
-                onNavigate = { closeMenuAndNavigate(it) },
-                onLogout = onLogout
-            )
+            when (val state = sheetState) {
+                is ShellSheetState.ProductCenter -> {
+                    ProductCenterSheet(
+                        activeWorkspaceId = activeWorkspaceId,
+                        onNavigate = { closeSheetAndNavigate(it) },
+                        onClose = { closeSheet() }
+                    )
+                }
+                is ShellSheetState.WorkspaceSections -> {
+                    WorkspaceSectionSheet(
+                        workspaceId = state.workspaceId,
+                        workspaceName = null,
+                        currentSectionId = state.currentSectionId,
+                        onNavigate = { closeSheetAndNavigate(it) },
+                        onOpenAllWorkspaces = { closeSheetAndNavigate(Destination.Workspaces) },
+                        onClose = { closeSheet() }
+                    )
+                }
+                ShellSheetState.Closed -> {
+                    Spacer(modifier = Modifier.height(1.dp))
+                }
+            }
         }
     ) {
         Scaffold(
@@ -152,8 +210,8 @@ fun AppShell(
                 if (currentDestination !is Destination.LessonReader) {
                     LkBottomNavigation(
                         currentDestination = currentDestination,
-                        onNavigate = { navController.navigateTo(it) },
-                        onMenuClick = { openMenu() }
+                        activeWorkspaceId = activeWorkspaceId,
+                        onNavigate = { navController.navigateTo(it) }
                     )
                 }
             },
@@ -180,6 +238,8 @@ fun AppShell(
                     newsRepository = newsRepository,
                     communityRepository = communityRepository,
                     settingsRepository = settingsRepository,
+                    onOpenProductCenter = { openProductCenter() },
+                    onOpenWorkspaceSections = { wsId, secId -> openWorkspaceSections(wsId, secId) },
                     onNewSession = onNewSession,
                     onLogout = onLogout
                 )
@@ -204,11 +264,20 @@ private fun ScreenContent(
     newsRepository: NewsRepository,
     communityRepository: CommunityRepository,
     settingsRepository: SettingsRepository,
+    onOpenProductCenter: () -> Unit,
+    onOpenWorkspaceSections: (String, String) -> Unit,
     onNewSession: (String, UserDto) -> Unit,
     onLogout: () -> Unit
 ) {
     val onBack = { navController.popBackStack(); Unit }
     val activeWorkspaceId by activeWorkspaceStore.activeWorkspaceId.collectAsState()
+
+    val communityViewModel = remember { CommunityViewModel(communityRepository) }
+    val socialViewModel = remember { SocialViewModel(communityRepository) }
+    val threadsViewModel = remember { ThreadsViewModel(communityRepository) }
+    val notificationsViewModel = remember { CommunityNotificationsViewModel(communityRepository) }
+    val newsViewModel = remember { NewsViewModel(newsRepository) }
+    val settingsViewModel = remember { SettingsViewModel(settingsRepository) }
 
     when (destination) {
         Destination.Login -> { /* Handled at app root */ }
@@ -219,7 +288,7 @@ private fun ScreenContent(
             onNavigateToCalculations = { navController.navigateTo(Destination.Calculations) },
             onNavigateToMentor = { navController.navigateTo(Destination.AiMentor) },
             onNavigateToDecisions = { navController.navigateTo(Destination.DecisionTools()) },
-            onNavigateToDecisionDetail = { code -> navController.navigateTo(Destination.DecisionSession(code)) }, // The web app navigates to check, but let's pass code
+            onNavigateToDecisionDetail = { code -> navController.navigateTo(Destination.DecisionSession(code)) },
             onNavigateToWorkspaces = { navController.navigateTo(Destination.Workspaces) },
             onNavigateToTracker = { workspaceId -> navController.navigateTo(Destination.Records(workspaceId)) },
             onNavigateToEnrollments = { navController.navigateTo(Destination.Courses) }
@@ -252,12 +321,10 @@ private fun ScreenContent(
         }
         is Destination.DecisionTools -> {
             val viewModel = remember { DecisionToolsViewModel(decisionRepository) }
-            // Apply the filter passed from navigation to the viewmodel state initially
             LaunchedEffect(destination.initialFilter) {
                 if (viewModel.uiState.value is com.localkarar.app.decision.DecisionToolsUiState.Content) {
                     viewModel.updateStatusFilter(destination.initialFilter)
                 } else {
-                    // if loading, we might need to pass it to loadTools, but since loadTools loads all tools, we just need to set the filter in ViewModel.
                     viewModel.updateStatusFilter(destination.initialFilter)
                 }
             }
@@ -280,7 +347,8 @@ private fun ScreenContent(
             AiMentorScreen(
                 viewModel = viewModel,
                 memoryViewModel = memoryViewModel,
-                onOpenConversation = { conversationId -> navController.navigateTo(Destination.Conversation(conversationId)) }
+                onOpenConversation = { conversationId -> navController.navigateTo(Destination.Conversation(conversationId)) },
+                onBack = onBack
             )
         }
         is Destination.Conversation -> {
@@ -289,7 +357,8 @@ private fun ScreenContent(
             }
             ConversationScreen(
                 conversationId = destination.conversationId,
-                viewModel = viewModel
+                viewModel = viewModel,
+                onBack = onBack
             )
         }
         Destination.Calculations -> {
@@ -299,7 +368,6 @@ private fun ScreenContent(
             CalculationsScreen(
                 viewModel = viewModel,
                 onCalculationSelected = { item ->
-                    // Route to the appropriate detail screen based on mode
                     if (item.supportsQuickCalculation && item.formula != null) {
                         navController.navigateTo(Destination.FormulaDetail(item.formula!!))
                     } else if (item.supportsDetailedAnalysis && item.definition.modelCode != null) {
@@ -366,6 +434,8 @@ private fun ScreenContent(
             WorkspaceHomeScreen(
                 viewModel = viewModel,
                 onOpenRecords = { navController.navigateTo(Destination.Records(destination.workspaceId)) },
+                onOpenOrders = { navController.navigateTo(Destination.Orders(destination.workspaceId)) },
+                onOpenProducts = { navController.navigateTo(Destination.Products(destination.workspaceId)) },
                 onOpenCalendar = { navController.navigateTo(Destination.Calendar(destination.workspaceId)) },
                 onOpenDocuments = { navController.navigateTo(Destination.Documents(destination.workspaceId)) },
                 onOpenTeam = { navController.navigateTo(Destination.Team(destination.workspaceId)) },
@@ -375,7 +445,28 @@ private fun ScreenContent(
                 onOpenSettings = { navController.navigateTo(Destination.WorkspaceSettings(destination.workspaceId)) },
                 onOpenRecord = { recordId -> navController.navigateTo(Destination.RecordDetail(destination.workspaceId, recordId)) },
                 onAddRecord = { navController.navigateTo(Destination.RecordEdit(destination.workspaceId, null)) },
+                onOpenSectionSelector = { onOpenWorkspaceSections(destination.workspaceId, "overview") },
                 onBack = onBack
+            )
+        }
+        is Destination.Orders -> {
+            val viewModel = remember(destination.workspaceId) {
+                com.localkarar.app.workspaces.OrdersViewModel(workspaceRepository)
+            }
+            OrdersScreen(
+                workspaceId = destination.workspaceId,
+                viewModel = viewModel,
+                onNavigateBack = onBack
+            )
+        }
+        is Destination.Products -> {
+            val viewModel = remember(destination.workspaceId) {
+                com.localkarar.app.workspaces.ProductsViewModel(workspaceRepository)
+            }
+            ProductsScreen(
+                workspaceId = destination.workspaceId,
+                viewModel = viewModel,
+                onNavigateBack = onBack
             )
         }
         is Destination.Records -> {
@@ -457,120 +548,245 @@ private fun ScreenContent(
             WorkspaceSettingsScreen(viewModel = viewModel, onBack = onBack)
         }
         Destination.News -> {
-            val viewModel = remember { NewsViewModel(newsRepository) }
             NewsFeedScreen(
-                viewModel = viewModel,
-                onOpenArticle = { articleId -> navController.navigateTo(Destination.NewsDetail(articleId)) }
+                viewModel = newsViewModel,
+                onOpenArticle = { articleId -> navController.navigateTo(Destination.NewsDetail(articleId)) },
+                onBack = onBack
             )
         }
         is Destination.NewsDetail -> {
-            val viewModel = remember { NewsViewModel(newsRepository) }
-            NewsDetailScreen(articleId = destination.articleId, viewModel = viewModel)
+            NewsDetailScreen(
+                articleId = destination.articleId,
+                viewModel = newsViewModel,
+                onBack = onBack
+            )
         }
         Destination.Community -> {
-            val viewModel = remember { CommunityViewModel(communityRepository) }
             CommunityFeedScreen(
-                viewModel = viewModel,
-                onOpenPost = { postId -> navController.navigateTo(Destination.CommunityPost(postId)) }
+                communityViewModel = communityViewModel,
+                socialViewModel = socialViewModel,
+                threadsViewModel = threadsViewModel,
+                notificationsViewModel = notificationsViewModel,
+                currentUserId = user.id,
+                onOpenPost = { postId -> navController.navigateTo(Destination.CommunityPost(postId)) },
+                onOpenProfile = { userId -> navController.navigateTo(Destination.CommunityProfile(userId)) },
+                onOpenThread = { threadId -> navController.navigateTo(Destination.CommunityThreadDetail(threadId)) },
+                onOpenNotifications = { navController.navigateTo(Destination.CommunityNotifications) },
+                onOpenFollowers = { userId, mode -> navController.navigateTo(Destination.CommunityFollowers(userId, mode)) },
+                onOpenProductCenter = onOpenProductCenter
             )
         }
         is Destination.CommunityPost -> {
-            val viewModel = remember { CommunityViewModel(communityRepository) }
-            CommunityPostDetailScreen(postId = destination.postId, viewModel = viewModel)
+            CommunityPostDetailScreen(
+                postId = destination.postId,
+                viewModel = communityViewModel,
+                currentUserId = user.id,
+                onBack = onBack,
+                onOpenProfile = { userId -> navController.navigateTo(Destination.CommunityProfile(userId)) },
+                onOpenPost = { postId -> navController.navigateTo(Destination.CommunityPost(postId)) }
+            )
+        }
+        is Destination.CommunityProfile -> {
+            CommunityProfileScreen(
+                userId = destination.userId,
+                socialViewModel = socialViewModel,
+                communityViewModel = communityViewModel,
+                onBack = onBack,
+                onOpenFollowers = { userId, mode -> navController.navigateTo(Destination.CommunityFollowers(userId, mode)) },
+                onOpenPost = { postId -> navController.navigateTo(Destination.CommunityPost(postId)) },
+                onOpenProfile = { userId -> navController.navigateTo(Destination.CommunityProfile(userId)) }
+            )
+        }
+        is Destination.CommunityFollowers -> {
+            FollowersScreen(
+                userId = destination.userId,
+                mode = destination.mode,
+                viewModel = socialViewModel,
+                onBack = onBack,
+                onOpenProfile = { userId -> navController.navigateTo(Destination.CommunityProfile(userId)) }
+            )
+        }
+        is Destination.CommunityThreadDetail -> {
+            ThreadDetailScreen(
+                threadId = destination.threadId,
+                viewModel = threadsViewModel,
+                currentUserId = user.id,
+                onBack = onBack
+            )
+        }
+        Destination.CommunityNotifications -> {
+            CommunityNotificationsScreen(
+                viewModel = notificationsViewModel,
+                onBack = onBack,
+                onOpenPost = { postId -> navController.navigateTo(Destination.CommunityPost(postId)) },
+                onOpenProfile = { userId -> navController.navigateTo(Destination.CommunityProfile(userId)) },
+                onOpenThread = { threadId -> navController.navigateTo(Destination.CommunityThreadDetail(threadId)) }
+            )
         }
         Destination.Settings -> {
-            val viewModel = remember { SettingsViewModel(settingsRepository) }
             SettingsScreen(
                 userName = user.name,
                 userEmail = user.email,
+                userRole = user.role,
+                userAvatarUrl = user.avatarUrl,
+                activeWorkspaceId = activeWorkspaceId,
+                viewModel = settingsViewModel,
                 onOpenProfile = { navController.navigateTo(Destination.Profile) },
+                onOpenWorkspaces = { navController.navigateTo(Destination.Workspaces) },
+                onOpenWorkspaceSettings = { wsId -> navController.navigateTo(Destination.WorkspaceSettings(wsId)) },
                 onOpenPassword = { navController.navigateTo(Destination.PasswordChange) },
                 onOpenEmail = { navController.navigateTo(Destination.EmailChange) },
+                onOpenConsents = { navController.navigateTo(Destination.LegalConsents) },
                 onOpenDeleteAccount = { navController.navigateTo(Destination.DeleteAccount) },
+                onLogoutAll = { settingsViewModel.logoutAll { t, u -> onNewSession(t, u) } },
                 onLogout = onLogout
             )
         }
         Destination.Profile -> {
-            val viewModel = remember { SettingsViewModel(settingsRepository) }
             ProfileScreen(
-                viewModel = viewModel,
+                viewModel = settingsViewModel,
                 user = user,
-                onNewSession = onNewSession
+                onNewSession = onNewSession,
+                onBack = onBack
             )
         }
         Destination.PasswordChange -> {
-            val viewModel = remember { SettingsViewModel(settingsRepository) }
-            PasswordChangeScreen(viewModel = viewModel)
+            PasswordChangeScreen(
+                viewModel = settingsViewModel,
+                onNewSession = onNewSession,
+                onBack = onBack
+            )
         }
         Destination.EmailChange -> {
-            val viewModel = remember { SettingsViewModel(settingsRepository) }
-            EmailChangeScreen(viewModel = viewModel, onNewSession = onNewSession)
+            EmailChangeScreen(
+                viewModel = settingsViewModel,
+                onNewSession = onNewSession,
+                onBack = onBack
+            )
+        }
+        Destination.LegalConsents -> {
+            LegalConsentsScreen(
+                viewModel = settingsViewModel,
+                onBack = onBack
+            )
         }
         Destination.DeleteAccount -> {
-            val viewModel = remember { SettingsViewModel(settingsRepository) }
-            DeleteAccountScreen(viewModel = viewModel, onDeleted = onLogout)
+            DeleteAccountScreen(
+                viewModel = settingsViewModel,
+                onDeleted = onLogout,
+                onBack = onBack
+            )
         }
     }
 }
 
 // ──────────────────────────────────────────────────────────────────
-// Bottom Navigation
+// LOCKED Primary Bottom Navigation (V1)
+// 1. Ana Sayfa
+// 2. İşletme Takibi
+// 3. Topluluk
+// 4. Hesaplamalar
+// 5. Ayarlar
 // ──────────────────────────────────────────────────────────────────
 
 private data class NavItem(
     val label: String,
     val icon: ImageVector,
-    val destination: Destination?,     // null = menu trigger
+    val getTargetDestination: (activeWorkspaceId: String?) -> Destination
 )
 
-private val NAV_ITEMS = listOf(
-    NavItem("Ana Sayfa", Icons.Default.Home,           Destination.Home),
-    NavItem("Kurslar",   Icons.Default.School,         Destination.Courses),
-    NavItem("Karar",     Icons.Default.AccountBalance,  Destination.DecisionTools()),
-    NavItem("Mentor",    Icons.Default.Psychology,      Destination.AiMentor),
-    NavItem("Menü",      Icons.Default.Menu,            null),  // opens drawer
+private val PRIMARY_NAV_ITEMS = listOf(
+    NavItem("Ana Sayfa", Icons.Default.Home) { Destination.Home },
+    NavItem("İşletme Takibi", Icons.Default.Business) { activeId ->
+        if (activeId != null) Destination.WorkspaceHome(activeId) else Destination.Workspaces
+    },
+    NavItem("Topluluk", Icons.Default.Groups) { Destination.Community },
+    NavItem("Hesaplamalar", Icons.Default.Calculate) { Destination.Calculations },
+    NavItem("Ayarlar", Icons.Default.Settings) { Destination.Settings }
 )
 
 @Composable
 private fun LkBottomNavigation(
     currentDestination: Destination,
-    onNavigate: (Destination) -> Unit,
-    onMenuClick: () -> Unit
+    activeWorkspaceId: String?,
+    onNavigate: (Destination) -> Unit
 ) {
     BottomNavigation(
         backgroundColor = LkSurfacePanel,
-        contentColor    = LkTextSecondary,
-        elevation       = 0.dp,
-        modifier        = Modifier
+        contentColor = LkTextSecondary,
+        elevation = 0.dp,
+        modifier = Modifier
+            .fillMaxWidth()
             .border(width = 1.dp, color = LkLineStrong)
     ) {
-        NAV_ITEMS.forEach { item ->
-            val selected = item.destination != null && currentDestination == item.destination
+        PRIMARY_NAV_ITEMS.forEach { item ->
+            val target = item.getTargetDestination(activeWorkspaceId)
+            val selected = isTabSelected(currentDestination, target)
+
             BottomNavigationItem(
-                selected             = selected,
-                onClick              = {
-                    if (item.destination != null) onNavigate(item.destination)
-                    else onMenuClick()
+                selected = selected,
+                onClick = {
+                    onNavigate(target)
                 },
-                icon                 = {
+                icon = {
                     Icon(
-                        imageVector  = item.icon,
+                        imageVector = item.icon,
                         contentDescription = item.label,
-                        modifier     = Modifier.size(22.dp),
-                        tint         = if (selected) LkPrimary else LkTextSecondary
+                        modifier = Modifier.size(22.dp),
+                        tint = if (selected) LkPrimary else LkTextSecondary
                     )
                 },
-                label                = {
+                label = {
                     Text(
-                        text      = item.label,
-                        style     = LkTypography.getMicro(),
-                        color     = if (selected) LkPrimary else LkTextSecondary,
-                        maxLines  = 1
+                        text = item.label,
+                        style = LkTypography.getMicro(),
+                        color = if (selected) LkPrimary else LkTextSecondary,
+                        maxLines = 1
                     )
                 },
-                selectedContentColor   = LkPrimary,
+                selectedContentColor = LkPrimary,
                 unselectedContentColor = LkTextSecondary
             )
         }
+    }
+}
+
+private fun isTabSelected(current: Destination, tabTarget: Destination): Boolean {
+    return when (tabTarget) {
+        is Destination.Home -> current is Destination.Home
+        is Destination.WorkspaceHome, Destination.Workspaces -> {
+            current is Destination.Workspaces ||
+            current is Destination.WorkspaceHome ||
+            current is Destination.Records ||
+            current is Destination.RecordDetail ||
+            current is Destination.RecordEdit ||
+            current is Destination.Orders ||
+            current is Destination.Products ||
+            current is Destination.Documents ||
+            current is Destination.Calendar ||
+            current is Destination.Team ||
+            current is Destination.Contacts ||
+            current is Destination.Notifications ||
+            current is Destination.Activity ||
+            current is Destination.WorkspaceSettings
+        }
+        is Destination.Community -> {
+            current is Destination.Community || current is Destination.CommunityPost
+        }
+        is Destination.Calculations -> {
+            current is Destination.Calculations ||
+            current is Destination.FormulaDetail ||
+            current is Destination.FinancialModelDetail ||
+            current is Destination.ModelRuns ||
+            current is Destination.RunDetail
+        }
+        is Destination.Settings -> {
+            current is Destination.Settings ||
+            current is Destination.Profile ||
+            current is Destination.PasswordChange ||
+            current is Destination.EmailChange ||
+            current is Destination.DeleteAccount
+        }
+        else -> false
     }
 }
