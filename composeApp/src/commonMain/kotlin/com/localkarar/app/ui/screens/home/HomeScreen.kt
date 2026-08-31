@@ -195,7 +195,7 @@ private fun StatusPanel(tracker: TrackerSummaryDto?, onNavigateToWorkspaces: () 
     var statusSentence = "Gerçek işletme metrikleri için işletme profilinizi ve takip kayıtlarınızı oluşturun."
     if (tracker != null) {
         val parts = mutableListOf<String>()
-        if (net < 0) parts.add("önümüzdeki 30 günde ${formatMoney(Math.abs(net))} nakit açığın görünüyor")
+        if (net < 0) parts.add("önümüzdeki 30 günde ${formatMoney(kotlin.math.abs(net))} nakit açığın görünüyor")
         else parts.add("önümüzdeki 30 günde ${formatMoney(net)} net nakit girişin görünüyor")
         
         if (overdue > 0) parts.add("$overdue kayıt gecikmiş durumda")

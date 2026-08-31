@@ -5,6 +5,7 @@ import platform.CoreFoundation.*
 import platform.Foundation.*
 import platform.Security.*
 
+@OptIn(ExperimentalForeignApi::class)
 actual class SecureStorage {
     private val account = "auth_token"
     private val service = "com.localkarar.app"
@@ -39,46 +40,63 @@ actual class SecureStorage {
     }
 
     private fun saveKeychainItem(itemAccount: String, value: String) {
-        val data = (value as NSString).dataUsingEncoding(NSUTF8StringEncoding)
-        val query = mapOf(
-            kSecClass to kSecClassGenericPassword,
-            kSecAttrService to service,
-            kSecAttrAccount to itemAccount,
-            kSecValueData to data
-        )
-        SecItemDelete(query as CFDictionaryRef)
-        SecItemAdd(query as CFDictionaryRef, null)
+        deleteKeychainItem(itemAccount)
+        val data = (value as NSString).dataUsingEncoding(NSUTF8StringEncoding) ?: return
+        val query = NSMutableDictionary().apply {
+            setObject(kSecClassGenericPassword, forKey = kSecClass)
+            setObject(service, forKey = kSecAttrService)
+            setObject(itemAccount, forKey = kSecAttrAccount)
+            setObject(data, forKey = kSecValueData)
+        }
+        val cfQuery = CFBridgingRetain(query) as CFDictionaryRef?
+        try {
+            SecItemAdd(cfQuery, null)
+        } finally {
+            if (cfQuery != null) CFRelease(cfQuery)
+        }
     }
 
     private fun readKeychainItem(itemAccount: String): String? {
-        val query = mapOf(
-            kSecClass to kSecClassGenericPassword,
-            kSecAttrService to service,
-            kSecAttrAccount to itemAccount,
-            kSecReturnData to true,
-            kSecMatchLimit to kSecMatchLimitOne
-        )
+        val query = NSMutableDictionary().apply {
+            setObject(kSecClassGenericPassword, forKey = kSecClass)
+            setObject(service, forKey = kSecAttrService)
+            setObject(itemAccount, forKey = kSecAttrAccount)
+            setObject(kCFBooleanTrue, forKey = kSecReturnData)
+            setObject(kSecMatchLimitOne, forKey = kSecMatchLimit)
+        }
+        val cfQuery = CFBridgingRetain(query) as CFDictionaryRef? ?: return null
         var result: String? = null
-        memScoped {
-            val resultPtr = alloc<CFTypeRefVar>()
-            val status = SecItemCopyMatching(query as CFDictionaryRef, resultPtr.ptr)
-            if (status == errSecSuccess) {
-                val data = resultPtr.value as? NSData
-                if (data != null) {
-                    val nsString = NSString.create(data = data, encoding = NSUTF8StringEncoding)
-                    result = nsString as String?
+        try {
+            memScoped {
+                val resultPtr = alloc<CFTypeRefVar>()
+                val status = SecItemCopyMatching(cfQuery, resultPtr.ptr)
+                if (status == errSecSuccess) {
+                    val cfData = resultPtr.value
+                    if (cfData != null) {
+                        val nsData = cfData as? NSData
+                        if (nsData != null) {
+                            result = NSString.create(data = nsData, encoding = NSUTF8StringEncoding) as? String
+                        }
+                    }
                 }
             }
+        } finally {
+            CFRelease(cfQuery)
         }
         return result
     }
 
     private fun deleteKeychainItem(itemAccount: String) {
-        val query = mapOf(
-            kSecClass to kSecClassGenericPassword,
-            kSecAttrService to service,
-            kSecAttrAccount to itemAccount
-        )
-        SecItemDelete(query as CFDictionaryRef)
+        val query = NSMutableDictionary().apply {
+            setObject(kSecClassGenericPassword, forKey = kSecClass)
+            setObject(service, forKey = kSecAttrService)
+            setObject(itemAccount, forKey = kSecAttrAccount)
+        }
+        val cfQuery = CFBridgingRetain(query) as CFDictionaryRef? ?: return
+        try {
+            SecItemDelete(cfQuery)
+        } finally {
+            CFRelease(cfQuery)
+        }
     }
 }

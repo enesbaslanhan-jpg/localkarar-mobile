@@ -125,7 +125,7 @@ class ConversationViewModel(
 
             // Optimistic user message
             val optimistic = MessageDto(
-                id = -(System.currentTimeMillis() % 100000).toInt(),
+                id = -(kotlinx.datetime.Clock.System.now().toEpochMilliseconds() % 100000).toInt(),
                 role = "user",
                 content = message,
                 generationStatus = "completed",

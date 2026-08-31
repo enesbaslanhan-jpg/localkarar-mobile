@@ -125,7 +125,9 @@ class MentorRepository(
 
     suspend fun archiveConversation(id: Int): Result<Unit> {
         return try {
-            val response = client.patch("$base/conversations/$id/archive")
+            val response = client.patch("$base/conversations/$id/archive") {
+                setBody("{}")
+            }
             if (response.status.isSuccess()) Result.success(Unit)
             else Result.failure(Exception(errorMessage(response)))
         } catch (e: Exception) {
@@ -135,7 +137,9 @@ class MentorRepository(
 
     suspend fun unarchiveConversation(id: Int): Result<Unit> {
         return try {
-            val response = client.patch("$base/conversations/$id/unarchive")
+            val response = client.patch("$base/conversations/$id/unarchive") {
+                setBody("{}")
+            }
             if (response.status.isSuccess()) Result.success(Unit)
             else Result.failure(Exception(errorMessage(response)))
         } catch (e: Exception) {
@@ -145,7 +149,9 @@ class MentorRepository(
 
     suspend fun deleteConversation(id: Int): Result<Unit> {
         return try {
-            val response = client.delete("$base/conversations/$id")
+            val response = client.delete("$base/conversations/$id") {
+                setBody("{}")
+            }
             if (response.status.isSuccess()) Result.success(Unit)
             else Result.failure(Exception(errorMessage(response)))
         } catch (e: Exception) {
@@ -187,9 +193,11 @@ class MentorRepository(
                     // SSE endpoints must expose their 4xx response body so RATE_LIMIT and
                     // CONCURRENT_LIMIT remain distinguishable to the UI.
                     expectSuccess = false
-                    contentType(ContentType.Application.Json)
                     if (bodyObject != null) {
+                        contentType(ContentType.Application.Json)
                         setBody(bodyObject)
+                    } else {
+                        setBody("{}")
                     }
                 }.execute { response ->
                     if (!response.status.isSuccess()) {
@@ -334,7 +342,9 @@ class MentorRepository(
 
     suspend fun deleteMemory(id: Int): Result<Unit> {
         return try {
-            val response = client.delete("$baseUrl/api/memory/$id")
+            val response = client.delete("$baseUrl/api/memory/$id") {
+                setBody("{}")
+            }
             if (response.status.isSuccess()) Result.success(Unit)
             else Result.failure(Exception(errorMessage(response)))
         } catch (e: Exception) {
