@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - feature/m7-ios-platform-build
+      - feature/m8-adaptive-ui-polish
+      - feature/m9-lifecycle-state
       - main
   workflow_dispatch:
 
