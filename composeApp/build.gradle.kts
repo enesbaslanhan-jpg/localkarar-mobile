@@ -57,6 +57,9 @@ kotlin {
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.multiplatform.markdown.renderer)
         }
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+        }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
         }
