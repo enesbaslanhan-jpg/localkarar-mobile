@@ -140,6 +140,7 @@ fun AppShell(
     val backStack by navController.backStack.collectAsState()
     val currentDestination = backStack.last()
     val activeWorkspaceId by activeWorkspaceStore.activeWorkspaceId.collectAsState()
+    val activeWorkspaceName by activeWorkspaceStore.activeWorkspaceName.collectAsState()
 
     val homeUiState by homeViewModel.uiState.collectAsState()
     LaunchedEffect(homeUiState) {
@@ -298,6 +299,7 @@ private fun ScreenContent(
 ) {
     val onBack = { navController.popBackStack(); Unit }
     val activeWorkspaceId by activeWorkspaceStore.activeWorkspaceId.collectAsState()
+    val activeWorkspaceName by activeWorkspaceStore.activeWorkspaceName.collectAsState()
 
     val communityViewModel = viewModel(key = "community_main") { CommunityViewModel(communityRepository) }
     val socialViewModel = viewModel(key = "community_social") { SocialViewModel(communityRepository) }
@@ -339,7 +341,8 @@ private fun ScreenContent(
             onNavigateToDecisionDetail = { code -> navController.navigateTo(Destination.DecisionTool(code)) },
             onNavigateToWorkspaces = { navController.navigateTo(Destination.Workspaces) },
             onNavigateToTracker = { workspaceId -> navController.navigateTo(Destination.Records(workspaceId)) },
-            onNavigateToEnrollments = { navController.navigateTo(Destination.Courses) }
+            onNavigateToEnrollments = { navController.navigateTo(Destination.Courses) },
+            onOpenProductCenter = onOpenProductCenter
         )
         Destination.Courses -> {
             val viewModel = viewModel(key = "courses_main") { CoursesViewModel(courseRepository, dashboardRepository) }
@@ -438,6 +441,11 @@ private fun ScreenContent(
                         navController.navigateTo(Destination.FinancialModelDetail(item.definition.modelCode!!))
                     }
                 },
+                onDetailedSelected = { item ->
+                    if (item.definition.modelCode != null) {
+                        navController.navigateTo(Destination.FinancialModelDetail(item.definition.modelCode!!))
+                    }
+                },
                 onNavigateToWorkspace = {
                     val id = activeWorkspaceId
                     if (id != null) navController.navigateTo(Destination.WorkspaceHome(id))
@@ -458,10 +466,11 @@ private fun ScreenContent(
             }
             FinancialModelScreen(
                 viewModel = viewModel,
-                workspaceName = null,
+                workspaceName = activeWorkspaceName ?: if (activeWorkspaceId != null) "İşletme" else null,
                 onOpenWorkspace = {
                     val id = activeWorkspaceId
                     if (id != null) navController.navigateTo(Destination.WorkspaceHome(id))
+                    else navController.navigateTo(Destination.Workspaces)
                 },
                 onBack = onBack
             )

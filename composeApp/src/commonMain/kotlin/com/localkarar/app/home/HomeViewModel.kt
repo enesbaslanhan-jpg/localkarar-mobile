@@ -58,7 +58,18 @@ class HomeViewModel(
         }
 
         viewModelScope.launch {
-            val workspaceId = activeWorkspaceStore.activeWorkspaceId.value
+            var workspaceId = activeWorkspaceStore.activeWorkspaceId.value
+            if (workspaceId == null) {
+                val workspacesResult = workspaceRepository.listWorkspaces()
+                if (workspacesResult.isSuccess) {
+                    val list = workspacesResult.getOrThrow().workspaces
+                    if (list.isNotEmpty()) {
+                        val first = list.first()
+                        activeWorkspaceStore.setActive(first.id, first.name)
+                        workspaceId = first.id
+                    }
+                }
+            }
             
             // Parallel fetches
             val dashboardDeferred = async { dashboardRepository.getDashboard() }

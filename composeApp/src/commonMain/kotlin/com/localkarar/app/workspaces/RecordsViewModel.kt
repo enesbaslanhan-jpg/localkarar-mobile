@@ -45,7 +45,7 @@ class RecordsViewModel(
                 workspaceId = workspaceId,
                 status = currentStatus,
                 type = currentType,
-                limit = 200
+                limit = 100
             )
             if (result.isSuccess) {
                 _uiState.value = RecordsUiState.Content(result.getOrThrow().records)

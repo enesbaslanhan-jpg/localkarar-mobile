@@ -80,8 +80,8 @@ class AuthViewModel(
             _registerError.value = "Geçerli bir e-posta adresi girin."
             return
         }
-        if (password.length < 8) {
-            _registerError.value = "Şifre en az 8 karakter olmalıdır."
+        if (password.length < 10) {
+            _registerError.value = "Şifre en az 10 karakter olmalıdır."
             return
         }
         if (!legalAccepted) {
@@ -93,7 +93,12 @@ class AuthViewModel(
         _registerError.value = null
 
         viewModelScope.launch {
-            val request = RegisterRequest(name = trimmedName, email = trimmedEmail, password = password)
+            val request = RegisterRequest(
+                name = trimmedName,
+                email = trimmedEmail,
+                password = password,
+                acceptedLegal = legalAccepted
+            )
             val result = authRepository.register(request)
 
             if (result.isFailure) {

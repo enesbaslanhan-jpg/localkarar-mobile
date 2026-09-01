@@ -63,7 +63,8 @@ fun HomeScreen(
     onNavigateToDecisionDetail: (String) -> Unit,
     onNavigateToWorkspaces: () -> Unit,
     onNavigateToTracker: (String) -> Unit,
-    onNavigateToEnrollments: () -> Unit
+    onNavigateToEnrollments: () -> Unit,
+    onOpenProductCenter: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
@@ -96,7 +97,8 @@ fun HomeScreen(
                         onNavigateToDecisionDetail = onNavigateToDecisionDetail,
                         onNavigateToWorkspaces = onNavigateToWorkspaces,
                         onNavigateToTracker = onNavigateToTracker,
-                        onNavigateToEnrollments = onNavigateToEnrollments
+                        onNavigateToEnrollments = onNavigateToEnrollments,
+                        onOpenProductCenter = onOpenProductCenter
                     )
                 }
             }
@@ -121,7 +123,8 @@ private fun DashboardContent(
     onNavigateToDecisionDetail: (String) -> Unit,
     onNavigateToWorkspaces: () -> Unit,
     onNavigateToTracker: (String) -> Unit,
-    onNavigateToEnrollments: () -> Unit
+    onNavigateToEnrollments: () -> Unit,
+    onOpenProductCenter: () -> Unit
 ) {
     val scrollState = rememberScrollState()
 
@@ -134,8 +137,19 @@ private fun DashboardContent(
     ) {
         // PageHead
         Column(modifier = Modifier.padding(top = LkSpacing.Space6)) {
-            Text("Kontrol Merkezi", style = LkTypography.getPageTitle(), color = LkTextPrimary)
-            Text("Bugün işletmenizde ne önemli?", style = LkTypography.getBody(), color = LkTextSecondary)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Kontrol Merkezi", style = LkTypography.getPageTitle(), color = LkTextPrimary)
+                    Text("Bugün işletmenizde ne önemli?", style = LkTypography.getBody(), color = LkTextSecondary)
+                }
+                IconButton(onClick = onOpenProductCenter) {
+                    Icon(Icons.Default.GridView, contentDescription = "Tüm Modüller", tint = LkPrimary)
+                }
+            }
             Spacer(modifier = Modifier.height(LkSpacing.Space4))
             Row(
                 modifier = Modifier.fillMaxWidth(),

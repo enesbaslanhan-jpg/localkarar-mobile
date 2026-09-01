@@ -144,6 +144,10 @@ fun createHttpClient(
         defaultRequest {
             url(ApiConfig.baseUrl)
             contentType(ContentType.Application.Json)
+            val token = secureStorage.readToken()
+            if (!token.isNullOrBlank()) {
+                header(HttpHeaders.Authorization, "Bearer $token")
+            }
         }
 
         HttpResponseValidator {

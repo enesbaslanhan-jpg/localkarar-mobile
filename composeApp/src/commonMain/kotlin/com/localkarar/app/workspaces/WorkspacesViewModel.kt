@@ -37,7 +37,7 @@ class WorkspacesViewModel(
             if (result.isSuccess) {
                 val workspaces = result.getOrThrow().workspaces
                 if (activeWorkspaceStore.activeWorkspaceId.value == null && workspaces.isNotEmpty()) {
-                    activeWorkspaceStore.setActive(workspaces.first().id)
+                    activeWorkspaceStore.setActive(workspaces.first().id, workspaces.first().name)
                 }
                 _uiState.value = WorkspacesUiState.Content(workspaces)
             } else {
@@ -71,7 +71,7 @@ class WorkspacesViewModel(
                 )
             )
             if (result.isSuccess) {
-                activeWorkspaceStore.setActive(result.getOrThrow().id)
+                activeWorkspaceStore.setActive(result.getOrThrow().id, name.trim())
                 load()
                 onSuccess(result.getOrThrow().id)
             } else {

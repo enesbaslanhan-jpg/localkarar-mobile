@@ -96,7 +96,7 @@ fun FinancialModelScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Column {
+                            Column(modifier = Modifier.weight(1f).padding(end = LkSpacing.Space2)) {
                                 Text(text = "${modelCategoryLabel(model.category)} · v${model.engineVersion ?: "1.0.0"}", style = LkTypography.getMicro(), color = LkTextSecondary)
                                 Spacer(modifier = Modifier.height(LkSpacing.Space1))
                                 Text(text = model.name, style = LkTypography.getSectionTitle(), color = LkTextPrimary)
@@ -183,44 +183,22 @@ private fun WorkbenchTab(
     val latestRun = scenarioRuns[scenarioName] ?: scenarioRuns.values.firstOrNull()
 
     Column(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space3)
-        ) {
-            // Inputs Rail
-            Column(modifier = Modifier.weight(1f)) {
-                LkSectionHeader(title = "Model Girdileri", subtitle = "${model.inputs.size} alan")
-                model.inputs.forEach { input ->
-                    LkNumericField(
-                        value = inputValues[input.key] ?: "",
-                        onValueChange = { newValue ->
-                            inputValues[input.key] = newValue
-                            inputErrors.remove(input.key)
-                        },
-                        label = input.label,
-                        placeholder = if (input.type == "number_array") "Virgülle ayırarak girin" else "Değer girin",
-                        error = inputErrors[input.key],
-                        suffix = input.unit.ifBlank { null }
-                    )
-                    if (input.description.isNotBlank()) {
-                        Text(text = input.description, style = LkTypography.getMetadata(), color = LkTextMuted, modifier = Modifier.padding(bottom = LkSpacing.Space2))
-                    }
-                }
-            }
-            // Output Rail
-            Column(modifier = Modifier.weight(1f)) {
-                LkSectionHeader(title = "Son Çalıştırma")
-                latestRun?.let { run ->
-                    val outputs = run.outputs.filterKeys { it !in setOf("sensitivity", "checks", "warnings", "trace", "confidence", "ethics", "normalizedInputs") }
-                    outputs.entries.take(4).forEach { (key, value) ->
-                        val definition = model.outputs.find { it.key == key }
-                        LkResultRow(
-                            label = definition?.label ?: key.replace('_', ' ').replaceFirstChar { it.uppercaseChar() },
-                            value = value.displayValue() + if (!definition?.unit.isNullOrBlank() && value.displayValue().isNotBlank()) " ${definition.unit}" else ""
-                        )
-                    }
-                    Text(text = "${SCENARIO_MAP[run.scenarioName ?: "base"] ?: run.scenarioName} · ${run.createdAt?.let { LkDateUtils.formatDateTime(it) } ?: ""}", style = LkTypography.getMicro(), color = LkTextMuted)
-                } ?: Text(text = "Henüz çalışma yok. Girdileri doldurup modeli çalıştırın.", style = LkTypography.getBodySmall(), color = LkTextMuted)
+        LkSectionHeader(title = "Model Girdileri", subtitle = "${model.inputs.size} alan")
+        Spacer(modifier = Modifier.height(LkSpacing.Space2))
+        model.inputs.forEach { input ->
+            LkNumericField(
+                value = inputValues[input.key] ?: "",
+                onValueChange = { newValue ->
+                    inputValues[input.key] = newValue
+                    inputErrors.remove(input.key)
+                },
+                label = input.label,
+                placeholder = if (input.type == "number_array") "Virgülle ayırarak girin" else "Değer girin",
+                error = inputErrors[input.key],
+                suffix = input.unit.ifBlank { null }
+            )
+            if (input.description.isNotBlank()) {
+                Text(text = input.description, style = LkTypography.getMetadata(), color = LkTextMuted, modifier = Modifier.padding(bottom = LkSpacing.Space2))
             }
         }
 
@@ -271,16 +249,45 @@ private fun WorkbenchTab(
                         }
                     }
                 }
-                if (valid && inputs.isNotEmpty() && workspaceName != null) {
-                    viewModel.run(inputs, scenarioName) { message ->
-                        setActionError(message)
+                if (valid) {
+                    viewModel.run(inputs, scenarioName) { error ->
+                        setActionError(error)
                     }
-                } else if (workspaceName == null) {
-                    setActionError("Finansal model çalıştırmak için önce bir işletme seçin.")
                 }
             },
-            enabled = !isRunning && workspaceName != null,
             modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(LkSpacing.Space4))
+        LkSectionHeader(title = "Son Çalıştırma")
+        Spacer(modifier = Modifier.height(LkSpacing.Space2))
+        latestRun?.let { run ->
+            val outputs = run.outputs.filterKeys { it !in setOf("sensitivity", "checks", "warnings", "trace", "confidence", "ethics", "normalizedInputs") }
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(LkSurfacePanel, LkShapes.MD)
+                    .border(1.dp, LkLineStrong, LkShapes.MD)
+                    .padding(LkSpacing.PadPanel)
+            ) {
+                outputs.entries.forEach { (key, value) ->
+                    val definition = model.outputs.find { it.key == key }
+                    LkResultRow(
+                        label = definition?.label ?: key.replace('_', ' ').replaceFirstChar { it.uppercaseChar() },
+                        value = value.displayValue() + if (!definition?.unit.isNullOrBlank() && value.displayValue().isNotBlank()) " ${definition.unit}" else ""
+                    )
+                }
+                Spacer(modifier = Modifier.height(LkSpacing.Space2))
+                Text(
+                    text = "${SCENARIO_MAP[run.scenarioName ?: "base"] ?: run.scenarioName} · ${run.createdAt?.let { LkDateUtils.formatDateTime(it) } ?: ""}",
+                    style = LkTypography.getMicro(),
+                    color = LkTextMuted
+                )
+            }
+        } ?: Text(
+            text = "Henüz çalışma yok. Girdileri doldurup modeli çalıştırın.",
+            style = LkTypography.getBodySmall(),
+            color = LkTextMuted
         )
     }
 }

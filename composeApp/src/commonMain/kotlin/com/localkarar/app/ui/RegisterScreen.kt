@@ -126,7 +126,7 @@ fun RegisterScreen(
                 LkPasswordTextField(
                     value = password,
                     onValueChange = { password = it },
-                    label = "Şifre (En az 8 karakter)",
+                    label = "Şifre (En az 10 karakter)",
                     placeholder = "••••••••"
                 )
 
@@ -162,7 +162,7 @@ fun RegisterScreen(
                 LkButton(
                     text = if (isLoading) "Hesap Oluşturuluyor..." else "Kayıt Ol",
                     onClick = { viewModel.register(name, email, password, legalAccepted) },
-                    enabled = name.isNotBlank() && email.isNotBlank() && password.length >= 8 && legalAccepted && !isLoading,
+                    enabled = name.isNotBlank() && email.isNotBlank() && password.length >= 10 && legalAccepted && !isLoading,
                     modifier = Modifier.fillMaxWidth()
                 )
 

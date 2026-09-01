@@ -39,7 +39,7 @@ fun LkSectionHeader(
     subtitle: String? = null,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier.fillMaxWidth()) {
+    Column(modifier = modifier) {
         Text(
             text = title,
             style = LkTypography.getSectionTitle(),
@@ -123,13 +123,15 @@ fun LkChip(
     text: String,
     background: Color = LkSurfaceRaised,
     contentColor: Color = LkTextSecondary,
+    onClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
+    val clickModifier = if (onClick != null) modifier.clickable(onClick = onClick) else modifier
     Text(
         text = text,
         style = LkTypography.getMicro(),
         color = contentColor,
-        modifier = modifier
+        modifier = clickModifier
             .background(background, CircleShape)
             .padding(horizontal = LkSpacing.Space3, vertical = LkSpacing.Space1)
     )

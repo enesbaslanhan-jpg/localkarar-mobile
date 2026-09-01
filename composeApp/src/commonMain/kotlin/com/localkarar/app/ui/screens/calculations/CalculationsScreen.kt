@@ -53,6 +53,7 @@ private fun formatTry(amount: Double): String {
 fun CalculationsScreen(
     viewModel: CalculationsViewModel,
     onCalculationSelected: (CalculationItem) -> Unit,
+    onDetailedSelected: ((CalculationItem) -> Unit)? = null,
     onNavigateToWorkspace: () -> Unit,
     onBack: () -> Unit,
     navController: NavController
@@ -61,6 +62,12 @@ fun CalculationsScreen(
     val categoryFilter by viewModel.categoryFilter.collectAsState()
     var selectedTab by remember { mutableStateOf(0) }
     val tabs = listOf("Katalog", "Finansal Görünüm", "Geçmiş")
+
+    LaunchedEffect(selectedTab) {
+        if (selectedTab == 1 || selectedTab == 2) {
+            viewModel.refresh()
+        }
+    }
 
     LkPageLayout(title = "Hesaplamalar", onBack = onBack) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -103,6 +110,7 @@ fun CalculationsScreen(
                                 categoryFilter = categoryFilter,
                                 onCategoryChanged = { viewModel.updateCategoryFilter(it) },
                                 onCalculationSelected = onCalculationSelected,
+                                onDetailedSelected = onDetailedSelected,
                                 onNavigateToWorkspace = onNavigateToWorkspace
                             )
                             1 -> FinansalGorunumTab(
@@ -117,7 +125,9 @@ fun CalculationsScreen(
                                 history = state.history,
                                 catalog = state.catalog,
                                 onHistorySelected = { item, calculationItem ->
-                                    navController.navigateTo(Destination.FormulaDetail(calculationItem.formula!!.id, item))
+                                    if (calculationItem.formula != null) {
+                                        navController.navigateTo(Destination.FormulaDetail(calculationItem.formula!!.id, item))
+                                    }
                                 }
                             )
                         }
@@ -140,6 +150,7 @@ private fun KatalogTab(
     categoryFilter: String,
     onCategoryChanged: (String) -> Unit,
     onCalculationSelected: (CalculationItem) -> Unit,
+    onDetailedSelected: ((CalculationItem) -> Unit)? = null,
     onNavigateToWorkspace: () -> Unit
 ) {
     val visibleItems = remember(catalog, categoryFilter) {
@@ -223,7 +234,9 @@ private fun KatalogTab(
             items(visibleItems, key = { it.id }) { item ->
                 CalculationCard(
                     item = item,
-                    onClick = { onCalculationSelected(item) }
+                    onClick = { onCalculationSelected(item) },
+                    onOpenDetailed = { onDetailedSelected?.invoke(item) ?: onCalculationSelected(item) },
+                    onOpenQuick = { onCalculationSelected(item) }
                 )
             }
         }
@@ -270,7 +283,9 @@ private fun QuickActionCard(
 @Composable
 private fun CalculationCard(
     item: CalculationItem,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onOpenDetailed: (() -> Unit)? = null,
+    onOpenQuick: (() -> Unit)? = null
 ) {
     Column(
         modifier = Modifier
@@ -312,8 +327,11 @@ private fun CalculationCard(
         Row(horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
             val categoryLabel = CALCULATION_CATEGORIES.firstOrNull { it.key == item.category }?.label ?: item.category
             LkChip(text = categoryLabel)
-            item.modeLabels().forEach { label ->
-                LkChip(text = label)
+            if (item.supportsQuickCalculation) {
+                LkChip(text = "Hızlı hesap", onClick = onOpenQuick)
+            }
+            if (item.supportsDetailedAnalysis) {
+                LkChip(text = "Detaylı analiz mevcut", onClick = onOpenDetailed)
             }
         }
     }

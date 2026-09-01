@@ -8,7 +8,11 @@ class ActiveWorkspaceStore {
     private val _activeWorkspaceId = MutableStateFlow<String?>(null)
     val activeWorkspaceId: StateFlow<String?> = _activeWorkspaceId.asStateFlow()
 
-    fun setActive(workspaceId: String?) {
+    private val _activeWorkspaceName = MutableStateFlow<String?>(null)
+    val activeWorkspaceName: StateFlow<String?> = _activeWorkspaceName.asStateFlow()
+
+    fun setActive(workspaceId: String?, name: String? = null) {
         _activeWorkspaceId.value = workspaceId
+        _activeWorkspaceName.value = name
     }
 }

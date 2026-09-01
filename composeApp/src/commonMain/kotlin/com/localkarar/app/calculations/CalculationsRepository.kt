@@ -19,35 +19,35 @@ class CalculationsRepository(private val api: SafeApiClient) {
     private val base = ApiConfig.baseUrl
 
     suspend fun getFormulas(): Result<List<FormulaDto>> {
-        return api.get("$base/api/formulas")
+        return api.get("$base/formulas")
     }
 
     suspend fun calculateFormula(formulaId: String, inputs: Map<String, Double>): Result<FormulaCalculateResponseDto> {
-        return api.post("$base/api/formulas/$formulaId/calculate", FormulaCalculateRequestDto(inputs))
+        return api.post("$base/formulas/$formulaId/calculate", FormulaCalculateRequestDto(inputs))
     }
 
     suspend fun getFormulaHistory(): Result<List<FormulaCalculationDto>> {
-        return api.get("$base/api/formula-calculations")
+        return api.get("$base/formula-calculations")
     }
 
     suspend fun getModels(): Result<FinancialModelListResponseDto> {
-        return api.get("$base/api/financial-models")
+        return api.get("$base/financial-models")
     }
 
     suspend fun getModel(code: String): Result<FinancialModelDto> {
-        return api.get("$base/api/financial-models/$code")
+        return api.get("$base/financial-models/$code")
     }
 
     suspend fun runModel(workspaceId: String, code: String, request: ModelRunRequestDto): Result<FinancialModelRunResponseDto> {
-        return api.post("$base/api/workspaces/$workspaceId/financial-models/$code/runs", request)
+        return api.post("$base/workspaces/$workspaceId/financial-models/$code/runs", request)
     }
 
     suspend fun getModelRuns(workspaceId: String, modelCode: String? = null): Result<FinancialModelRunListResponseDto> {
         val suffix = if (modelCode != null) "?modelCode=${modelCode.uppercase()}" else ""
-        return api.get("$base/api/workspaces/$workspaceId/financial-model-runs$suffix")
+        return api.get("$base/workspaces/$workspaceId/financial-model-runs$suffix")
     }
 
     suspend fun getRunDetail(workspaceId: String, runId: String): Result<FinancialModelRunDetailDto> {
-        return api.get("$base/api/workspaces/$workspaceId/financial-model-runs/$runId")
+        return api.get("$base/workspaces/$workspaceId/financial-model-runs/$runId")
     }
 }
