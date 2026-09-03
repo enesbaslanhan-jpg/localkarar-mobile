@@ -1,0 +1,93 @@
+name: Android Build & Test
+
+# NEDEN VAR:
+#
+# Bu depoda Android icin HICBIR CI isi yoktu ve hicbir yerde `gradle test`
+# adimi gecmiyordu. Yani mevcut 9 birim testi (DeepLinkParserTest,
+# DestinationCodecTest) hicbir zaman kosmuyordu -- yazilmislar ama kimse
+# dustuklerini gormuyordu.
+#
+# Ayrica release derlemesi hic denenmiyordu. R8 bu turda acildi ve R8'in
+# kotlinx.serialization DTO'larini bozmasi debug'da GORUNMEYEN bir arizadir;
+# yalniz `assembleRelease` calistirilirsa yakalanir.
+
+on:
+  push:
+    branches: [ main, 'feature/**', 'fix/**' ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Derle, test et, release al
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Depoyu al
+        uses: actions/checkout@v4
+
+      - name: JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Debug derleme
+        run: ./gradlew :composeApp:assembleDebug --stacktrace
+
+      # Testler ayri adim: derleme gecip testin dustugu durum raporda
+      # acikca gorunsun. `--stacktrace` teshis icin.
+      # Yalniz Android birim testi hedefi: commonTest kaynak kumesi bu hedefe
+      # de derlendigi icin ortak testler burada kosuyor. `allTests` KULLANILMADI
+      # -- Linux kosucusunda iOS hedeflerini de tetikler ve is patlar.
+      - name: Birim testleri
+        run: ./gradlew :composeApp:testDebugUnitTest --stacktrace
+
+      - name: Test raporlarini yukle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-raporlari
+          path: |
+            composeApp/build/reports/tests/
+            composeApp/build/test-results/
+          retention-days: 14
+
+      - name: Android Lint
+        run: ./gradlew :composeApp:lintDebug --stacktrace
+
+      - name: Lint raporunu yukle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-raporu
+          path: composeApp/build/reports/lint-results-debug.html
+          retention-days: 14
+
+      # 🔴 EN KRITIK ADIM. R8 acik oldugu icin burada bozulan sey debug'da
+      # hicbir zaman gorunmez. Imzalama sirlari yoksa cikti imzasiz uretilir
+      # ve is yine de anlamli: R8/ProGuard kurallarinin dogrulugu sinaniyor.
+      - name: Release derleme (R8 acik)
+        env:
+          LK_KEYSTORE_PATH: ${{ secrets.LK_KEYSTORE_PATH }}
+          LK_KEYSTORE_PASSWORD: ${{ secrets.LK_KEYSTORE_PASSWORD }}
+          LK_KEY_ALIAS: ${{ secrets.LK_KEY_ALIAS }}
+          LK_KEY_PASSWORD: ${{ secrets.LK_KEY_PASSWORD }}
+        run: ./gradlew :composeApp:assembleRelease --stacktrace
+
+      - name: R8 eslesme dosyasini yukle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r8-mapping
+          path: composeApp/build/outputs/mapping/release/mapping.txt
+          retention-days: 90

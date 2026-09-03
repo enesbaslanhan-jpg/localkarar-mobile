@@ -78,20 +78,72 @@ android {
         applicationId = "com.localkarar.app"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = libs.versions.app.versionCode.get().toInt()
+        versionName = libs.versions.app.versionName.get()
     }
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+    /*
+     * IMZALAMA.
+     *
+     * Onceki halinde signingConfigs blogu HIC YOKTU: `assembleRelease` imzasiz
+     * cikti uretiyordu ve magazaya yuklenemezdi.
+     *
+     * Keystore ve parolalar DEPOYA GIRMIYOR, ortam degiskeninden okunuyor.
+     * Degiskenler yoksa imzalama yapilandirmasi hic kurulmuyor: yerelde
+     * `assembleRelease` (imzasiz) calismaya devam ediyor, CI'da degiskenler
+     * verilerek imzali cikti aliniyor. Boylece "keystore yok" hatasi
+     * gelistirici makinesinde derlemeyi durdurmuyor.
+     */
+    val keystoreYolu = System.getenv("LK_KEYSTORE_PATH")
+    val keystoreParolasi = System.getenv("LK_KEYSTORE_PASSWORD")
+    val anahtarAdi = System.getenv("LK_KEY_ALIAS")
+    val anahtarParolasi = System.getenv("LK_KEY_PASSWORD")
+    val imzalanabilir = !keystoreYolu.isNullOrBlank() &&
+        !keystoreParolasi.isNullOrBlank() &&
+        !anahtarAdi.isNullOrBlank() &&
+        !anahtarParolasi.isNullOrBlank()
+
+    if (imzalanabilir) {
+        signingConfigs {
+            create("release") {
+                storeFile = file(keystoreYolu!!)
+                storePassword = keystoreParolasi
+                keyAlias = anahtarAdi
+                keyPassword = anahtarParolasi
+            }
+        }
+    }
+
     buildTypes {
         getByName("debug") {
             buildConfigField("Boolean", "IS_RELEASE", "false")
         }
         getByName("release") {
-            isMinifyEnabled = false
+            /*
+             * R8 ACILDI.
+             *
+             * Kapaliyken release APK'si tamamen okunabilir kaliyordu: sinif ve
+             * yontem adlari, ic string'ler, sozlesme yapisinin tamami acikta.
+             *
+             * ⚠️ RISK: kotlinx.serialization'in @Serializable sinif ve alan
+             * adlari R8 tarafindan degistirilirse DTO'lar SESSIZCE bozulur --
+             * debug'da calisip release'de bozulan tipik hata budur. Bunu
+             * onleyen kurallar proguard-rules.pro icinde; oradaki -keep
+             * satirlari SILINMEMELI.
+             */
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+            if (imzalanabilir) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             buildConfigField("Boolean", "IS_RELEASE", "true")
         }
     }

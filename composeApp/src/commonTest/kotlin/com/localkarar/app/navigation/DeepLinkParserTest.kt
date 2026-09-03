@@ -144,4 +144,26 @@ class DeepLinkParserTest {
             )
         }
     }
+
+    /*
+     * BILGI KUTUPHANESI, BILGI NESNESI ve OGRENME YOLU URUNDEN
+     * KALDIRILDI (03.09.2026, urun sahibi karari). Webde de rotalari
+     * silindi; urunun ogrenme yuzeyi 38 kanonik kurs.
+     *
+     * Bu test karari bekliyor: biri bu yollar icin dal eklerse,
+     * kullaniciyi olmayan bir ekrana goturecegi icin test duser.
+     */
+    @Test
+    fun bilgiVeOgrenmeYoluYollariEslesmez() {
+        for (url in listOf(
+            "https://localkarar.com/app/knowledge",
+            "https://localkarar.com/app/knowledge/CUR-038-01",
+            "https://localkarar.com/app/knowledge/topic/finans",
+            "https://localkarar.com/app/learning-path",
+            "https://localkarar.com/app/learning-path/pilot"
+        )) {
+            val result = DeepLinkParser.parse(url)
+            assertIs<DeepLinkResult.Unsupported>(result, "Unsupported bekleniyordu: '$url'")
+        }
+    }
 }

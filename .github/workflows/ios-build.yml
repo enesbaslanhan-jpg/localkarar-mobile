@@ -1,13 +1,17 @@
 name: iOS Platform & Simulator Build
 
+# Daller KALIBA cevrildi. Onceki halinde tek tek yaziliyorlardi
+# (feature/m7-..., feature/m8-...); her yeni dal icin bu dosyayi duzenlemek
+# gerekiyordu ve duzenlenmediginde is SESSIZCE hic kosmuyordu -- basarisiz
+# olmuyor, sadece yok. Unutulmasi kacinilmaz bir kurulumdu.
 on:
   push:
     branches:
-      - feature/m7-ios-platform-build
-      - feature/m8-adaptive-ui-polish
-      - feature/m9-lifecycle-state
-      - feature/m10a-deep-links
       - main
+      - 'feature/**'
+      - 'fix/**'
+  pull_request:
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
@@ -67,14 +71,29 @@ jobs:
           echo "Discovered Simulator Name: $SIM_NAME"
           echo "Discovered Simulator UDID: $SIM_UDID"
 
+      # 🔴 set -o pipefail ZORUNLU.
+      #
+      # `./gradlew ... | tee log` kaliginda adimin cikis kodu TEE'DEN gelir.
+      # GitHub Actions bash'i varsayilan olarak pipefail ile calismaz, yani
+      # gradle derlemesi DUSSE BILE adim yesil goruunuyordu -- CI, kirik kodu
+      # gecirir hale gelmisti.
       - name: Compile Kotlin iOS Simulator Target
         run: |
+          set -o pipefail
           echo "=== Compiling Kotlin iosSimulatorArm64 ==="
           mkdir -p artifacts
           ./gradlew :composeApp:compileKotlinIosSimulatorArm64 --stacktrace 2>&1 | tee artifacts/gradle_compile.log
 
+      # commonTest testleri burada da kosuyor: iOS hedefine derlenmis halleriyle.
+      # Onceki kurulumda hicbir is `gradle test` calistirmiyordu.
+      - name: Birim testleri (iOS simulator hedefi)
+        run: |
+          set -o pipefail
+          ./gradlew :composeApp:iosSimulatorArm64Test --stacktrace 2>&1 | tee artifacts/gradle_test.log
+
       - name: Link Kotlin iOS Debug Framework
         run: |
+          set -o pipefail
           echo "=== Linking Debug Framework iosSimulatorArm64 ==="
           ./gradlew :composeApp:linkDebugFrameworkIosSimulatorArm64 --stacktrace 2>&1 | tee artifacts/gradle_link.log
 

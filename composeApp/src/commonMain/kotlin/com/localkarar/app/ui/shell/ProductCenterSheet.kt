@@ -74,6 +74,18 @@ fun ProductCenterSheet(
                     icon = Icons.Default.Psychology,
                     destination = Destination.AiMentor
                 )
+                /*
+                 * BILGI KUTUPHANESI ve OGRENME YOLU URUNDEN KALDIRILDI.
+                 *
+                 * Urun sahibi karari (03.09.2026): deneme amacli iceriklerdi;
+                 * urunun ogrenme yuzeyi 38 kanonik kurs. Webde de rotalari
+                 * silindi, yalniz menuden cikarilmakla kalinmadi.
+                 *
+                 * Ekranlar, ViewModel'ler ve DTO'lar da silindi: ulasilamayan
+                 * kod birakmak, sonraki kisiye calisan bir ozellik gibi
+                 * gorunur.
+                 */
+
             )
         ),
         ProductGroup(

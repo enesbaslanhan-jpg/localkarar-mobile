@@ -2,7 +2,6 @@ package com.localkarar.app.courses
 
 import com.localkarar.app.network.dto.CourseDto
 import com.localkarar.app.network.dto.DashboardEnrollmentDto
-import com.localkarar.app.network.dto.LearningPathDto
 import com.localkarar.app.home.DashboardRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,7 +17,6 @@ data class CoursesStateData(
     val totalPages: Int = 1,
     val total: Int = 0,
     val enrollments: List<DashboardEnrollmentDto> = emptyList(),
-    val learningPath: LearningPathDto? = null,
     val categories: List<String> = emptyList(),
     // Current Filters
     val search: String = "",
@@ -114,7 +112,6 @@ class CoursesViewModel(
                         total = coursesResult.getOrNull()?.total ?: 0,
                         categories = categories,
                         enrollments = enrollmentsResult.getOrNull()?.enrollments ?: emptyList(),
-                        learningPath = dashboardResult.getOrNull()?.currentLearningPath
                     )
                     _uiState.value = CoursesUiState.Content(currentData)
                 }

@@ -30,13 +30,16 @@ import com.localkarar.app.courses.CourseRepository
 import com.localkarar.app.decision.DecisionRepository
 import com.localkarar.app.workspaces.ActiveWorkspaceStore
 import com.localkarar.app.workspaces.WorkspaceRepository
+import com.localkarar.app.workspaces.DocumentUploadRepository
 import com.localkarar.app.mentor.MentorRepository
 import com.localkarar.app.news.NewsRepository
 import com.localkarar.app.community.CommunityRepository
 import com.localkarar.app.settings.SettingsRepository
+import com.localkarar.app.settings.AccountNotificationsRepository
 import com.localkarar.app.ui.ForgotPasswordScreen
 import com.localkarar.app.ui.LoginScreen
 import com.localkarar.app.ui.RegisterScreen
+import com.localkarar.app.ui.WelcomeScreen
 import com.localkarar.app.ui.ResetPasswordScreen
 import com.localkarar.app.ui.shell.AppShell
 import com.localkarar.app.ui.theme.LocalKararTheme
@@ -85,8 +88,23 @@ fun App(secureStorage: SecureStorage) {
     val newsRepository = remember { NewsRepository(httpClient) }
     val communityRepository = remember { CommunityRepository(httpClient) }
     val settingsRepository = remember { SettingsRepository(httpClient) }
+    val documentUploadRepository = remember { DocumentUploadRepository(httpClient) }
+    val accountNotificationsRepository = remember { AccountNotificationsRepository(SafeApiClient(httpClient, "Bildirimler")) }
 
     var authRoute by rememberSaveable { mutableStateOf(AuthRoute.LOGIN) }
+
+    /*
+     * KAYIT SONRASI KARSILAMA.
+     *
+     * Webde kayit /app/hosgeldin adresine yonleniyor (AuthPage.jsx:113);
+     * mobilde kayit biter bitmez kullanici dogrudan bos bir Kontrol
+     * Merkezi ekranina dusuyordu.
+     *
+     * Bayrak rememberSaveable DEGIL: ekran yalnizca kaydin hemen
+     * ardindaki oturumda gorunmeli. Surec olumunden sonra geri gelmesi,
+     * uygulamayi her acisinda karsilama gormek demek olurdu.
+     */
+    var yeniKayit by remember { mutableStateOf(false) }
 
     LocalKararTheme {
         val sessionState by authViewModel.sessionState.collectAsState()
@@ -118,6 +136,7 @@ fun App(secureStorage: SecureStorage) {
                         )
                         AuthRoute.REGISTER -> RegisterScreen(
                             viewModel = authViewModel,
+                            onRegistered = { yeniKayit = true },
                             onNavigateToLogin = {
                                 authViewModel.clearErrors()
                                 authRoute = AuthRoute.LOGIN
@@ -144,6 +163,12 @@ fun App(secureStorage: SecureStorage) {
                     }
                 }
                 is SessionState.Authenticated -> {
+                    if (yeniKayit) {
+                        WelcomeScreen(
+                            user = state.user,
+                            onStart = { yeniKayit = false }
+                        )
+                    } else {
                     AppShell(
                         user = state.user,
                         homeViewModel = homeViewModel,
@@ -157,6 +182,8 @@ fun App(secureStorage: SecureStorage) {
                         newsRepository = newsRepository,
                         communityRepository = communityRepository,
                         settingsRepository = settingsRepository,
+                        documentUploadRepository = documentUploadRepository,
+                        accountNotificationsRepository = accountNotificationsRepository,
                         onNewSession = { token, user ->
                             authRepository.applyNewSession(token, user)
                         },
@@ -165,6 +192,7 @@ fun App(secureStorage: SecureStorage) {
                             authRoute = AuthRoute.LOGIN
                         }
                     )
+                    }
                 }
             }
         }

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Koyu temada uygulama zemini. Compose tarafinda LkSurfaceCanvas (Color.kt:18). -->
+    <color name="lk_acilis_zemini">#FF121619</color>
+</resources>

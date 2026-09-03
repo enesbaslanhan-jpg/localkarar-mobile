@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.localkarar.app.core.LkDateUtils
+import com.localkarar.app.core.rememberFilePicker
 import com.localkarar.app.network.dto.WorkspaceDocumentDto
 import com.localkarar.app.ui.components.LkButton
 import com.localkarar.app.ui.components.LkButtonVariant
@@ -37,8 +38,24 @@ fun DocumentsScreen(
     onBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val yukleniyor by viewModel.yukleniyor.collectAsState()
     var deleteConfirmId by remember { mutableStateOf<String?>(null) }
     var notice by remember { mutableStateOf<String?>(null) }
+
+    /*
+     * Dosya secici. Platform karsiliklari (`rememberFilePicker`) ZATEN VARDI,
+     * yalnizca kullanilmiyordu -- ekran "belge yukleme su an icin web
+     * suruminde kullanilabilir" diyordu.
+     *
+     * Kategori GONDERILMIYOR (null): sunucu icerigi kendisi cozumluyor ve
+     * e-faturayi taniyor. Yukleme aninda kullaniciya kategori sordurmak,
+     * dogru cevabi zaten bilen bir sisteme gereksiz bir adim eklemek olurdu.
+     */
+    val dosyaSec = rememberFilePicker { secilen ->
+        if (secilen != null) {
+            viewModel.belgeYukle(secilen.name, secilen.bytes)
+        }
+    }
 
     LkPageLayout(title = "Belgeler", onBack = onBack) {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -52,8 +69,15 @@ fun DocumentsScreen(
                     if (state.documents.isEmpty()) {
                         LkEmptyState(
                             title = "Henüz belge yok",
-                            description = "Web sürümünden belge yükleyebilirsiniz. Yüklenen belgeler burada listelenir.",
-                            icon = Icons.Default.AttachFile
+                            description = "Fatura, sözleşme veya makbuz yükleyin. e-Fatura XML dosyaları otomatik olarak çözümlenir.",
+                            icon = Icons.Default.AttachFile,
+                            action = {
+                                LkButton(
+                                    text = if (yukleniyor) "Yükleniyor..." else "Belge yükle",
+                                    onClick = dosyaSec,
+                                    enabled = !yukleniyor
+                                )
+                            }
                         )
                     } else {
                         LazyColumn(
@@ -62,13 +86,12 @@ fun DocumentsScreen(
                             verticalArrangement = Arrangement.spacedBy(LkSpacing.Space3)
                         ) {
                             item {
-                                LkInfoPanel(title = "Bilgi", icon = Icons.Default.Info) {
-                                    Text(
-                                        text = "Belge yükleme şu an için web sürümünde kullanılabilir. Yüklediğiniz belgelerin analiz özetleri burada görünür.",
-                                        style = LkTypography.getMetadata(),
-                                        color = LkTextSecondary
-                                    )
-                                }
+                                LkButton(
+                                    text = if (yukleniyor) "Yükleniyor..." else "Belge yükle",
+                                    onClick = dosyaSec,
+                                    enabled = !yukleniyor,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
                             }
                             items(state.documents, key = { it.id }) { document ->
                                 DocumentCard(

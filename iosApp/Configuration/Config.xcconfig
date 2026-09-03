@@ -1,3 +1,11 @@
 TEAM_ID=
 BUNDLE_ID=com.localkarar.app
 APP_NAME=LocalKarar
+
+// Universal link yetkisi. Dosya iosApp/iosApp/iosApp.entitlements icinde;
+// yol proje kokune (iosApp.xcodeproj'in bulundugu dizin) goredir.
+//
+// pbxproj elle duzenlenmedi: her iki yapilandirma da bu xcconfig'i
+// baseConfigurationReference olarak kullaniyor, dolayisiyla ayar buradan
+// veriliyor. Boylece Debug ve Release ayni yerden besleniyor.
+CODE_SIGN_ENTITLEMENTS = iosApp/iosApp.entitlements

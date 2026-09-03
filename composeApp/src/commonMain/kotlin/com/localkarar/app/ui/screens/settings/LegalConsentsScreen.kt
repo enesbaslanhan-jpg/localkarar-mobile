@@ -17,6 +17,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.localkarar.app.core.openExternalUrl
+import com.localkarar.app.network.ApiConfig
 import com.localkarar.app.settings.SettingsViewModel
 import com.localkarar.app.ui.components.LkButton
 import com.localkarar.app.ui.components.LkPageLayout
@@ -136,6 +138,43 @@ fun LegalConsentsScreen(
                                     text = doc.summary,
                                     style = LkTypography.getBodySmall(),
                                     color = LkTextPrimary
+                                )
+                            }
+
+                            /*
+                             * 🔴 METNI OKUMANIN HICBIR YOLU YOKTU.
+                             *
+                             * Ekran belgeleri listeliyor, surumlerini
+                             * gosteriyor ve ONAY ALIYOR -- ama kullanici
+                             * onayladigi metni uygulamada hicbir yerde
+                             * goremiyordu. Parity eksiginden once bir uyum
+                             * sorunu: okunamayan bir metne onay aliniyordu.
+                             *
+                             * METIN KOPYALANMIYOR, gercek sayfa aciliyor.
+                             * Sebep: metinler 117 KB ve surumleriyle birlikte
+                             * hareket etmek zorunda -- `privacy.js` basindaki
+                             * not bunu acikca yaziyor ("once burasi
+                             * guncellenir, sonra version artirilir"). Ikinci
+                             * bir kopya, surum artisinda sessizce eskiyip
+                             * kullaniciya YANLIS metni onaylatirdi.
+                             *
+                             * Adres `ApiConfig.baseUrl` uzerinden: ayni
+                             * Fastify hem SPA'yi hem API'yi suniyor, yani
+                             * gelistirmede 10.0.2.2:3000, uretimde
+                             * localkarar.com -- ikisi de dogru sayfayi acar.
+                             * Belge `type` degerleri web rotalariyla birebir
+                             * ayni (terms, privacy, cookies, ...).
+                             */
+                            Spacer(Modifier.height(12.dp))
+                            TextButton(
+                                onClick = { openExternalUrl(ApiConfig.baseUrl + "/" + doc.type) },
+                                contentPadding = PaddingValues(0.dp)
+                            ) {
+                                Text(
+                                    "Metni oku",
+                                    style = LkTypography.getBodySmall(),
+                                    color = LkPrimary,
+                                    fontWeight = FontWeight.SemiBold
                                 )
                             }
                         }

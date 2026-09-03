@@ -100,6 +100,18 @@ object DeepLinkParser {
             "bildirimler" -> {
                 if (segments.size == 1) DeepLinkTarget.NotificationsRoot else null
             }
+            /*
+             * BILGI KUTUPHANESI, BILGI NESNESI ve OGRENME YOLU
+             * DESTEKLENMIYOR.
+             *
+             * Urun sahibi karari (03.09.2026): bu yuzeyler deneme amacliydi
+             * ve KALDIRILDI -- webde de rotalari silindi. Urunun ogrenme
+             * yuzeyi 38 kanonik kurs.
+             *
+             * Buraya bir dal eklemek, olmayan bir ekrana yonlendirmek olur.
+             * `DeepLinkParserTest.bilgiVeOgrenmeYoluYollariEslesmez` bunu
+             * bekcilik ediyor.
+             */
             "mentor" -> {
                 if (segments.size == 1) DeepLinkTarget.MentorRoot else null
             }

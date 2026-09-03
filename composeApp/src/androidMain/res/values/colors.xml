@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Acik temada uygulama zemini.
+      Compose tarafindaki LkLightSurfaceCanvas ile AYNI olmali (Color.kt:57).
+      Farkli olursa acilista renk sicramasi gorunur; bu temanin varlik sebebi
+      tam olarak o sicramayi ortadan kaldirmak.
+    -->
+    <color name="lk_acilis_zemini">#FFE1E2E5</color>
+</resources>

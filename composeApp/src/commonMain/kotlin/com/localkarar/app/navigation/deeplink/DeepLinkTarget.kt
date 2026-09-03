@@ -12,6 +12,8 @@ sealed interface DeepLinkTarget {
     data object SelfProfile : DeepLinkTarget
     data object NotificationsRoot : DeepLinkTarget
 
+    // Bilgi Kutuphanesi / Ogrenme Yolu (webde menude degil, rota olarak canli)
+
     // Mentor
     data object MentorRoot : DeepLinkTarget
 
@@ -61,6 +63,7 @@ sealed interface DeepLinkTarget {
         is UserProfile -> Destination.CommunityProfile(userId)
         is SelfProfile -> Destination.Profile
         is NotificationsRoot -> Destination.CommunityNotifications
+
 
         is MentorRoot -> Destination.AiMentor
 

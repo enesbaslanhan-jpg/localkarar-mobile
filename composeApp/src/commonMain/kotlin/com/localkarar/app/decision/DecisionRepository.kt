@@ -1,5 +1,6 @@
 ﻿package com.localkarar.app.decision
 
+import com.localkarar.app.core.AppLog
 import com.localkarar.app.network.ApiConfig
 import com.localkarar.app.network.ApiError
 import com.localkarar.app.network.dto.DecisionCheckListDto
@@ -31,7 +32,7 @@ class DecisionRepository(private val httpClient: HttpClient) {
         technical: String
     ) : Exception(userMessage) {
         init {
-            println("DecisionRepository contract violation: $technical")
+            AppLog.e("DecisionRepository", "contract violation: $technical")
         }
     }
 
@@ -46,7 +47,7 @@ class DecisionRepository(private val httpClient: HttpClient) {
     }
 
     private fun HttpResponse.failForStatus(): Result<Nothing> {
-        println("DecisionRepository request failed: HTTP ${status.value}")
+        AppLog.e("DecisionRepository", "request failed: HTTP ${status.value}")
         return Result.failure(Exception(userMessage))
     }
 

@@ -39,8 +39,34 @@ This document establishes the authoritative parity matrix between the Web LocalK
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **1** | **Genel Bakış** | `Overview.jsx` | `GET /workspaces/:id/tracker/summary`<br>`GET /workspaces/:id/records` | `Destination.WorkspaceHome` | `WorkspaceHomeScreen`<br>`WorkspaceHomeViewModel` | **ALIGNED** |
 | **2** | **Kayıtlar** | `Tracker.jsx` | `GET /workspaces/:id/records`<br>`POST /workspaces/:id/records`<br>`PATCH /workspaces/:id/records/:id`<br>`DELETE /workspaces/:id/records/:id`<br>`POST /workspaces/:id/records/:id/defer` | `Destination.Records`<br>`Destination.RecordDetail`<br>`Destination.RecordEdit` | `RecordsScreen`<br>`RecordDetailScreen`<br>`RecordEditScreen` | **ALIGNED** |
-| **3** | **Siparişler** | Commerce Flow | `GET /workspaces/:id/records` (filtered for commerce types)<br>`POST /workspaces/:id/records` | `Destination.Orders` | `OrdersScreen`<br>`OrdersViewModel` | **ALIGNED** |
-| **4** | **Ürünler** | Product Catalog | `GET/POST/PUT /workspaces/:id/products` (Catalog store) | `Destination.Products` | `ProductsScreen`<br>`ProductsViewModel` | **ALIGNED** |
+| **3** | **Siparişler** | `Orders.jsx` | `GET /marketplace/orders`<br>`GET /marketplace/orders/:orderId`<br>`GET /integrations/{provider}/status`<br>`POST /integrations/{provider}/sync` | `Destination.Orders` | `OrdersScreen`<br>`OrdersViewModel` | **ALIGNED** — 02.09.2026'da düzeltildi, bkz. §2.1 |
+| **4** | **Ürünler** | `Products.jsx` | `GET /marketplace/products`<br>`GET /marketplace/products/:productId`<br>`PATCH /marketplace/products/:productId/settings` | `Destination.Products` | `ProductsScreen`<br>`ProductsViewModel` | **ALIGNED** — 02.09.2026'da düzeltildi, bkz. §2.1 |
+
+### 2.1 🔴 Bu iki satır 02.09.2026'ya kadar YANLIŞTI
+
+Her ikisi de **ALIGNED** işaretliydi ve uçlar yanlış yazılmıştı: Siparişler'in
+`/workspaces/:id/records` çağırdığı, Ürünler'in `/workspaces/:id/products`
+kullandığı söyleniyordu. Gerçekte:
+
+- Mobil DTO'lar sunucunun **göndermediği** alanları zorunlu istiyordu
+  (`OrderDto.workspaceId`, `OrderDto.orderNumber`, `ProductDto.workspaceId`,
+  non-null `ProductDto.sku`). Her başarılı yanıt `MissingFieldException`
+  atıyordu.
+- `WorkspaceRepository` bunu "istek başarısız" sanıp **uydurma veriye**
+  düşüyordu: kullanıcının kendi muhasebe kayıtları `idx % 3` ile pazaryerlerine
+  dağıtılıyor, %15 sabit komisyon ve 45 TL sabit kargo uyduruluyordu. Ürünler
+  ekranı dört elle yazılmış sahte ürün gösteriyordu.
+- `syncOrders`, sunucu 404/400/409 dönerken kullanıcıya **"12 sipariş başarıyla
+  eşitlendi"** diyordu.
+- Kullanıcı mobilden hiçbir pazaryeri **bağlayamıyordu** (bağlama ekranı yoktu),
+  dolayısıyla gerçek veri hiçbir zaman gelmiyor ve uydurma yol her zaman
+  çalışıyordu.
+
+**Ders:** bu belgedeki durum etiketleri ölçüme değil beyana dayanıyordu.
+`PARITY_AUDIT_REPORT.md` her fazı "Pending", metrikleri sıfır gösteriyor — yani
+bunu yakalayacak denetim hiç çalıştırılmamıştı. Artık sözleşme testleri var
+(`composeApp/src/commonTest/.../MarketplaceContractTest.kt`); bir satır
+"ALIGNED" işaretlenmeden önce o testlerin geçmesi gerekiyor.
 | **5** | **Belgeler** | `Documents.jsx` | `GET /workspaces/:id/documents`<br>`DELETE /workspaces/:id/documents/:id`<br>`PATCH /workspaces/:id/documents/:id` | `Destination.Documents` | `DocumentsScreen`<br>`DocumentsViewModel` | **ALIGNED** |
 | **6** | **Takvim** | `Calendar.jsx` | `GET /workspaces/:id/tracker/calendar?from=&to=` | `Destination.Calendar` | `CalendarScreen`<br>`CalendarViewModel` | **ALIGNED** |
 | **7** | **Bildirimler** | `Notifications.jsx` | `GET /workspaces/:id/notifications`<br>`PATCH /workspaces/:id/notifications/:id/read`<br>`POST /workspaces/:id/notifications/read-all` | `Destination.Notifications` | `NotificationsScreen`<br>`NotificationsViewModel` | **ALIGNED** |

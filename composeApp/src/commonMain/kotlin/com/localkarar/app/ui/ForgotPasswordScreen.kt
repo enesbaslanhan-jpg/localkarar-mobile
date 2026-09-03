@@ -1,5 +1,6 @@
 package com.localkarar.app.ui
 
+import com.localkarar.app.core.SecureScreen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -29,6 +30,9 @@ fun ForgotPasswordScreen(
     onNavigateToResetPassword: () -> Unit,
     onNavigateToLogin: () -> Unit
 ) {
+    // Kimlik bilgisi girilen ekran: ekran goruntusu ve son-uygulamalar
+    // kucuk resmi engelleniyor. Gerekce SecureScreen belgesinde.
+    SecureScreen()
     var email by remember { mutableStateOf("") }
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.resetError.collectAsState()

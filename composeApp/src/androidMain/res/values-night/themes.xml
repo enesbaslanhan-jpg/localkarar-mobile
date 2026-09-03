@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Koyu tema karsiligi. Gerekcesi values/themes.xml icinde. -->
+    <style name="Theme.LocalKarar" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/lk_acilis_zemini</item>
+    </style>
+</resources>

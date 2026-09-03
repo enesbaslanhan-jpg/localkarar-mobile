@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      ACILIS TEMASI.
+
+      Onceki halinde hem uygulama hem etkinlik
+      `@android:style/Theme.Material.Light.NoActionBar` kullaniyordu. Bu SABIT
+      ACIK bir tema: koyu tema secili bir cihazda uygulama acilirken once
+      BEYAZ bir ekran patliyor, sonra koyu arayuz geliyordu.
+
+      Burada tema gece/gunduz nitelendiricisine birakiliyor: values/ acik,
+      values-night/ koyu. Boylece acilis penceresi ile ilk cizilen kare ayni
+      renkte oluyor ve gecis gorunmez hale geliyor.
+    -->
+    <style name="Theme.LocalKarar" parent="@android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/lk_acilis_zemini</item>
+    </style>
+</resources>

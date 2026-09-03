@@ -137,11 +137,6 @@ fun CatalogView(
             }
         }
         
-        // Competency Panel
-        item {
-            Spacer(modifier = Modifier.height(LkSpacing.Space6))
-            CompetencyPanel(data)
-        }
     }
 }
 
@@ -167,13 +162,23 @@ fun EnrollmentsView(
     }
 }
 
+/**
+ * Kurslar sayfasinin ust karti.
+ *
+ * Aktif kurs varsa onu, yoksa katalogu tanitir.
+ *
+ * ⚠️ OGRENME YOLU BURADAN KALDIRILDI (03.09.2026, urun sahibi karari).
+ * Yol, kutuphane Bilgi Nesnelerinin uzerine kuruluydu ve o icerik
+ * urunden cikarildi; webde de sayfasi silindi. Urunun ogrenme yuzeyi
+ * 38 kanonik kurs.
+ */
 @Composable
 fun ActivePathHero(
     data: CoursesStateData,
     onNavigateToCourseDetail: (Int) -> Unit
 ) {
     val activeCourse = data.enrollments.firstOrNull { it.status == "in_progress" }
-    
+
     Surface(
         color = LkSurfacePanel,
         shape = LkShapes.MD,
@@ -183,16 +188,27 @@ fun ActivePathHero(
             .border(1.dp, LkLineSoft, LkShapes.MD)
     ) {
         Column(modifier = Modifier.padding(LkSpacing.Space5)) {
-            val label = if (activeCourse != null) "AKTİF ÖĞRENME" else if (data.learningPath != null) "AKTİF ÖĞRENME YOLU" else "KURS KATALOĞU"
-            val title = activeCourse?.courseTitle ?: data.learningPath?.title ?: "İşletmeni güçlendiren uygulamalı kurslar"
+            val label = if (activeCourse != null) "AKTİF ÖĞRENME" else "KURS KATALOĞU"
+            val title = activeCourse?.courseTitle ?: "İşletmeni güçlendiren uygulamalı kurslar"
             val progress = activeCourse?.progress ?: 0
-            
+
             Text(label, style = LkTypography.getMicro().copy(fontWeight = FontWeight.Bold), color = LkTextSecondary)
             Spacer(modifier = Modifier.height(LkSpacing.Space2))
             Text(title, style = LkTypography.getSectionTitle(), color = LkTextPrimary)
+
+            /* Ders sayisi. Web de 0 iken yazmiyor (CoursesPage.jsx:341). */
+            if (activeCourse != null && activeCourse.courseLessonCount > 0) {
+                Spacer(modifier = Modifier.height(LkSpacing.Space1))
+                Text(
+                    "${activeCourse.courseLessonCount} ders",
+                    style = LkTypography.getMetadata(),
+                    color = LkTextSecondary
+                )
+            }
+
             Spacer(modifier = Modifier.height(LkSpacing.Space4))
-            
-            if (activeCourse != null || data.learningPath != null) {
+
+            if (activeCourse != null) {
                 LinearProgressIndicator(
                     progress = progress / 100f,
                     color = LkPrimary,
@@ -202,20 +218,20 @@ fun ActivePathHero(
                 Spacer(modifier = Modifier.height(LkSpacing.Space2))
                 Text("%$progress tamamlandı", style = LkTypography.getMetadata(), color = LkTextSecondary)
             }
-            
+
             Spacer(modifier = Modifier.height(LkSpacing.Space4))
-            
+
             Button(
-                onClick = { 
-                    if (activeCourse != null) {
-                        onNavigateToCourseDetail(activeCourse.courseId)
-                    }
-                },
+                onClick = { activeCourse?.let { onNavigateToCourseDetail(it.courseId) } },
                 colors = ButtonDefaults.buttonColors(backgroundColor = LkSurfaceSunken),
                 shape = LkShapes.FULL,
                 elevation = ButtonDefaults.elevation(0.dp)
             ) {
-                Text(if (activeCourse != null || data.learningPath != null) "Derse devam et" else "Kursları keşfet", style = LkTypography.getBodyStrong(), color = LkTextPrimary)
+                Text(
+                    if (activeCourse != null) "Derse devam et" else "Kursları keşfet",
+                    style = LkTypography.getBodyStrong(),
+                    color = LkTextPrimary
+                )
                 Spacer(modifier = Modifier.width(LkSpacing.Space2))
                 Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(16.dp), tint = LkTextPrimary)
             }
@@ -292,24 +308,6 @@ fun CategoryChip(text: String, isSelected: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-fun CompetencyPanel(data: CoursesStateData) {
-    Surface(
-        color = LkSurfacePanel,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(modifier = Modifier.padding(LkSpacing.Space5)) {
-            Text("Yetkinlik görünümü", style = LkTypography.getSectionTitle(), color = LkTextPrimary)
-            Spacer(modifier = Modifier.height(LkSpacing.Space4))
-            if (data.learningPath != null) {
-                Text("İlerleyişiniz burada görünecek.", style = LkTypography.getBodySmall(), color = LkTextSecondary)
-            } else {
-                Text("Kişisel öğrenme yolunuz oluşturulduğunda yetkinlik ilerlemeniz burada görünecek.", style = LkTypography.getBodySmall(), color = LkTextSecondary)
-            }
-        }
-    }
-}
-
-@Composable
 fun EnrollmentCard(
     enrollment: DashboardEnrollmentDto,
     onNavigateToCourseDetail: (Int) -> Unit
@@ -353,6 +351,17 @@ fun EnrollmentCard(
                 if (enrollment.courseLevel != null) {
                     Box(modifier = Modifier.background(LkSurfaceSunken, LkShapes.SM).padding(horizontal = 6.dp, vertical = 2.dp)) {
                         Text(enrollment.courseLevel, style = LkTypography.getMicro(), color = LkTextSecondary)
+                    }
+                }
+                /* Ders sayisi. Web de 0 iken YAZMIYOR (EnrollmentsPage.jsx:77);
+                   "0 ders" bilgi degil, gurultu. */
+                if (enrollment.courseLessonCount > 0) {
+                    Box(modifier = Modifier.background(LkSurfaceSunken, LkShapes.SM).padding(horizontal = 6.dp, vertical = 2.dp)) {
+                        Text(
+                            "${enrollment.courseLessonCount} ders",
+                            style = LkTypography.getMicro(),
+                            color = LkTextSecondary
+                        )
                     }
                 }
             }

@@ -44,7 +44,37 @@ data class UserDto(
     val location: String? = null,
     val websiteUrl: String? = null,
     val onboardingCompleted: Boolean = false,
-    val emailVerified: Boolean = false
+    val emailVerified: Boolean = false,
+    /**
+     * Uyelik durumu. Sunucu bunu /auth/login, /auth/register VE /auth/me
+     * yanitlarinin ucunde de gonderiyor (auth.ts, hesaplaUyelikDurumu).
+     *
+     * 🔴 BU ALAN EKSIKTI ve `ignoreUnknownKeys = true` yuzunden SESSIZCE
+     * dusuyordu. Sonuc: mobil, kullanicinin denemesinin bittiginden ancak bir
+     * yazma istegi 403 ile geri geldiginde haberdar olabiliyordu -- yani
+     * kullanici once basarisiz olmak zorundaydi. Alan okununca uyari
+     * ONCEDEN gosterilebiliyor.
+     */
+    val membership: MembershipDto? = null
+)
+
+/**
+ * Sunucudaki `hesaplaUyelikDurumu` ciktisi (src/config/billing.ts).
+ *
+ * `state` degerleri: "active" | "billing_not_started" | "trial" | "expired".
+ * Bugun uretimde BILLING_STARTS_AT null oldugu icin herkes
+ * "billing_not_started" aliyor ve hicbir serit gorunmuyor. Ucretlendirme
+ * tarihi secildigi gun bu alan kendiliginden anlam kazaniyor.
+ */
+@Serializable
+data class MembershipDto(
+    val state: String,
+    val trialEndsAt: String? = null,
+    val trialDaysLeft: Int? = null,
+    val showBanner: Boolean? = null,
+    val founder: Boolean? = null,
+    val currentPeriodEnd: String? = null,
+    val testCheckout: Boolean? = null
 )
 
 @Serializable

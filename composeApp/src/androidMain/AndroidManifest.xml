@@ -2,28 +2,52 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.localkarar.app">
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Cevrimdisi bandi icin ag durumunu okuma. Konum ya da kimlik bilgisi
+         tasimayan "normal" seviyede bir izin; kullaniciya sorulmuyor. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
+    <!--
+      android:usesCleartextTraffic KALDIRILDI.
+
+      Manifest "true" diyordu, network_security_config.xml ise
+      cleartextTrafficPermitted="false" + yalniz 10.0.2.2/localhost istisnasi.
+      API 24+ ta ag guvenlik yapilandirmasi kazandigi icin davranis dogruydu
+      ama beyan CELISKILIYDI ve magaza taramalari bunu isaretliyor.
+
+      Debug istisnalari artik src/debug/AndroidManifest.xml uzerinden yalniz
+      debug derlemesine giriyor; ONCEDEN AYNI MANIFEST RELEASE'E DE GIDIYORDU.
+    -->
     <application
         android:allowBackup="true"
-        android:usesCleartextTraffic="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
         android:icon="@android:drawable/sym_def_app_icon"
         android:label="LocalKarar"
         android:networkSecurityConfig="@xml/network_security_config"
         android:roundIcon="@android:drawable/sym_def_app_icon"
         android:supportsRtl="true"
-        android:theme="@android:style/Theme.Material.Light.NoActionBar">
+        android:theme="@style/Theme.LocalKarar">
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
             android:windowSoftInputMode="adjustResize"
-            android:theme="@android:style/Theme.Material.Light.NoActionBar">
+            android:theme="@style/Theme.LocalKarar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- HTTPS App Links -->
+            <!--
+              HTTPS App Links.
+
+              ⚠️ autoVerify="true" ancak sunucuda
+              https://localkarar.com/.well-known/assetlinks.json yayindaysa
+              calisir ve o dosya RELEASE IMZASININ SHA-256 parmak izini
+              icermek zorundadir. Dosya yayina alinana kadar baglantilar
+              "dogrulanmamis" sayilir: kullaniciya uygulama/tarayici secimi
+              sorulur ama baglanti yine de hedefe gider.
+            -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />

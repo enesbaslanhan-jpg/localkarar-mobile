@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  AG GUVENLIK YAPILANDIRMASI — YALNIZ DEBUG.
+
+  Bu dosya debug kaynak kumesinde oldugu icin release derlemesine GIRMEZ;
+  release, src/androidMain/res altindaki katı surumu kullanir.
+
+  Istisnalar yerel gelistirme icin: Android emulator ana makine loopback'i
+  (10.0.2.2) ve simulator/yerel sunucu (localhost, 127.0.0.1).
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">10.0.2.2</domain>
+        <domain includeSubdomains="true">localhost</domain>
+        <domain includeSubdomains="true">127.0.0.1</domain>
+    </domain-config>
+</network-security-config>

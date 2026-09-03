@@ -1,5 +1,6 @@
 package com.localkarar.app.ui.screens.settings
 
+import com.localkarar.app.core.SecureScreen
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -24,6 +25,9 @@ fun EmailChangeScreen(
     onNewSession: (String, UserDto) -> Unit,
     onBack: () -> Unit
 ) {
+    // Kimlik bilgisi girilen ekran: ekran goruntusu ve son-uygulamalar
+    // kucuk resmi engelleniyor. Gerekce SecureScreen belgesinde.
+    SecureScreen()
     LkPageLayout(title = "E-posta Değiştir", onBack = onBack) {
         Column(
             Modifier

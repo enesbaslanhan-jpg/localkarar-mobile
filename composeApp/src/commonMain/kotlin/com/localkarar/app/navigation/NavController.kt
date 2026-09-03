@@ -43,6 +43,7 @@ object DestinationCodec {
             is Destination.Contacts -> "contacts:${destination.workspaceId}"
             is Destination.Activity -> "activity:${destination.workspaceId}"
             is Destination.WorkspaceSettings -> "workspace_settings:${destination.workspaceId}"
+            is Destination.WorkspaceIntegrations -> "workspace_integrations:${destination.workspaceId}"
             is Destination.Community -> if (destination.initialTab == "feed") "community" else "community:${destination.initialTab}"
             is Destination.CommunityPost -> "community_post:${destination.postId}"
             is Destination.CommunityProfile -> "community_profile:${destination.userId}"
@@ -55,6 +56,10 @@ object DestinationCodec {
             Destination.EmailChange -> "email_change"
             Destination.LegalConsents -> "legal_consents"
             Destination.DeleteAccount -> "delete_account"
+            Destination.Support -> "support"
+            Destination.About -> "about"
+            Destination.Guide -> "guide"
+            Destination.AccountNotifications -> "account_notifications"
         }
     }
 
@@ -93,6 +98,7 @@ object DestinationCodec {
                 "contacts" -> Destination.Contacts(parts[1])
                 "activity" -> Destination.Activity(parts[1])
                 "workspace_settings" -> Destination.WorkspaceSettings(parts[1])
+                "workspace_integrations" -> Destination.WorkspaceIntegrations(parts[1])
                 "community" -> if (parts.size > 1 && parts[1].isNotBlank()) Destination.Community(parts[1]) else Destination.Community("feed")
                 "community_post" -> Destination.CommunityPost(parts[1])
                 "community_profile" -> Destination.CommunityProfile(parts[1].toInt())
@@ -105,6 +111,10 @@ object DestinationCodec {
                 "email_change" -> Destination.EmailChange
                 "legal_consents" -> Destination.LegalConsents
                 "delete_account" -> Destination.DeleteAccount
+                "support" -> Destination.Support
+                "about" -> Destination.About
+                "guide" -> Destination.Guide
+                "account_notifications" -> Destination.AccountNotifications
                 else -> Destination.Home
             }
         } catch (_: Exception) {

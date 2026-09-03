@@ -42,6 +42,14 @@ sealed interface Destination {
     data class Activity(val workspaceId: String) : Destination
     data class WorkspaceSettings(val workspaceId: String) : Destination
 
+    /**
+     * Pazaryeri entegrasyonlari (baglama/kesme/esitleme).
+     *
+     * Bu hedef YOKTU: kullanici mobilden hicbir pazaryeri baglayamiyordu ve
+     * bu yuzden Siparisler/Urunler ekranlarina gercek veri hic gelmiyordu.
+     */
+    data class WorkspaceIntegrations(val workspaceId: String) : Destination
+
     data class Conversation(val conversationId: Int) : Destination
     data class NewsDetail(val articleId: String) : Destination
     data class CommunityPost(val postId: String) : Destination
@@ -55,4 +63,23 @@ sealed interface Destination {
     object EmailChange : Destination
     object LegalConsents : Destination
     object DeleteAccount : Destination
+
+    /**
+     * Destek / yardim formu.
+     *
+     * Webdeki `/yardim` sayfasinin karsiligi; mobilde HIC YOKTU. Onemi:
+     * `POST /support/contact` uyelik kapisindan muaf, yani salt okunur moda
+     * dusmus kullanicinin kalan tek yazma yolu.
+     */
+    object Support : Destination
+    object About : Destination
+    object Guide : Destination
+
+    /**
+     * Bilgi Kutuphanesi. Webdeki `/app/knowledge` ve konu detayinin karsiligi;
+     * mobilde HIC YOKTU.
+     */
+
+    /** Hesap bildirimleri (webdeki `/app/bildirimler`). Mobilde HIC YOKTU. */
+    object AccountNotifications : Destination
 }

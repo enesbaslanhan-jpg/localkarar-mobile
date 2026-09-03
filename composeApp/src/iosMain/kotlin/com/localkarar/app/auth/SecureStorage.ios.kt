@@ -4,6 +4,7 @@ import kotlinx.cinterop.*
 import platform.CoreFoundation.*
 import platform.Foundation.*
 import platform.Security.*
+import com.localkarar.app.core.AppLog
 
 @OptIn(ExperimentalForeignApi::class)
 actual class SecureStorage {
@@ -58,7 +59,35 @@ actual class SecureStorage {
             CFDictionarySetValue(dict, kSecAttrService, serviceCf)
             CFDictionarySetValue(dict, kSecAttrAccount, accountCf)
             CFDictionarySetValue(dict, kSecValueData, dataCf)
-            SecItemAdd(dict, null)
+
+            /*
+             * 🔴 kSecAttrAccessible HIC SET EDILMIYORDU.
+             *
+             * Varsayilan `kSecAttrAccessibleWhenUnlocked`tir ve "ThisDeviceOnly"
+             * olmayan her deger, ogeyi iCloud/iTunes YEDEGINE sokar; yani
+             * kullanicinin baska bir cihazina geri yuklenir. Bir erisim tokeni
+             * ve bir yenileme tokeni icin bu istenmez -- yenileme tokeni 30 gun
+             * gecerli ve tek basina hesaba tam erisim veriyor.
+             *
+             * AfterFirstUnlock secildi, WhenUnlocked DEGIL: uygulama arka planda
+             * uyandiginda (bildirim, derin baglanti) cihaz kilitliyse
+             * WhenUnlocked ile token okunamaz ve istek sebepsiz duserdi.
+             *
+             * Yedeklemeyi kapatan kisim ThisDeviceOnly eki.
+             */
+            CFDictionarySetValue(
+                dict,
+                kSecAttrAccessible,
+                kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+            )
+
+            val status = SecItemAdd(dict, null)
+            if (status != errSecSuccess) {
+                // Donus degeri atiliyordu: basarisiz kayit tamamen sessizdi ve
+                // kullanici bir sonraki aciliste sebepsiz giris ekraninda
+                // buluyordu kendini.
+                AppLog.e("SecureStorage", "Keychain kaydi basarisiz (OSStatus=$status)")
+            }
         } finally {
             if (serviceCf != null) CFRelease(serviceCf)
             if (accountCf != null) CFRelease(accountCf)

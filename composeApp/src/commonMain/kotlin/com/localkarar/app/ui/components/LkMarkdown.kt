@@ -65,10 +65,47 @@ fun LkMarkdown(
                     )
                 }
                 is MarkdownBlock.Paragraph -> {
-                    Text(
-                        text = parseInlineMarkdown(block.text, textColor),
-                        style = LkTypography.getBody().copy(color = textColor, lineHeight = 22.sp)
-                    )
+                    /*
+                     * Paragrafta MATEMATIK olabilir.
+                     *
+                     * Once matematik var mi diye bakiliyor: icerigin buyuk
+                     * cogunlugunda `$` yok ve o durumda ESKI YOL korunuyor
+                     * (tek bir AnnotatedString) -- kalin/italik gibi satir ici
+                     * bicimler orada calisiyor ve bozulmamali.
+                     *
+                     * Formul iceren paragraflarda metin ve formuller sirayla
+                     * ciziliyor. Onceden `$$\text{...}$$` kullaniciya HAM
+                     * olarak gorunuyordu.
+                     */
+                    val parcalar = remember(block.text) { matematikAyir(block.text) }
+                    if (parcalar.size == 1 && parcalar[0] is MetinParcasi.Duz) {
+                        Text(
+                            text = parseInlineMarkdown(block.text, textColor),
+                            style = LkTypography.getBody().copy(color = textColor, lineHeight = 22.sp)
+                        )
+                    } else {
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            parcalar.forEach { parca ->
+                                when (parca) {
+                                    is MetinParcasi.Duz -> {
+                                        val metin = parca.value.trim()
+                                        if (metin.isNotEmpty()) {
+                                            Text(
+                                                text = parseInlineMarkdown(metin, textColor),
+                                                style = LkTypography.getBody()
+                                                    .copy(color = textColor, lineHeight = 22.sp)
+                                            )
+                                        }
+                                    }
+                                    is MetinParcasi.Matematik -> LkMath(
+                                        latex = parca.latex,
+                                        blok = parca.blok,
+                                        renk = textColor
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
                 is MarkdownBlock.CodeBlock -> {
                     LkCodeBlockView(language = block.language, code = block.code)

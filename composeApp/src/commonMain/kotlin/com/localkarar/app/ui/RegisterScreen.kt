@@ -1,5 +1,6 @@
 package com.localkarar.app.ui
 
+import com.localkarar.app.core.SecureScreen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -24,8 +25,12 @@ import com.localkarar.app.ui.theme.*
 @Composable
 fun RegisterScreen(
     viewModel: AuthViewModel,
+    onRegistered: () -> Unit,
     onNavigateToLogin: () -> Unit
 ) {
+    // Kimlik bilgisi girilen ekran: ekran goruntusu ve son-uygulamalar
+    // kucuk resmi engelleniyor. Gerekce SecureScreen belgesinde.
+    SecureScreen()
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -161,7 +166,7 @@ fun RegisterScreen(
 
                 LkButton(
                     text = if (isLoading) "Hesap Oluşturuluyor..." else "Kayıt Ol",
-                    onClick = { viewModel.register(name, email, password, legalAccepted) },
+                    onClick = { viewModel.register(name, email, password, legalAccepted, onRegistered) },
                     enabled = name.isNotBlank() && email.isNotBlank() && password.length >= 10 && legalAccepted && !isLoading,
                     modifier = Modifier.fillMaxWidth()
                 )

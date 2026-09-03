@@ -4,6 +4,24 @@ import com.localkarar.app.network.ApiConfig
 import com.localkarar.app.network.SafeApiClient
 import com.localkarar.app.network.dto.*
 
+/**
+ * Saglayici suzgecindeki "hepsi" secenegi.
+ *
+ * Arayuzdeki etiket ayni zamanda suzgec degeri olarak kullaniliyor ve
+ * repository icinde string karsilastirmasiyla ayikliniyordu. Sabite alindi ki
+ * etiketin degismesi sessizce "sunucuya provider=TUMU gonder" haline gelmesin.
+ */
+const val TUM_SAGLAYICILAR = "TÜMÜ"
+
+/**
+ * Sunucunun tanidigi pazaryeri saglayicilari.
+ *
+ * `ordersQuery` (marketplace-routes.ts) enum'u yalniz bu dordunu kabul ediyor.
+ * Arayuz bir ara WOOCOMMERCE de sunuyordu; secildiginde sunucu 422 donuyor,
+ * repository de bunu uydurma listeye dusurup hatayi tamamen gizliyordu.
+ */
+val DESTEKLENEN_SAGLAYICILAR = listOf("TRENDYOL", "HEPSIBURADA", "N11", "SHOPIFY")
+
 class WorkspaceRepository(private val api: SafeApiClient) {
 
     private val base = ApiConfig.baseUrl
@@ -157,348 +175,219 @@ class WorkspaceRepository(private val api: SafeApiClient) {
     }
 
     // ========================================================================
-    // CANONICAL MARKETPLACE ORDERS: GET /marketplace/orders & POST /integrations/trendyol/sync
+    // 🔴 UYDURMA VERI BURADAN SILINDI
+    //
+    // Bu bolum dort ayri yerde gercek olmayan veri uretiyordu:
+    //
+    //  1. getOrders          — kullanicinin KENDI muhasebe kayitlarini alip
+    //                          `idx % 3` ile TRENDYOL/HEPSIBURADA/N11'e dagitiyor,
+    //                          %15 sabit komisyon ve 45.0 TL sabit kargo uydurup
+    //                          "pazaryeri siparisi" diye sunuyordu.
+    //  2. getProducts        — dort elle yazilmis sahte urun (p-101...), uydurma
+    //                          ciro (83250.0) ve iade oranlariyla. Biri stok=4,
+    //                          biri stok=0 secilmisti ki suzgecler "calisir" gorunsun.
+    //  3. getIntegrationStatus — HERHANGI bir hatada `connected = true`.
+    //  4. syncOrders         — sunucu 404/400/409 donerken kullaniciya
+    //                          "12 siparis basariyla esitlendi" diyordu.
+    //
+    // Dordu de "dayanikli yedek yol" diye yazilmisti ama yedek DEGILDI: DTO'lar
+    // sunucunun gondermedigi alanlari zorunlu istedigi icin her basarili yanit
+    // ayristirmada dusuyordu ve bu yol HER ZAMAN calisiyordu.
+    //
+    // Yeni kural: veri yoksa BOS DURUM gosterilir. Uydurulmaz.
     // ========================================================================
 
     suspend fun getOrders(
         workspaceId: String,
         provider: String? = null,
-        limit: Int = 100,
-        // status: client-side deep-link filter — not sent to backend (Web parity)
-        // q: not part of canonical Web list contract
+        limit: Int = 100
+        // status: istemci tarafi derin baglanti suzgeci — sunucuya gonderilmiyor
+        // q: kanonik liste sozlesmesinin parcasi degil
     ): Result<OrderListResponseDto> {
         val params = mutableListOf("workspaceId=$workspaceId")
-        if (!provider.isNullOrBlank() && provider != "TÜMÜ") params.add("provider=$provider")
+        if (!provider.isNullOrBlank() && provider != TUM_SAGLAYICILAR) params.add("provider=$provider")
         params.add("limit=$limit")
-        val queryString = "?" + params.joinToString("&")
 
-        // Canonical Web endpoint: GET /marketplace/orders?workspaceId=...
-        val remoteResult: Result<OrderListResponseDto> = api.get("$base/marketplace/orders$queryString")
-        if (remoteResult.isSuccess) {
-            return remoteResult
-        }
+        val wire: Result<OrderListWireDto> = api.get("$base/marketplace/orders?" + params.joinToString("&"))
+        val liste = wire.getOrElse { return Result.failure(it) }
 
-        // Resilient fallback to normalized records if backend marketplace integration gateway is unpopulated
-        val recordsResult = getRecords(workspaceId, limit = 100)
-        return recordsResult.map { resp ->
-            val commerceRecords = resp.records.filter { 
-                it.type == "shipment" || it.type == "purchase" || it.type == "order" || it.type == "payment"
-            }
-            val orders = commerceRecords.mapIndexed { idx, rec ->
-                val normStatus = when (rec.status.lowercase()) {
-                    "completed" -> "DELIVERED"
-                    "in_progress" -> "PROCESSING"
-                    "cancelled" -> "CANCELLED"
-                    "deferred" -> "PARTIALLY_RETURNED"
-                    else -> "CREATED"
-                }
-                val prov = when (idx % 3) {
-                    0 -> "TRENDYOL"
-                    1 -> "HEPSIBURADA"
-                    else -> "N11"
-                }
-                val gross = rec.amount
-                val comm = if (gross != null) gross * 0.15 else null
-                val ship = if (gross != null) 45.0 else null
-                val net = if (gross != null && comm != null && ship != null) (gross - comm - ship) else null
+        // Baglanti durumu ve son esitleme zamani LISTE ucundan GELMIYOR --
+        // sunucu `{ orders, total, limit, offset }` donuyor, baska bir sey degil.
+        // Bilinmiyorsa "bagli degil" varsayiliyor; tersi kullaniciya yalan olur.
+        val durum = getIntegrationStatus(workspaceId).getOrNull()
 
-                OrderDto(
-                    id = rec.id,
-                    workspaceId = rec.workspaceId,
-                    orderNumber = "TY-${rec.id.takeLast(8).uppercase()}",
-                    provider = prov,
-                    status = normStatus,
-                    customerName = rec.contact?.name ?: rec.title,
-                    orderDate = rec.createdAt,
-                    deliveryDate = rec.dueAt,
-                    grossAmount = gross,
-                    commission = comm,
-                    shipping = ship,
-                    refund = null,
-                    netContribution = net,
-                    currency = rec.currency,
-                    itemsCount = 1,
-                    items = listOf(
-                        OrderItemDto(
-                            id = "item-${rec.id}",
-                            title = rec.title,
-                            sku = "SKU-${rec.id.take(6).uppercase()}",
-                            barcode = "868000${rec.id.hashCode().toString().takeLast(6)}",
-                            quantity = 1,
-                            unitPrice = gross,
-                            totalPrice = gross
-                        )
-                    ),
-                    lastSyncedAt = "2026-08-28T02:00:00Z"
-                )
-            }
-            // Only provider filter is applied server-side; status is client-side (Web parity)
-            val filtered = if (!provider.isNullOrBlank() && provider != "TÜMÜ") {
-                orders.filter { it.provider.equals(provider, ignoreCase = true) }
-            } else orders
-
+        return Result.success(
             OrderListResponseDto(
-                orders = filtered,
-                total = filtered.size,
-                lastSyncedAt = "2026-08-28T02:00:00Z",
-                integrationConnected = true
+                orders = liste.orders,
+                total = liste.total,
+                lastSyncedAt = durum?.lastSyncedAt,
+                integrationConnected = durum?.connected ?: false
             )
-        }
+        )
     }
 
     suspend fun getOrderDetail(workspaceId: String, orderId: String): Result<OrderDto> {
-        val remoteResult: Result<OrderDto> = api.get("$base/marketplace/orders/$orderId?workspaceId=$workspaceId")
-        if (remoteResult.isSuccess) {
-            return remoteResult
-        }
-        val listResult = getOrders(workspaceId)
-        return listResult.mapCatching { list ->
-            list.orders.firstOrNull { it.id == orderId }
-                ?: throw NoSuchElementException("Sipariş bulunamadı.")
-        }
+        val wire: Result<OrderDetailWireDto> =
+            api.get("$base/marketplace/orders/$orderId?workspaceId=$workspaceId")
+        return wire.map { it.order }
     }
 
-    suspend fun getIntegrationStatus(workspaceId: String): Result<IntegrationStatusDto> {
-        val remoteResult: Result<IntegrationStatusDto> = api.get("$base/integrations/trendyol/status?workspaceId=$workspaceId")
-        if (remoteResult.isSuccess) {
-            return remoteResult
-        }
-        return Result.success(IntegrationStatusDto(connected = true, provider = "TRENDYOL", lastSyncedAt = "2026-08-28T02:00:00Z"))
-    }
+    suspend fun getIntegrationStatus(
+        workspaceId: String,
+        provider: String = "trendyol"
+    ): Result<IntegrationStatusDto> =
+        api.get("$base/integrations/${provider.lowercase()}/status?workspaceId=$workspaceId")
 
-    suspend fun syncOrders(workspaceId: String): Result<OrderSyncResponseDto> {
-        // Canonical Web endpoint: POST /integrations/trendyol/sync { workspaceId }
-        val remoteResult: Result<OrderSyncResponseDto> = api.post(
-            "$base/integrations/trendyol/sync",
+    // ========================================================================
+    // ENTEGRASYON YASAM DONGUSU
+    //
+    // Bu bolum YOKTU. Mobil yalnizca trendyol/status ve trendyol/sync
+    // cagiriyordu; kullanici mobilden hicbir pazaryeri BAGLAYAMIYORDU. Bu
+    // yuzden gercek veri hicbir zaman gelmiyor, uydurma yol da hep devrede
+    // kaliyordu.
+    // ========================================================================
+
+    /** Desteklenen pazaryerleri katalogu (kimlik dogrulamasi gerektirmiyor). */
+    suspend fun getMarketplaceCatalog(): Result<MarketplaceCatalogDto> =
+        api.get("$base/integrations/marketplaces")
+
+    /** Calisma alaninin mevcut baglantilari + katalog. */
+    suspend fun getWorkspaceIntegrations(workspaceId: String): Result<WorkspaceIntegrationsDto> =
+        api.get("$base/integrations?workspaceId=$workspaceId")
+
+    /*
+     * Baglanma cagrilari saglayici basina AYRI, cunku her birinin kimlik
+     * modeli farkli ve sunucu ayri zod semalariyla dogruluyor. Tek bir "genel"
+     * istek nesnesi, alan adlarini yanlis gonderip 422 almanin en kolay yolu
+     * olurdu -- ve o 422 eskiden uydurma listeye dusup gorunmez olurdu.
+     *
+     * ⚠️ Kimlik bilgileri MOBILDE SAKLANMIYOR. Sunucu onlari sifreleyip
+     * tutuyor ve hicbir yanitta geri vermiyor; buradan yalniz gecerken
+     * geciyorlar.
+     *
+     * ⚠️ Sunucu `connect` sirasinda kimlik bilgilerini ONCE DOGRULUYOR ve
+     * gecersizse veritabanina YAZMIYOR. Dolayisiyla buradan donen hata gercek
+     * bir dogrulama sonucudur, kullaniciya oldugu gibi gosterilmeli.
+     */
+    suspend fun connectTrendyol(body: TrendyolConnectRequestDto): Result<Unit> =
+        api.post("$base/integrations/trendyol/connect", body)
+
+    suspend fun connectHepsiburada(body: HepsiburadaConnectRequestDto): Result<Unit> =
+        api.post("$base/integrations/hepsiburada/connect", body)
+
+    suspend fun connectN11(body: N11ConnectRequestDto): Result<Unit> =
+        api.post("$base/integrations/n11/connect", body)
+
+    /**
+     * Shopify OAuth ile baglaniyor: sunucu bir yetkilendirme adresi donuyor.
+     *
+     * O adres HARICI TARAYICIDA acilmali, uygulama ici WebView'de DEGIL:
+     * kullanicidan Shopify hesabinin parolasi isteniyor ve uygulamanin
+     * gosterdigi bir web goruntuleyicide parola toplamak hem guvenlik hem
+     * magaza incelemesi acisindan yanlis.
+     */
+    suspend fun connectShopify(body: ShopifyConnectRequestDto): Result<ShopifyConnectResponseDto> =
+        api.post("$base/integrations/shopify/connect", body)
+
+    suspend fun disconnectIntegration(workspaceId: String, provider: String): Result<Unit> =
+        api.delete("$base/integrations/${provider.lowercase()}/disconnect?workspaceId=$workspaceId")
+
+    /**
+     * Esitlemeyi BASLATIR. Sunucu `{ started, connectionId }` donuyor; isin
+     * bitmesini beklemiyor. "Su kadar siparis esitlendi" denemez -- o bilgi bu
+     * cagriyla ogrenilemez, esitleme calisma kayitlarindan (latestRuns) gelir.
+     *
+     * Hata durumlari gizlenmiyor: baglanti yoksa 404, baglanti pasifse 400
+     * (CONNECTION_NOT_ACTIVE), zaten calisiyorsa 409 (SYNC_ALREADY_RUNNING).
+     */
+    suspend fun syncOrders(
+        workspaceId: String,
+        provider: String = "trendyol"
+    ): Result<SyncStartedResponseDto> =
+        api.post(
+            "$base/integrations/${provider.lowercase()}/sync",
             SyncMarketplaceRequestDto(workspaceId = workspaceId)
         )
-        if (remoteResult.isSuccess) {
-            return remoteResult
-        }
-        // Resilient response if external API sandbox credentials are in demo mode
-        return Result.success(
-            OrderSyncResponseDto(
-                success = true,
-                syncedCount = 12,
-                lastSyncedAt = "2026-08-28T02:45:00Z",
-                message = "Tüm pazaryeri siparişleri başarıyla eşitlendi."
-            )
-        )
-    }
 
     // ========================================================================
-    // CANONICAL MARKETPLACE PRODUCTS: GET /marketplace/products & PATCH /marketplace/products/:id/settings
+    // PAZARYERI URUNLERI: GET /marketplace/products
     // ========================================================================
-
-    private val localSettings = mutableMapOf<String, MutableMap<String, Any?>>()
 
     suspend fun getProducts(
         workspaceId: String,
         provider: String? = null,
         onSale: Boolean? = null,
-        stockFilter: String? = null, // "low" | "out" (canonical Web values)
-        windowDays: String = "30", // "7", "30", "90"
-        sort: String = "default", // "default" | "bestSelling" | "topRevenue" | "mostReturned"
+        stockFilter: String? = null, // "low" | "out" (kanonik web degerleri)
+        windowDays: String = "30",   // "7" | "30" | "90"
+        sort: String = "default",    // "default" | "bestSelling" | "topRevenue" | "mostReturned"
         query: String? = null
     ): Result<ProductListResponseDto> {
         val params = mutableListOf("workspaceId=$workspaceId")
-        if (!provider.isNullOrBlank() && provider != "TÜMÜ") params.add("provider=$provider")
+        if (!provider.isNullOrBlank() && provider != TUM_SAGLAYICILAR) params.add("provider=$provider")
         if (onSale != null) params.add("onSale=$onSale")
-        // Canonical Web stockFilter values: "low" | "out" (not low_stock / out_of_stock)
-        val canonicalStockFilter = when (stockFilter) {
+
+        // Kanonik web degerleri "low" | "out" -- low_stock / out_of_stock DEGIL
+        val kanonikStok = when (stockFilter) {
             "low_stock", "low" -> "low"
             "out_of_stock", "out" -> "out"
             else -> null
         }
-        if (!canonicalStockFilter.isNullOrBlank()) params.add("stockFilter=$canonicalStockFilter")
-        val canonicalWindowDays = when (windowDays) {
+        if (kanonikStok != null) params.add("stockFilter=$kanonikStok")
+
+        val kanonikPencere = when (windowDays) {
             "7", "7d" -> "7"
             "90", "90d" -> "90"
             else -> "30"
         }
-        params.add("windowDays=$canonicalWindowDays")
-        // Canonical Web: omit sort param when default; only send when a specific sort is selected
-        val canonicalSort = when (sort) {
+        params.add("windowDays=$kanonikPencere")
+
+        // Varsayilan siralamada parametre HIC gonderilmiyor (sort=default DEGIL)
+        val kanonikSiralama = when (sort) {
             "bestSelling", "best_selling" -> "bestSelling"
             "topRevenue", "top_revenue" -> "topRevenue"
             "mostReturned", "most_returned" -> "mostReturned"
-            else -> null // default = omit entirely
+            else -> null
         }
-        if (!canonicalSort.isNullOrBlank()) params.add("sort=$canonicalSort")
+        if (kanonikSiralama != null) params.add("sort=$kanonikSiralama")
         if (!query.isNullOrBlank()) params.add("q=$query")
-        val queryString = "?" + params.joinToString("&")
 
-        // Canonical Web endpoint: GET /marketplace/products?workspaceId=...
-        val remoteResult: Result<ProductListResponseDto> = api.get("$base/marketplace/products$queryString")
-        if (remoteResult.isSuccess) {
-            return remoteResult
-        }
+        val wire: Result<ProductListWireDto> = api.get("$base/marketplace/products?" + params.joinToString("&"))
+        val liste = wire.getOrElse { return Result.failure(it) }
 
-        // Standard seed conforming strictly to Web Marketplace semantics
-        val baseProducts = listOf(
-            ProductDto(
-                id = "p-101",
-                workspaceId = workspaceId,
-                provider = "TRENDYOL",
-                title = "Ergonomik Alüminyum Laptop Standı ve Soğutucu",
-                sku = "TY-LPT-99",
-                barcode = "868123456001",
-                salePrice = 450.0,
-                listPrice = 599.0,
-                currency = "TRY",
-                stock = 42,
-                onSale = true,
-                unitsSold = 185,
-                orderCount = 142,
-                grossSales = 83250.0,
-                returnRate = 2.1,
-                tags = listOf("Aksesuar", "Bestseller"),
-                lastSyncedAt = "2026-08-28T02:00:00Z"
-            ),
-            ProductDto(
-                id = "p-102",
-                workspaceId = workspaceId,
-                provider = "HEPSIBURADA",
-                title = "Kablosuz Hızlı Şarj Standı 15W Qi Destekli",
-                sku = "HB-CHG-15",
-                barcode = "868123456002",
-                salePrice = 320.0,
-                listPrice = 420.0,
-                currency = "TRY",
-                stock = 4, // low stock (< 5)
-                onSale = true,
-                unitsSold = 94,
-                orderCount = 88,
-                grossSales = 30080.0,
-                returnRate = 4.2,
-                tags = listOf("Şarj"),
-                lastSyncedAt = "2026-08-28T02:00:00Z"
-            ),
-            ProductDto(
-                id = "p-103",
-                workspaceId = workspaceId,
-                provider = "N11",
-                title = "Örgülü Type-C to Type-C 100W PD Şarj Kablosu 2m",
-                sku = "N11-C2C-2M",
-                barcode = "868123456003",
-                salePrice = 149.0,
-                listPrice = 199.0,
-                currency = "TRY",
-                stock = 0, // out of stock
-                onSale = false,
-                unitsSold = 310,
-                orderCount = 280,
-                grossSales = 46190.0,
-                returnRate = 1.0,
-                tags = listOf("Kablo"),
-                lastSyncedAt = "2026-08-28T02:00:00Z"
-            ),
-            ProductDto(
-                id = "p-104",
-                workspaceId = workspaceId,
-                provider = "SHOPIFY",
-                title = "Minimalist Deri Kartlık ve Cüzdan RFID Korumalı",
-                sku = "SH-WLT-01",
-                barcode = "868123456004",
-                salePrice = 680.0,
-                listPrice = 750.0,
-                currency = "TRY",
-                stock = 18,
-                onSale = true,
-                unitsSold = 64,
-                orderCount = 59,
-                grossSales = 43520.0,
-                returnRate = 0.5,
-                tags = listOf("Deri"),
-                lastSyncedAt = "2026-08-28T02:00:00Z"
-            )
-        )
-
-        // Apply local overrides
-        val enriched = baseProducts.map { prod ->
-            val overrides = localSettings[prod.id]
-            if (overrides != null) {
-                @Suppress("UNCHECKED_CAST")
-                prod.copy(
-                    internalNote = overrides["internalNote"] as? String ?: prod.internalNote,
-                    tags = overrides["tags"] as? List<String> ?: prod.tags,
-                    isFavorite = overrides["isFavorite"] as? Boolean ?: prod.isFavorite,
-                    lowStockThresholdOverride = overrides["lowStockThresholdOverride"] as? Int ?: prod.lowStockThresholdOverride
-                )
-            } else prod
-        }
-
-        // Apply filters
-        var filtered = enriched
-        if (!provider.isNullOrBlank() && provider != "TÜMÜ") {
-            filtered = filtered.filter { it.provider.equals(provider, ignoreCase = true) }
-        }
-        if (onSale != null) {
-            filtered = filtered.filter { it.onSale == onSale }
-        }
-        if (!canonicalStockFilter.isNullOrBlank()) {
-            filtered = when (canonicalStockFilter) {
-                "low" -> filtered.filter { it.stock in 1..5 }
-                "out" -> filtered.filter { it.stock == 0 }
-                else -> filtered
-            }
-        }
-        if (!query.isNullOrBlank()) {
-            filtered = filtered.filter {
-                it.title.contains(query, ignoreCase = true) ||
-                it.sku.contains(query, ignoreCase = true) ||
-                (it.barcode?.contains(query, ignoreCase = true) == true)
-            }
-        }
-
-        // Apply sorting using canonical camelCase keys
-        val sorted = when (canonicalSort) {
-            "bestSelling" -> filtered.sortedByDescending { it.unitsSold }
-            "topRevenue" -> filtered.sortedByDescending { it.grossSales ?: 0.0 }
-            "mostReturned" -> filtered.sortedByDescending { it.returnRate ?: 0.0 }
-            else -> filtered.sortedBy { it.title }
-        }
+        // Suzme ve siralama SUNUCUDA yapiliyor; istemci tarafinda tekrarlanmiyor.
+        // Onceki surumde bu isler uydurma listenin uzerinde calisiyordu, o yuzden
+        // suzgecler "calisiyor" gibi gorunuyordu.
+        val durum = getIntegrationStatus(workspaceId).getOrNull()
 
         return Result.success(
             ProductListResponseDto(
-                products = sorted,
-                total = sorted.size,
-                lastSyncedAt = "2026-08-28T02:00:00Z",
-                integrationConnected = true
+                products = liste.products,
+                total = liste.total,
+                lastSyncedAt = durum?.lastSyncedAt,
+                integrationConnected = durum?.connected ?: false
             )
         )
     }
 
     suspend fun getProductDetail(workspaceId: String, productId: String): Result<ProductDto> {
-        val remoteResult: Result<ProductDto> = api.get("$base/marketplace/products/$productId?workspaceId=$workspaceId")
-        if (remoteResult.isSuccess) {
-            return remoteResult
-        }
-        val listResult = getProducts(workspaceId)
-        return listResult.mapCatching { list ->
-            list.products.firstOrNull { it.id == productId }
-                ?: throw NoSuchElementException("Ürün bulunamadı.")
-        }
+        val wire: Result<ProductDetailWireDto> =
+            api.get("$base/marketplace/products/$productId?workspaceId=$workspaceId")
+        // Detay ucunda performans AYRI alanda geliyor; urun nesnesine tasiniyor
+        // ki arayuz liste ile detay arasinda ayni alanlari okusun.
+        return wire.map { it.product.copy(performance = it.performance) }
     }
 
+    /**
+     * Urun ayarlarini kaydeder.
+     *
+     * Onceki surum PATCH basarisiz olunca degisikligi surec ici bir map'e yazip
+     * `Result.success` donuyordu: kullanici "kaydedildi" goruyor, uygulama
+     * kapaninca kayip. Artik hata oldugu gibi yukari veriliyor.
+     */
     suspend fun updateProductSettings(
         workspaceId: String,
         productId: String,
         body: UpdateProductSettingsRequestDto
-    ): Result<Unit> {
-        // Canonical Web endpoint: PATCH /marketplace/products/:productId/settings { workspaceId, ... }
-        val remoteResult = api.patch<Unit>(
-            "$base/marketplace/products/$productId/settings",
-            body
-        )
-        if (remoteResult.isSuccess) {
-            return remoteResult
-        }
-        val map = localSettings.getOrPut(productId) { mutableMapOf() }
-        body.internalNote?.let { map["internalNote"] = it }
-        body.tags?.let { map["tags"] = it }
-        body.isFavorite?.let { map["isFavorite"] = it }
-        body.lowStockThresholdOverride?.let { map["lowStockThresholdOverride"] = it }
-        return Result.success(Unit)
-    }
+    ): Result<Unit> =
+        api.patch("$base/marketplace/products/$productId/settings", body)
 }

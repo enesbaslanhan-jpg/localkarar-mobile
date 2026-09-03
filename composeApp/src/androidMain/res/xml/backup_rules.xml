@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 11 ve alti (API < 31) icin ayni dislama.
+  Gerekcesi data_extraction_rules.xml icinde.
+  minSdk 24 oldugu icin iki dosya da gerekli.
+-->
+<full-backup-content>
+    <exclude domain="sharedpref" path="secure_prefs.xml" />
+    <exclude domain="sharedpref" path="secure_prefs_fallback.xml" />
+</full-backup-content>

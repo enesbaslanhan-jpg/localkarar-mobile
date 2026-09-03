@@ -38,6 +38,10 @@ fun SettingsScreen(
     onOpenEmail: () -> Unit,
     onOpenConsents: () -> Unit,
     onOpenDeleteAccount: () -> Unit,
+    onOpenSupport: () -> Unit,
+    onOpenAbout: () -> Unit,
+    onOpenGuide: () -> Unit,
+    onOpenNotifications: () -> Unit,
     onLogoutAll: (() -> Unit)? = null,
     onLogout: () -> Unit
 ) {
@@ -233,6 +237,40 @@ fun SettingsScreen(
                     description = "Bu cihaz haricindeki tüm açık oturumları sonlandır",
                     icon = Icons.Default.Devices,
                     onClick = { showLogoutAllDialog = true }
+                )
+            }
+
+            // Section: Yardım
+            //
+            // Bu bölüm mobilde YOKTU. Webde `/yardim` sayfası var; mobilde
+            // karşılığı olmadığı için salt okunur moda düşen kullanıcı
+            // uygulamadan destek isteyemiyordu (destek formu üyelik
+            // kapısından muaf olan tek yazma yolu).
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                SectionHeader("YARDIM")
+                SettingItem(
+                    label = "Bildirimler",
+                    description = "Hesabınızla ilgili gelişmeler",
+                    icon = Icons.Default.NotificationsNone,
+                    onClick = onOpenNotifications
+                )
+                SettingItem(
+                    label = "Kullanım Kılavuzu",
+                    description = "Uygulamanın temel akışlarını öğrenin",
+                    icon = Icons.Default.MenuBook,
+                    onClick = onOpenGuide
+                )
+                SettingItem(
+                    label = "LocalKarar Hakkında",
+                    description = "Amaç, kapsam ve sorumluluklar",
+                    icon = Icons.Default.Info,
+                    onClick = onOpenAbout
+                )
+                SettingItem(
+                    label = "Destek",
+                    description = "Sorun bildirin, bize yazın",
+                    icon = Icons.Default.HelpOutline,
+                    onClick = onOpenSupport
                 )
             }
 

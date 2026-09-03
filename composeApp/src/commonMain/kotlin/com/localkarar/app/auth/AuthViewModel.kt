@@ -68,7 +68,21 @@ class AuthViewModel(
         }
     }
 
-    fun register(name: String, email: String, password: String, legalAccepted: Boolean) {
+    /**
+     * Kayit.
+     *
+     * @param onBasarili yalnizca SUNUCU kaydi kabul ettiginde cagrilir.
+     *   Karsilama ekranini tetikliyor; dogrulama hatasinda ya da 4xx/5xx
+     *   yanitinda cagrilmamali, yoksa kaydolamamis kullaniciya "hos
+     *   geldin" denirdi.
+     */
+    fun register(
+        name: String,
+        email: String,
+        password: String,
+        legalAccepted: Boolean,
+        onBasarili: () -> Unit = {}
+    ) {
         val trimmedName = name.trim()
         val trimmedEmail = email.trim()
 
@@ -107,6 +121,8 @@ class AuthViewModel(
                     is ApiError -> exception.message
                     else -> exception?.message ?: "Kayıt işlemi başarısız oldu."
                 }
+            } else {
+                onBasarili()
             }
             _isLoading.value = false
         }

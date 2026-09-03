@@ -19,6 +19,10 @@ import com.localkarar.app.navigation.Destination
 import com.localkarar.app.navigation.NavController
 import com.localkarar.app.navigation.ScopedViewModelStoreOwner
 import com.localkarar.app.navigation.rememberNavController
+import com.localkarar.app.core.AppMessages
+import com.localkarar.app.core.ConnectivityMonitor
+import com.localkarar.app.ui.components.LkMembershipBanner
+import com.localkarar.app.ui.components.LkOfflineBanner
 import com.localkarar.app.ui.screens.home.HomeScreen
 import com.localkarar.app.ui.theme.*
 import kotlinx.coroutines.launch
@@ -61,11 +65,13 @@ import com.localkarar.app.workspaces.RecordDetailViewModel
 import com.localkarar.app.workspaces.RecordEditViewModel
 import com.localkarar.app.workspaces.CalendarViewModel
 import com.localkarar.app.workspaces.DocumentsViewModel
+import com.localkarar.app.workspaces.DocumentUploadRepository
 import com.localkarar.app.workspaces.TeamViewModel
 import com.localkarar.app.workspaces.ContactsViewModel
 import com.localkarar.app.workspaces.NotificationsViewModel
 import com.localkarar.app.workspaces.ActivityViewModel
 import com.localkarar.app.workspaces.WorkspaceSettingsViewModel
+import com.localkarar.app.workspaces.IntegrationsViewModel
 import com.localkarar.app.ui.screens.workspaces.WorkspacesScreen
 import com.localkarar.app.ui.screens.workspaces.WorkspaceHomeScreen
 import com.localkarar.app.ui.screens.workspaces.WorkspaceSectionSheet
@@ -81,6 +87,7 @@ import com.localkarar.app.ui.screens.workspaces.ContactsScreen
 import com.localkarar.app.ui.screens.workspaces.NotificationsScreen
 import com.localkarar.app.ui.screens.workspaces.ActivityScreen
 import com.localkarar.app.ui.screens.workspaces.WorkspaceSettingsScreen
+import com.localkarar.app.ui.screens.workspaces.IntegrationsScreen
 import com.localkarar.app.mentor.MentorRepository
 import com.localkarar.app.mentor.MentorViewModel
 import com.localkarar.app.mentor.MemoryViewModel
@@ -104,13 +111,29 @@ import com.localkarar.app.ui.screens.community.ProfileScreen as CommunityProfile
 import com.localkarar.app.ui.screens.community.NotificationsScreen as CommunityNotificationsScreen
 import com.localkarar.app.settings.SettingsRepository
 import com.localkarar.app.settings.SettingsViewModel
+import com.localkarar.app.settings.SupportViewModel
+import com.localkarar.app.settings.AccountNotificationsRepository
+import com.localkarar.app.settings.AccountNotificationsViewModel
+import com.localkarar.app.ui.screens.settings.AccountNotificationsScreen
 import com.localkarar.app.ui.screens.settings.SettingsScreen
 import com.localkarar.app.ui.screens.settings.ProfileScreen
 import com.localkarar.app.ui.screens.settings.PasswordChangeScreen
 import com.localkarar.app.ui.screens.settings.EmailChangeScreen
 import com.localkarar.app.ui.screens.settings.LegalConsentsScreen
 import com.localkarar.app.ui.screens.settings.DeleteAccountScreen
+import com.localkarar.app.ui.screens.settings.SupportScreen
+import com.localkarar.app.ui.screens.settings.AboutScreen
+import com.localkarar.app.ui.screens.settings.GuideScreen
 import com.localkarar.app.auth.UserDto
+
+/**
+ * Uyeligin baslatildigi adres.
+ *
+ * Uygulama ICINDE odeme akisi YOK: kullanici harici tarayiciya cikiyor.
+ * Apple 3.1.1 ve Google Play Billing dijital abonelikte kendi
+ * faturalandirmalarini sart kosabiliyor; uygulama icinden PayTR calistirmak
+ * magaza reddine acik bir yol olurdu.
+ */
 
 private sealed interface ShellSheetState {
     object Closed : ShellSheetState
@@ -133,6 +156,8 @@ fun AppShell(
     newsRepository: NewsRepository,
     communityRepository: CommunityRepository,
     settingsRepository: SettingsRepository,
+    documentUploadRepository: DocumentUploadRepository,
+    accountNotificationsRepository: AccountNotificationsRepository,
     onNewSession: (String, UserDto) -> Unit,
     onLogout: () -> Unit
 ) {
@@ -202,6 +227,34 @@ fun AppShell(
         }
     }
 
+    // --- Kabuk seviyesindeki durum yuzeyleri -------------------------------
+
+    val scaffoldState = rememberScaffoldState()
+
+    /*
+     * Baglanti gozlemcisi kabukta kuruluyor ve oturum boyunca yasiyor.
+     * `DisposableEffect(Unit)`: uygulama kabugu yikildiginda platform kaydi
+     * birakiliyor, yoksa ConnectivityManager geri cagrimi sizardi.
+     */
+    val baglantiGozlemcisi = remember { ConnectivityMonitor() }
+    DisposableEffect(Unit) {
+        baglantiGozlemcisi.basla()
+        onDispose { baglantiGozlemcisi.dur() }
+    }
+    val cevrimici by baglantiGozlemcisi.cevrimici.collectAsState()
+
+    // Deneme uyarisi kapatilabilir; SURE DOLDUYSA serit kapatilamaz
+    // (LkMembershipBanner bunu kendisi zorluyor).
+    var uyelikSeridiKapatildi by remember { mutableStateOf(false) }
+
+    // Kisa sureli mesajlar (basarisiz yazma islemleri, gecersiz derin baglanti)
+    // tek bir snackbar yuzeyine akiyor.
+    LaunchedEffect(Unit) {
+        AppMessages.akis.collect { mesaj ->
+            scaffoldState.snackbarHostState.showSnackbar(message = mesaj.metin)
+        }
+    }
+
     CompositionLocalProvider(LocalViewModelStoreOwner provides sessionStoreOwner) {
         ModalBottomSheetLayout(
             sheetState = bottomSheetState,
@@ -233,6 +286,7 @@ fun AppShell(
             }
         ) {
             Scaffold(
+                scaffoldState = scaffoldState,
                 bottomBar = {
                     if (currentDestination !is Destination.LessonReader) {
                         LkBottomNavigation(
@@ -245,11 +299,23 @@ fun AppShell(
                 backgroundColor = LkSurfaceCanvas,
                 modifier = Modifier.fillMaxSize()
             ) { paddingValues ->
-                Box(
+                Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues)
                 ) {
+                    // Seritler TUM ekranlarin ustunde, TEK yerde. Ekran ekran
+                    // tekrarlansalardi birbirinden farkli gorunmeleri ve
+                    // birinin unutulmasi kacinilmazdi.
+                    LkOfflineBanner(gorunur = !cevrimici)
+                    LkMembershipBanner(
+                        membership = user.membership,
+                        onKapat = if (uyelikSeridiKapatildi) null else {
+                            { uyelikSeridiKapatildi = true }
+                        }
+                    )
+
+                    Box(modifier = Modifier.fillMaxSize()) {
                     ScreenContent(
                         destination = currentDestination,
                         navController = navController,
@@ -265,11 +331,14 @@ fun AppShell(
                         newsRepository = newsRepository,
                         communityRepository = communityRepository,
                         settingsRepository = settingsRepository,
+                        documentUploadRepository = documentUploadRepository,
+                        accountNotificationsRepository = accountNotificationsRepository,
                         onOpenProductCenter = { openProductCenter() },
                         onOpenWorkspaceSections = { wsId, secId -> openWorkspaceSections(wsId, secId) },
                         onNewSession = onNewSession,
                         onLogout = onLogout
                     )
+                    }
                 }
             }
         }
@@ -292,6 +361,8 @@ private fun ScreenContent(
     newsRepository: NewsRepository,
     communityRepository: CommunityRepository,
     settingsRepository: SettingsRepository,
+    documentUploadRepository: DocumentUploadRepository,
+    accountNotificationsRepository: AccountNotificationsRepository,
     onOpenProductCenter: () -> Unit,
     onOpenWorkspaceSections: (String, String) -> Unit,
     onNewSession: (String, UserDto) -> Unit,
@@ -369,6 +440,14 @@ private fun ScreenContent(
             LessonReaderScreen(
                 viewModel = viewModel,
                 onNavigateToLesson = { cId, lId -> navController.navigateTo(Destination.LessonReader(cId, lId)) },
+                /*
+                 * Ders icindeki "Hesaplamayi Ac" / "Karar Aracini Ac"
+                 * dugmeleri. Webde ayni dugmeler var; mobilde bu satirlar
+                 * ham metin olarak goruntuleniyordu.
+                 */
+                onOpenFormula = { formulaId -> navController.navigateTo(Destination.FormulaDetail(formulaId)) },
+                onOpenModel = { modelCode -> navController.navigateTo(Destination.FinancialModelDetail(modelCode)) },
+                onOpenDecisionTool = { code -> navController.navigateTo(Destination.DecisionTool(code)) },
                 onBack = onBack
             )
         }
@@ -588,7 +667,7 @@ private fun ScreenContent(
         }
         is Destination.Documents -> {
             val viewModel = viewModel(key = "documents:${destination.workspaceId}") {
-                DocumentsViewModel(destination.workspaceId, workspaceRepository)
+                DocumentsViewModel(destination.workspaceId, workspaceRepository, documentUploadRepository)
             }
             DocumentsScreen(viewModel = viewModel, onBack = onBack)
         }
@@ -621,6 +700,16 @@ private fun ScreenContent(
                 WorkspaceSettingsViewModel(destination.workspaceId, workspaceRepository)
             }
             WorkspaceSettingsScreen(viewModel = viewModel, onBack = onBack)
+        }
+        is Destination.WorkspaceIntegrations -> {
+            val viewModel = viewModel(key = "workspace_integrations:${destination.workspaceId}") {
+                IntegrationsViewModel(workspaceRepository)
+            }
+            IntegrationsScreen(
+                workspaceId = destination.workspaceId,
+                viewModel = viewModel,
+                onNavigateBack = onBack
+            )
         }
         Destination.News -> {
             NewsFeedScreen(
@@ -714,6 +803,10 @@ private fun ScreenContent(
                 onOpenEmail = { navController.navigateTo(Destination.EmailChange) },
                 onOpenConsents = { navController.navigateTo(Destination.LegalConsents) },
                 onOpenDeleteAccount = { navController.navigateTo(Destination.DeleteAccount) },
+                onOpenSupport = { navController.navigateTo(Destination.Support) },
+                onOpenAbout = { navController.navigateTo(Destination.About) },
+                onOpenGuide = { navController.navigateTo(Destination.Guide) },
+                onOpenNotifications = { navController.navigateTo(Destination.AccountNotifications) },
                 onLogoutAll = { settingsViewModel.logoutAll { t, u -> onNewSession(t, u) } },
                 onLogout = onLogout
             )
@@ -752,6 +845,21 @@ private fun ScreenContent(
                 onDeleted = onLogout,
                 onBack = onBack
             )
+        }
+        Destination.Support -> {
+            val viewModel = viewModel(key = "support") { SupportViewModel(settingsRepository) }
+            SupportScreen(user = user, viewModel = viewModel, onNavigateBack = onBack)
+        }
+        Destination.About -> AboutScreen(onNavigateBack = onBack)
+        Destination.Guide -> GuideScreen(
+            onNavigateBack = onBack,
+            onOpenSupport = { navController.navigateTo(Destination.Support) }
+        )
+        Destination.AccountNotifications -> {
+            val viewModel = viewModel(key = "account_notifications") {
+                AccountNotificationsViewModel(accountNotificationsRepository)
+            }
+            AccountNotificationsScreen(viewModel = viewModel, onNavigateBack = onBack)
         }
     }
     }

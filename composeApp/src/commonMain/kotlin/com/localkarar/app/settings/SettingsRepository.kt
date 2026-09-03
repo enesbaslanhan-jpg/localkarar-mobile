@@ -251,4 +251,53 @@ class SettingsRepository(
             Result.failure(e)
         }
     }
+
+    /**
+     * Destek / iletisim formu.
+     *
+     * 🔴 BU UC MOBILDE HIC BAGLI DEGILDI. Webde `/yardim` sayfasi var ve
+     * calisiyor; mobilde karsiligi yoktu.
+     *
+     * Onemi teknik degil: `POST /support/contact` uyelik kapisinin MUAF
+     * listesinde (membership-guard.ts). Yani suresi dolmus, salt okunur moda
+     * dusmus bir kullanicinin kalan TEK yazma yolu bu. Mobilde bulunmamasi,
+     * o kullanicinin uygulamadan destek isteyememesi demekti.
+     *
+     * Giris gerektirmiyor; sunucuda saatte 5 istekle sinirli.
+     */
+    suspend fun destekTalebiGonder(
+        ad: String,
+        eposta: String,
+        konu: String,
+        mesaj: String
+    ): Result<Unit> {
+        return try {
+            val response = client.post("/support/contact") {
+                contentType(ContentType.Application.Json)
+                setBody(
+                    DestekTalebiRequest(
+                        ad = ad.trim(),
+                        eposta = eposta.trim(),
+                        konu = konu.trim(),
+                        mesaj = mesaj.trim()
+                        // `website` BAL KUPU alani BILEREK GONDERILMIYOR.
+                        // Sunucu doluysa istegi sessizce atiyor; gercek
+                        // kullanici zaten dolduramaz, biz de doldurmamaliyiz.
+                    )
+                )
+            }
+            if (response.status.isSuccess()) Result.success(Unit)
+            else Result.failure(Exception(errorMessage(response)))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }
+
+@kotlinx.serialization.Serializable
+private data class DestekTalebiRequest(
+    val ad: String,
+    val eposta: String,
+    val konu: String,
+    val mesaj: String
+)

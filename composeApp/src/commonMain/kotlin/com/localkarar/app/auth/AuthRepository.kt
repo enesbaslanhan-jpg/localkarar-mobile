@@ -45,9 +45,18 @@ class AuthRepository(
                     val user = response.body<UserDto>()
                     _sessionState.value = SessionState.Authenticated(user)
                 }
-                HttpStatusCode.Unauthorized,
-                HttpStatusCode.Forbidden -> {
+                HttpStatusCode.Unauthorized -> {
                     secureStorage.clearToken()
+                    _sessionState.value = SessionState.Unauthenticated
+                }
+                // 403 ARTIK TOKEN SILMIYOR. Uyelik kapisi, suresi dolan
+                // kullaniciya 403 + MEMBERSHIP_EXPIRED donuyor; burada token
+                // silinirse kullanici uygulamadan atilir ve uyeligini
+                // baslatacagi ekrana hic ulasamaz -- sunucuda 401 yerine 403
+                // secilmesinin sebebi tam olarak bunu onlemekti.
+                // (Bugun `expectSuccess = true` yuzunden bu dala girilmiyor;
+                // koruma ileride o ayar degisirse diye duruyor.)
+                HttpStatusCode.Forbidden -> {
                     _sessionState.value = SessionState.Unauthenticated
                 }
                 else -> {

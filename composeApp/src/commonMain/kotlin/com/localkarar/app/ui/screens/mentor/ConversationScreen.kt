@@ -418,6 +418,14 @@ private fun MessageBubble(
     }
 }
 
+/**
+ * Mentor atif karti.
+ *
+ * ⚠️ TIKLANABILIR DEGIL ve bu bilincli. Webde ayni atif
+ * `/app/knowledge/:code` sayfasina goturuyor, ama urun sahibi karari
+ * (03.09.2026) Bilgi Nesnelerinin uygulamada erisilebilir OLMAMASI
+ * yonunde. Atif yalniz cevabin neye dayandigini gosteriyor.
+ */
 @Composable
 private fun CitationCard(citation: CitationDto) {
     Box(
@@ -441,7 +449,6 @@ private fun CitationCard(citation: CitationDto) {
         }
     }
 }
-
 @Composable
 private fun StreamingBubble(
     text: String,

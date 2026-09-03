@@ -1,5 +1,7 @@
 package com.localkarar.app.home
 
+import com.localkarar.app.core.AppLog
+
 import com.localkarar.app.auth.SecureStorage
 import com.localkarar.app.network.dto.DashboardResponse
 import io.ktor.client.*
@@ -29,7 +31,7 @@ class DashboardRepository(
                 Result.failure(Exception("Dashboard fetch failed: ${response.status}"))
             }
         } catch (e: Exception) {
-            println("Dashboard fetch exception: $e"); Result.failure(e)
+            AppLog.e("Dashboard", "fetch exception", e); Result.failure(e)
         }
     }
 }

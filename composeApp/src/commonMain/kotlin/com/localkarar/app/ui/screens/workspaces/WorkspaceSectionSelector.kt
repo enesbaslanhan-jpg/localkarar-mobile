@@ -69,6 +69,10 @@ val WORKSPACE_SECTION_GROUPS = listOf(
         groupTitle = "YÖNETİM",
         items = listOf(
             WorkspaceSectionItem("activity", "Aktiviteler", "İşlem ve değişiklik günlüğü", Icons.Default.History) { wsId -> Destination.Activity(wsId) },
+            // Bu giris YOKTU: kullanici mobilden hicbir pazaryeri
+            // baglayamiyordu, dolayisiyla Siparisler ve Urunler ekranlarina
+            // gercek veri hicbir zaman gelmiyordu.
+            WorkspaceSectionItem("integrations", "Pazaryeri Entegrasyonları", "Trendyol, Hepsiburada, N11, Shopify", Icons.Default.Link) { wsId -> Destination.WorkspaceIntegrations(wsId) },
             WorkspaceSectionItem("settings", "İşletme Ayarları", "İşletme profili ve yapılandırma", Icons.Default.Settings) { wsId -> Destination.WorkspaceSettings(wsId) }
         )
     )

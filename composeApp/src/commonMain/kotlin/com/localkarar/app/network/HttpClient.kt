@@ -1,6 +1,7 @@
 package com.localkarar.app.network
 
 import com.localkarar.app.auth.SecureStorage
+import com.localkarar.app.core.AppLog
 import io.ktor.client.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
@@ -19,13 +20,42 @@ import com.localkarar.app.auth.UserDto
 import io.ktor.client.plugins.auth.*
 import io.ktor.client.plugins.auth.providers.*
 
+/** Hata govdelerini cozmek icin paylasilan cozumleyici; her cagrida yeniden kurulmuyor. */
+private val hataGovdesiJson = Json { ignoreUnknownKeys = true }
+
+/**
+ * Sunucu hata govdesindeki MAKINE OKUNUR kodu cikarir; yoksa null.
+ *
+ * Arka uc uc ayri zarf kullaniyor ve ucu de canli:
+ *   1. `{ "error": "insan mesaji" }`                  -- baskin bicim
+ *   2. `{ "error": "MAKINE_KODU", "message": "..." }` -- `error` KOD tasiyor
+ *   3. `{ "error": "insan mesaji", "code": "KOD" }`   -- yeni konvansiyon
+ *
+ * Once `code` okunuyor (3), yoksa `error` alani BUYUK_HARF_ALT_TIRE kalibina
+ * uyuyorsa kod sayiliyor (2). Boylece 1. bicimdeki insan mesajlari yanlislikla
+ * kod diye yorumlanmiyor.
+ */
+private fun parseErrorCode(rawBody: String): String? {
+    if (rawBody.isBlank()) return null
+    return try {
+        val trimmed = rawBody.trim()
+        if (!trimmed.startsWith("{") || !trimmed.endsWith("}")) return null
+        val element = hataGovdesiJson.parseToJsonElement(trimmed) as? JsonObject
+        val code = (element?.get("code") as? JsonPrimitive)?.content
+        if (!code.isNullOrBlank()) return code
+        val error = (element?.get("error") as? JsonPrimitive)?.content
+        if (error != null && error.matches(Regex("^[A-Z][A-Z0-9_]{2,}$"))) error else null
+    } catch (e: Exception) {
+        null
+    }
+}
+
 private fun parseUserFacingErrorMessage(rawBody: String): String {
     if (rawBody.isBlank()) return "İşlem gerçekleştirilemedi. Lütfen tekrar deneyin."
     return try {
         val trimmed = rawBody.trim()
         if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
-            val json = Json { ignoreUnknownKeys = true }
-            val element = json.parseToJsonElement(trimmed) as? JsonObject
+            val element = hataGovdesiJson.parseToJsonElement(trimmed) as? JsonObject
             val errorVal = element?.get("error")?.let { (it as? JsonPrimitive)?.content }
             val msgVal = element?.get("message")?.let { (it as? JsonPrimitive)?.content }
             val resolved = errorVal ?: msgVal ?: ""
@@ -66,9 +96,15 @@ fun createHttpClient(
             json(jsonSerializer)
         }
 
+        // 🔴 SEVIYE RELEASE'DE **NONE** OLMAK ZORUNDA.
+        //
+        // Burasi kosulsuz `LogLevel.INFO` idi. Ktor'da INFO seviyesi istek
+        // BASLIKLARINI da yaziyor; asagidaki `defaultRequest` her istege
+        // `Authorization: Bearer <token>` ekledigi icin erisim tokeni release
+        // derlemesinde logcat'e dusuyordu. Token'in omru 8 saat.
         install(Logging) {
             logger = Logger.DEFAULT
-            level = LogLevel.INFO
+            level = if (AppEnvironmentProvider.isRelease) LogLevel.NONE else LogLevel.INFO
         }
 
         install(HttpTimeout) {
@@ -157,7 +193,7 @@ fun createHttpClient(
                     contentType.match(ContentType.Application.Json) ||
                     contentType.match(ContentType.Text.EventStream)
                 if (!isSupportedResponse) {
-                    println("API_ERROR: Expected JSON but got ${contentType.contentType}/${contentType.contentSubtype} for ${response.request.url}")
+                    AppLog.e("Api", "Expected JSON but got ${contentType.contentType}/${contentType.contentSubtype} for ${response.request.url}")
                     throw ApiError.ServerError("Beklenmeyen yanıt formatı alındı. (Sunucu Hatası)")
                 }
             }
@@ -179,7 +215,17 @@ fun createHttpClient(
                             throw ApiError.Unauthorized(message = "Oturumunuzun süresi doldu. Lütfen tekrar giriş yapın.")
                         }
                     }
-                    HttpStatusCode.Forbidden -> throw ApiError.Forbidden("Bu işlem için yetkiniz bulunmuyor.")
+                    HttpStatusCode.Forbidden -> {
+                        // Uyelik kapisi (membership-guard.ts) 403 + MEMBERSHIP_EXPIRED
+                        // donuyor. Bu, "yetkin yok" degil "sureni doldurdun" demek;
+                        // kullanici girisli kalmali ve uyeligini baslatabilmeli.
+                        // Ayrim koda gore yapiliyor, mesaja gore DEGIL.
+                        if (parseErrorCode(exceptionResponseText) == "MEMBERSHIP_EXPIRED") {
+                            val sunucuMesaji = parseUserFacingErrorMessage(exceptionResponseText)
+                            throw ApiError.MembershipExpired(sunucuMesaji)
+                        }
+                        throw ApiError.Forbidden("Bu işlem için yetkiniz bulunmuyor.")
+                    }
                     HttpStatusCode.NotFound -> throw ApiError.NotFound("Aranan kaynak bulunamadı.")
                     HttpStatusCode.Conflict -> throw ApiError.UnknownError(message = "Veri çakışması oluştu.")
                     HttpStatusCode.UnprocessableEntity, HttpStatusCode.BadRequest -> {
@@ -187,7 +233,7 @@ fun createHttpClient(
                         throw ApiError.ValidationError(message = friendlyMessage)
                     }
                     else -> {
-                        println("API_ERROR: HTTP ${exceptionResponse.status.value} - $exceptionResponseText")
+                        AppLog.e("Api", "HTTP ${exceptionResponse.status.value} - $exceptionResponseText")
                         throw ApiError.ServerError("Sunucuyla iletişim kurulurken bir sorun oluştu.")
                     }
                 }

@@ -1,5 +1,6 @@
 package com.localkarar.app.ui
 
+import com.localkarar.app.core.SecureScreen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -28,6 +29,9 @@ fun ResetPasswordScreen(
     viewModel: AuthViewModel,
     onNavigateToLogin: () -> Unit
 ) {
+    // Kimlik bilgisi girilen ekran: ekran goruntusu ve son-uygulamalar
+    // kucuk resmi engelleniyor. Gerekce SecureScreen belgesinde.
+    SecureScreen()
     var token by remember { mutableStateOf(initialToken) }
     var newPassword by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }

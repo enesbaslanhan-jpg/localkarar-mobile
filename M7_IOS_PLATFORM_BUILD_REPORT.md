@@ -58,7 +58,7 @@ This document provides the authoritative audit, implementation details, and veri
 | Feature | Expect Declaration | Android Actual | iOS Actual | Status |
 | :--- | :--- | :--- | :--- | :--- |
 | **SecureStorage** | `expect class SecureStorage` | EncryptedSharedPreferences | Native Keychain (`CFDictionaryCreateMutable`, `SecItemAdd/CopyMatching/Delete`, ARC bridging) | `BUILD_VERIFIED` |
-| **Environment Provider** | `expect object AppEnvironmentProvider` | `BuildConfig.IS_RELEASE` (Dev: `10.0.2.2:3000`, Prod: `https://api.localkarar.com`) | `Platform.isDebugBinary` (Dev: `localhost:3000`, Prod: `https://api.localkarar.com`) | `BUILD_VERIFIED` |
+| **Environment Provider** | `expect object AppEnvironmentProvider` | `BuildConfig.IS_RELEASE` (Dev: `10.0.2.2:3000`, Prod: `https://localkarar.com`) | `Platform.isDebugBinary` (Dev: `localhost:3000`, Prod: `https://localkarar.com`) | `BUILD_VERIFIED` |
 | **File Picker** | `expect fun rememberFilePicker` | `rememberLauncherForActivityResult` (`OpenDocument`) | Native `UIDocumentPickerViewController` with security-scoped resource accessing & byte extraction | `BUILD_VERIFIED` |
 | **External URL** | `expect fun openExternalUrl` | Android `Intent.ACTION_VIEW` | `UIApplication.sharedApplication.openURL` | `BUILD_VERIFIED` |
 | **System Back** | `expect fun SystemBackHandler` | `androidx.activity.compose.BackHandler` | No-op (iOS uses in-app back navigation actions) | `BUILD_VERIFIED` |

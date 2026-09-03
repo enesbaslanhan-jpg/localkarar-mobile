@@ -1,5 +1,6 @@
 package com.localkarar.app.ui
 
+import com.localkarar.app.core.SecureScreen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -26,8 +27,30 @@ fun LoginScreen(
     onNavigateToRegister: () -> Unit,
     onNavigateToForgotPassword: () -> Unit
 ) {
-    var email by remember { mutableStateOf("admin@localakademi.com") }
-    var password by remember { mutableStateOf("admin123") }
+    // Kimlik bilgisi girilen ekran: ekran goruntusu ve son-uygulamalar
+    // kucuk resmi engelleniyor. Gerekce SecureScreen belgesinde.
+    SecureScreen()
+    /*
+     * 🔴 BU ALANLAR ONCEDEN DOLU GELIYORDU:
+     *
+     *     mutableStateOf("admin@localakademi.com")
+     *     mutableStateOf("admin123")
+     *
+     * Gelistirme kolayligi icin konmus ve KALMIS. Sonuclari:
+     *
+     *  1. Yayimlanan uygulamayi acan HERKES giris ekraninda bir yonetici
+     *     e-postasini ve parolasini goruyordu. O hesap uretimde varsa
+     *     dogrudan ele gecirme; yoksa bile gecerli bir yonetici adresinin
+     *     sizmasi ve parola kalibinin ipucu.
+     *  2. Parola alani doluyken kullanici "giris yap"a basinca kendi hesabi
+     *     yerine baskasininkini denemis oluyordu.
+     *
+     * DEVELOPMENT_STATUS.md "M2 - Demo Auth Removal: COMPLETE - hardcoded
+     * tokens, demo student bypass and fake users removed" diyordu; bu iki
+     * satir o temizlikten kacmisti. Belge dogru sanildigi icin kimse bakmadi.
+     */
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
     
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.loginError.collectAsState()
@@ -43,8 +66,6 @@ fun LoginScreen(
             modifier = Modifier
                 .widthIn(max = 420.dp)
                 .fillMaxWidth()
-                .background(LkSurfacePanel, LkShapes.MD)
-                .border(1.dp, LkLineStrong, LkShapes.MD)
                 .padding(LkSpacing.Space6)
         ) {
             Column(
@@ -56,7 +77,7 @@ fun LoginScreen(
                 // App Brand
                 Box(
                     modifier = Modifier
-                        .size(56.dp)
+                    .size(48.dp)
                         .background(LkSurfaceSignature, shape = LkShapes.MD)
                         .border(1.dp, LkLineSoft, LkShapes.MD),
                     contentAlignment = Alignment.Center
@@ -67,8 +88,8 @@ fun LoginScreen(
                 Spacer(modifier = Modifier.height(LkSpacing.Space4))
                 
                 Text(
-                    text = "LocalKarar'a Giriş Yap",
-                    style = LkTypography.getSectionTitle(),
+                    text = "İşletmen için doğru kararlar",
+                    style = LkTypography.getDisplay(),
                     color = LkTextPrimary,
                     textAlign = TextAlign.Center
                 )
@@ -76,8 +97,8 @@ fun LoginScreen(
                 Spacer(modifier = Modifier.height(LkSpacing.Space2))
                 
                 Text(
-                    text = "Devam etmek için kurumsal hesabınıza giriş yapın.",
-                    style = LkTypography.getBodySmall(),
+                    text = "Tahmine değil, kendi rakamlarına dayanan kararlar.",
+                    style = LkTypography.getBody(),
                     color = LkTextSecondary,
                     textAlign = TextAlign.Center
                 )
@@ -106,8 +127,8 @@ fun LoginScreen(
                 LkTextField(
                     value = email,
                     onValueChange = { email = it },
-                    label = "Kurumsal E-posta",
-                    placeholder = "ornek@sirket.com"
+                    label = "E-posta",
+                    placeholder = "mail@ornek.com"
                 )
                 
                 Spacer(modifier = Modifier.height(LkSpacing.Space4))

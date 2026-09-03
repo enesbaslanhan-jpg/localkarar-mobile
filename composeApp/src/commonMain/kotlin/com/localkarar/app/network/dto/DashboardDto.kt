@@ -8,7 +8,6 @@ data class DashboardResponse(
     val user: DashboardUserDto,
     val stats: DashboardStatsDto,
     val enrollments: List<DashboardEnrollmentDto>? = null,
-    val currentLearningPath: LearningPathDto? = null,
     val resumeItem: ResumeItemDto? = null,
     val recommendations: List<RecommendationDto>? = null,
     val upcomingTasks: List<UpcomingTaskDto>? = null,
@@ -19,14 +18,6 @@ data class DashboardResponse(
     val recentMentorSession: RecentMentorSessionDto? = null,
     val recentCourseActivity: RecentCourseActivityDto? = null,
     val demoMode: Boolean = false
-)
-
-@Serializable
-data class LearningPathDto(
-    val id: Int,
-    val title: String,
-    val pathData: JsonElement? = null,
-    val createdAt: String
 )
 
 @Serializable
@@ -82,6 +73,18 @@ data class DashboardEnrollmentDto(
     val courseTitle: String,
     val courseCategory: String? = null,
     val courseLevel: String? = null,
+    /**
+     * Kursun toplam ders sayisi.
+     *
+     * 🔴 BU ALAN EKSIKTI ve `ignoreUnknownKeys` yuzunden sessizce dusuyordu.
+     * Webde iki yerde gorunur: Kurslar sayfasinin ust kartinda ("N ders")
+     * ve Kayitlarim listesinde (EnrollmentsPage.jsx:77, CoursesPage.jsx:341).
+     * Mobilde ders sayisi hic gosterilemiyordu.
+     *
+     * Sunucu `/enrollments/my` yanitinda gonderiyor; 0 gelebilir, o zaman
+     * web de yazmiyor.
+     */
+    val courseLessonCount: Int = 0,
     val progress: Int,
     val status: String,
     val createdAt: String,

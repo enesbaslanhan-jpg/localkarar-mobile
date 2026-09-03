@@ -28,7 +28,9 @@ class OrdersViewModel(
     private val _lastSyncedAt = MutableStateFlow<String?>(null)
     val lastSyncedAt: StateFlow<String?> = _lastSyncedAt.asStateFlow()
 
-    private val _integrationConnected = MutableStateFlow(true)
+    // Varsayilan FALSE: durum ogrenilene kadar "bagli" demek, hicbir
+    // entegrasyon yokken arayuzun bagliymis gibi davranmasi demekti.
+    private val _integrationConnected = MutableStateFlow(false)
     val integrationConnected: StateFlow<Boolean> = _integrationConnected.asStateFlow()
 
     private val _error = MutableStateFlow<String?>(null)
@@ -82,13 +84,15 @@ class OrdersViewModel(
         _error.value = null
         viewModelScope.launch {
             repository.syncOrders(workspaceId)
-                .onSuccess { syncResp ->
-                    _lastSyncedAt.value = syncResp.lastSyncedAt
+                .onSuccess {
+                    // Sunucu esitlemeyi yalnizca BASLATIYOR; ne zaman bitecegini
+                    // ve kac kayit gelecegini bu yanit soylemiyor. Son esitleme
+                    // zamani listeyle birlikte durum ucundan yeniden okunuyor.
                     _isSyncing.value = false
                     loadOrders(workspaceId)
                 }
                 .onFailure { err ->
-                    _error.value = err.message ?: "Eşitleme başarısız oldu."
+                    _error.value = err.message ?: "Eşitleme başlatılamadı."
                     _isSyncing.value = false
                 }
         }

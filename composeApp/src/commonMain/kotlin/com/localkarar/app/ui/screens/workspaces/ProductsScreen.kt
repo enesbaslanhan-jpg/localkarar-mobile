@@ -27,9 +27,11 @@ import com.localkarar.app.ui.components.LkButtonVariant
 import com.localkarar.app.ui.components.LkNumericField
 import com.localkarar.app.ui.components.LkTextField
 import com.localkarar.app.ui.theme.*
+import com.localkarar.app.workspaces.DESTEKLENEN_SAGLAYICILAR
+import com.localkarar.app.workspaces.TUM_SAGLAYICILAR
 import com.localkarar.app.workspaces.ProductsViewModel
 
-private val PROVIDERS = listOf("TÜMÜ", "TRENDYOL", "HEPSIBURADA", "N11", "SHOPIFY")
+private val PROVIDERS = listOf(TUM_SAGLAYICILAR) + DESTEKLENEN_SAGLAYICILAR
 
 private val WINDOW_OPTIONS = listOf(
     "7" to "7 Gün",
@@ -123,7 +125,7 @@ fun ProductsScreen(
                 horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2)
             ) {
                 items(PROVIDERS) { provider ->
-                    val isSelected = (selectedProvider == null && provider == "TÜMÜ") || (selectedProvider == provider)
+                    val isSelected = (selectedProvider == null && provider == TUM_SAGLAYICILAR) || (selectedProvider == provider)
                     Box(
                         modifier = Modifier
                             .background(
@@ -136,7 +138,7 @@ fun ProductsScreen(
                                 shape = LkShapes.SM
                             )
                             .clickable {
-                                viewModel.setProviderFilter(workspaceId, if (provider == "TÜMÜ") null else provider)
+                                viewModel.setProviderFilter(workspaceId, if (provider == TUM_SAGLAYICILAR) null else provider)
                             }
                             .padding(horizontal = LkSpacing.Space3, vertical = 6.dp)
                     ) {
@@ -488,7 +490,7 @@ private fun MarketplaceProductCard(
             Spacer(modifier = Modifier.height(2.dp))
 
             Text(
-                text = "SKU: ${product.sku} ${if (!product.barcode.isNullOrBlank()) "| Barkod: ${product.barcode}" else ""}",
+                text = "SKU: ${product.sku ?: "—"} ${if (!product.barcode.isNullOrBlank()) "| Barkod: ${product.barcode}" else ""}",
                 style = LkTypography.getMicro(),
                 color = LkTextMuted
             )

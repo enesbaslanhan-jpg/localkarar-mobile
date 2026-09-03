@@ -20,7 +20,7 @@ actual fun openExternalUrl(url: String) {
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         ctx.startActivity(intent)
     } catch (e: Exception) {
-        println("openExternalUrl failed: ${e.message}")
+        AppLog.e("Platform", "openExternalUrl failed", e)
     }
 }
 

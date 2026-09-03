@@ -17,7 +17,7 @@ actual fun openExternalUrl(url: String) {
             app.openURL(nsUrl, options = emptyMap<Any?, Any?>(), completionHandler = null)
         }
     } catch (e: Exception) {
-        println("openExternalUrl failed: ${e.message}")
+        AppLog.e("Platform", "openExternalUrl failed", e)
     }
 }
 
@@ -55,7 +55,7 @@ private class DocumentPickerDelegate(
                 onResult(null)
             }
         } catch (e: Exception) {
-            println("Error reading picked file: ${e.message}")
+            AppLog.e("Platform", "Error reading picked file", e)
             onResult(null)
         } finally {
             if (isSecurityScoped) {
@@ -103,12 +103,12 @@ actual fun rememberFilePicker(onFilePicked: (PickedFile?) -> Unit): () -> Unit {
             if (topVc != null) {
                 topVc.presentViewController(picker, animated = true, completion = null)
             } else {
-                println("No rootViewController found to present document picker")
+                AppLog.w("Platform", "No rootViewController found to present document picker")
                 onFilePicked(null)
                 activeDelegate = null
             }
         } catch (e: Exception) {
-            println("rememberFilePicker error: ${e.message}")
+            AppLog.e("Platform", "rememberFilePicker error", e)
             onFilePicked(null)
             activeDelegate = null
         }

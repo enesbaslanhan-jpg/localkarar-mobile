@@ -14,9 +14,9 @@ The `feature/m3-business-tracker-v2` branch establishes the **Native Primary Nav
 | **M1 - Workspace Section Selector** | **FUNCTIONALLY_IMPLEMENTED** | Native modal sheet supporting all 11 Web sections grouped into 5 domains |
 | **M1 - Topluluk Sub-Navigation** | **FUNCTIONALLY_IMPLEMENTED** | Internal sub-tabs: Akış (Feed), Kişiler, Sohbetler, Profil |
 | **M1 - Ayarlar Hub** | **FUNCTIONALLY_IMPLEMENTED** | First-class settings destination with categorized profile, security, app & account flows |
-| **M2 - Demo Auth Removal** | **COMPLETE** | Hardcoded tokens, demo student bypass and fake users removed |
+| **M2 - Demo Auth Removal** | **COMPLETE** (gerçekte 02.09.2026) | Hardcoded tokens, demo student bypass and fake users removed. 🔴 Bu satır 02.09.2026'ya kadar YANLIŞTI — aşağıdaki nota bakın. |
 | **M2 - Native Register & Password Reset** | **FUNCTIONALLY_IMPLEMENTED** | Validations, anti-enumeration reset request, Turkish error mapping |
-| **M2 - Cross-Platform Environments** | **COMPLETE** | Android debug (10.0.2.2), iOS debug (localhost:3000), Production (api.localkarar.com) |
+| **M2 - Cross-Platform Environments** | **COMPLETE** | Android debug (10.0.2.2), iOS debug (localhost:3000), Production (localkarar.com) |
 | **M3 - İşletme Takibi 11 Bölüm Paritesi** | **FUNCTIONALLY_IMPLEMENTED** | 11 bölümün tamamı eksiksiz bağlandı ve gerçeğe uygun modellendi |
 | **M3 - Siparişler (Orders)** | **FUNCTIONALLY_IMPLEMENTED** | Sipariş kartları, metrikler, filtreler, arama, durum güncelleme ve oluşturma |
 | **M3 - Ürünler (Products)** | **FUNCTIONALLY_IMPLEMENTED** | Katalog, fiyat/maliyet/marj hesaplama, kritik stok uyarıları, düzenleme/ekleme |
@@ -28,3 +28,46 @@ The `feature/m3-business-tracker-v2` branch establishes the **Native Primary Nav
 - `Destination.Community` → **Topluluk** (Primary Tab 3)
 - `Destination.Calculations` → **Hesaplamalar** (Primary Tab 4)
 - `Destination.Settings` → **Ayarlar** (Primary Tab 5)
+
+---
+
+## 🔴 02.09.2026 — Yanlış çıkan durum etiketleri
+
+Bu belgedeki "COMPLETE" / "FUNCTIONALLY_IMPLEMENTED" etiketleri ölçüme değil
+beyana dayanıyordu. Üç tanesi gerçeği yansıtmıyordu:
+
+### M2 — Demo Auth Removal
+
+`LoginScreen.kt` giriş formunu şu değerlerle **önden dolduruyordu**:
+
+```kotlin
+var email by remember { mutableStateOf("admin@localakademi.com") }
+var password by remember { mutableStateOf("admin123") }
+```
+
+Yayımlanan uygulamayı açan herkes giriş ekranında bir yönetici e-postası ve
+parolası görüyordu. Belge "hardcoded tokens ... removed" dediği için kimse
+bakmadı; temizlikten kaçan iki satır orada kaldı. 02.09.2026'da boşaltıldı.
+
+### İşletme Takibi — Siparişler ve Ürünler
+
+İkisi de **ALIGNED** işaretliydi ama %100 uydurma veri gösteriyorlardı.
+Ayrıntı: `WORKSPACE_TRACKER_PARITY_V2.md` §2.1.
+
+### M2 — Cross-Platform Environments
+
+`PRODUCTION` adresi `https://api.localkarar.com` yazıyordu ve **böyle bir host
+hiç var olmadı** (sunucudaki ters vekil yalnız `localkarar.com` ve `www` biliyor).
+Yani "COMPLETE" işaretli bu satırla derlenen her release build tek bir isteği
+bile tamamlayamazdı. Kök adrese çevrildi.
+
+---
+
+**Ders:** bir satırın durumu, o durumu düşürecek bir kontrol varsa anlamlıdır.
+Bu turda eklenenler:
+
+- `composeApp/src/commonTest/.../MarketplaceContractTest.kt` — mobil DTO'ları
+  sunucunun gerçek yanıt şekline karşı doğruluyor (8 test)
+- `.github/workflows/android-build.yml` — testler artık CI'da **koşuyor**;
+  önceden hiçbir iş `gradle test` çalıştırmıyordu
+- `assembleRelease` CI'da — R8'in DTO'ları bozması yalnız orada görünür

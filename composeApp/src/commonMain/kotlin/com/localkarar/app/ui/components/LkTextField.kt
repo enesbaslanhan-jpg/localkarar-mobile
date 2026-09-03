@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.BasicTextField
@@ -47,7 +48,18 @@ fun LkTextField(
     keyboardActions: KeyboardActions = KeyboardActions.Default,
     visualTransformation: VisualTransformation = VisualTransformation.None,
     enabled: Boolean = true,
-    trailingContent: @Composable (() -> Unit)? = null
+    trailingContent: @Composable (() -> Unit)? = null,
+    /**
+     * Cok satirli giris (destek mesaji, not, aciklama).
+     *
+     * Eklendi cunku uzun metin isteyen ekranlar kendi metin kutularini
+     * yazmaya baslamisti; ayni bilesenin iki farkli gorunumu olmasi tasarim
+     * sisteminin amacini bozar.
+     *
+     * `false` verildiginde sabit 40dp yukseklik birakiliyor ve yukseklik
+     * cagiran tarafin `modifier`ina birakiliyor.
+     */
+    singleLine: Boolean = true
 ) {
     var isFocused by remember { mutableStateOf(false) }
 
@@ -69,13 +81,13 @@ fun LkTextField(
         BasicTextField(
             value = value,
             onValueChange = onValueChange,
-            modifier = Modifier
+            modifier = (if (singleLine) Modifier.height(40.dp) else Modifier.heightIn(min = 96.dp))
                 .fillMaxWidth()
-                .height(40.dp)
                 .background(if (enabled) LkSurfaceSunken else LkSurfaceSunken.copy(alpha = 0.5f), LkShapes.SM)
                 .border(1.dp, borderColor, LkShapes.SM)
                 .onFocusChanged { isFocused = it.isFocused },
             enabled = enabled,
+            singleLine = singleLine,
             textStyle = LkTypography.getBodySmall().copy(color = if (enabled) LkTextPrimary else LkTextMuted),
             keyboardOptions = keyboardOptions,
             keyboardActions = keyboardActions,
@@ -85,8 +97,10 @@ fun LkTextField(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                        .padding(horizontal = 12.dp, vertical = if (singleLine) 0.dp else 10.dp),
+                    // Cok satirlida metin USTTEN baslamali; ortalamak, uzun
+                    // mesajda imleci kutunun ortasinda birakirdi.
+                    verticalAlignment = if (singleLine) Alignment.CenterVertically else Alignment.Top
                 ) {
                     Box(modifier = Modifier.weight(1f)) {
                         if (value.isEmpty()) {

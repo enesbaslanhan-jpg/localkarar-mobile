@@ -25,7 +25,9 @@ class ProductsViewModel(
     private val _lastSyncedAt = MutableStateFlow<String?>(null)
     val lastSyncedAt: StateFlow<String?> = _lastSyncedAt.asStateFlow()
 
-    private val _integrationConnected = MutableStateFlow(true)
+    // Varsayilan FALSE: durum ogrenilene kadar "bagli" demek, hicbir
+    // entegrasyon yokken arayuzun bagliymis gibi davranmasi demekti.
+    private val _integrationConnected = MutableStateFlow(false)
     val integrationConnected: StateFlow<Boolean> = _integrationConnected.asStateFlow()
 
     // Filters

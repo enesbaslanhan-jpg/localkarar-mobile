@@ -1,5 +1,6 @@
 package com.localkarar.app.network.dto
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 
@@ -377,88 +378,228 @@ data class SyncMarketplaceRequestDto(
     val workspaceId: String
 )
 
+
+// ============================================================================
+// PAZARYERI SOZLESMESI
+//
+// 🔴 BU BLOK BIR ARIZANIN SONUCU. Onceki hali sunucunun GONDERMEDIGI alanlari
+// ZORUNLU istiyordu: OrderDto `workspaceId` + `orderNumber`, ProductDto
+// `workspaceId` + non-null `sku`. kotlinx.serialization her BASARILI yanitta
+// MissingFieldException atiyordu; repository de bunu "istek basarisiz" sanip
+// uydurma veriye dusuyordu. Yani basari dali OLU KODDU ve Siparisler/Urunler
+// ekranlari %100 uydurma veri gosteriyordu.
+//
+// Bundan sonraki kural: ALANLAR SUNUCUNUN GERCEKTEN GONDERDIGI ADLA yazilir.
+// Arayuzun alistigi adlar @SerialName ile eslenir ya da turetilmis ozellik
+// olarak verilir -- ASLA savunmaci varsayilanla gizlenmez.
+//
+// Kaynak: src/services/integrations/marketplace-routes.ts (orderJson) ve
+//         src/services/integrations/product-analytics.ts (productListItemFromRow)
+// ============================================================================
+
+/**
+ * GET /integrations/{provider}/status
+ *
+ * `connected` varsayilani "yoksa true" idi; istek basarisiz olsa bile arayuz
+ * "bagli" diyordu. Sunucu bu alani her zaman gonderiyor; varsayilan hem
+ * gereksiz hem yaniltici.
+ */
 @Serializable
 data class IntegrationStatusDto(
-    val connected: Boolean = true,
-    val provider: String = "TRENDYOL",
-    val lastSyncedAt: String? = null
+    val connected: Boolean,
+    val syncing: Boolean = false,
+    val circuitBreakerTripped: Boolean = false,
+    val counts: IntegrationCountsDto = IntegrationCountsDto(),
+    val latestRuns: List<IntegrationSyncRunDto> = emptyList()
+) {
+    /** En son tamamlanan esitlemenin bitis zamani; hic esitleme yoksa null. */
+    val lastSyncedAt: String? get() = latestRuns.firstOrNull { it.finishedAt != null }?.finishedAt
+}
+
+@Serializable
+data class IntegrationCountsDto(
+    val orders: Int = 0,
+    val products: Int = 0
+)
+
+@Serializable
+data class IntegrationSyncRunDto(
+    val id: String,
+    val syncType: String? = null,
+    val status: String? = null,
+    val startedAt: String? = null,
+    val finishedAt: String? = null,
+    val recordsFetched: Int? = null,
+    val recordsCreated: Int? = null,
+    val recordsUpdated: Int? = null,
+    val recordsSkipped: Int? = null,
+    val errorCode: String? = null
+)
+
+/**
+ * POST /integrations/{provider}/sync yaniti: `{ started, connectionId }`.
+ *
+ * Sunucu esitlemeyi BASLATIYOR, bitirmiyor. Onceki DTO `syncedCount` bekliyordu
+ * ve repository hata durumunda "12 siparis esitlendi" diye uyduruyordu --
+ * hicbir sey esitlenmemisken kullaniciya soylenen duz yanlis bir cumleydi.
+ */
+@Serializable
+data class SyncStartedResponseDto(
+    val started: Boolean = false,
+    val connectionId: String? = null
 )
 
 @Serializable
 data class OrderItemDto(
-    val id: String? = null,
-    val productId: String? = null,
-    val title: String,
+    val id: String,
+    val externalProductId: String? = null,
     val sku: String? = null,
     val barcode: String? = null,
+    val title: String? = null,
     val quantity: Int = 1,
     val unitPrice: Double? = null,
-    val totalPrice: Double? = null,
-    val imageUrl: String? = null
+    @SerialName("grossAmount") val totalPrice: Double? = null,
+    val discountAmount: Double? = null,
+    val commissionAmount: Double? = null,
+    val refundAmount: Double? = null,
+    val netContribution: Double? = null
 )
 
 @Serializable
 data class OrderDto(
     val id: String,
-    val workspaceId: String,
-    val orderNumber: String,
-    val provider: String = "TRENDYOL", // TRENDYOL, HEPSIBURADA, N11, SHOPIFY, WOOCOMMERCE
-    val status: String = "CREATED", // CREATED, PROCESSING, SHIPPED, DELIVERED, CANCELLED, RETURNED, PARTIALLY_RETURNED, UNKNOWN
-    val customerName: String? = null,
-    val orderDate: String? = null,
-    val deliveryDate: String? = null,
+    val provider: String,
+    val externalId: String? = null,
+    @SerialName("externalOrderNumber") val orderNumber: String? = null,
+    @SerialName("customerDisplayName") val customerName: String? = null,
+    val currency: String? = null,
     val grossAmount: Double? = null,
-    val commission: Double? = null,
-    val shipping: Double? = null,
-    val refund: Double? = null,
+    val discountAmount: Double? = null,
+    @SerialName("commissionAmount") val commission: Double? = null,
+    @SerialName("shippingAmount") val shipping: Double? = null,
+    @SerialName("refundAmount") val refund: Double? = null,
     val netContribution: Double? = null,
-    val currency: String = "TRY",
-    val itemsCount: Int = 1,
-    val items: List<OrderItemDto> = emptyList(),
-    val lastSyncedAt: String? = null
+    val status: String = "UNKNOWN",
+    val orderDate: String? = null,
+    @SerialName("syncedAt") val lastSyncedAt: String? = null,
+    /** Liste ucunda `_count.items`ten gelir; detay ucunda gonderilmez. */
+    @SerialName("itemCount") val itemsCount: Int? = null,
+    /** Yalniz detay ucunda dolu gelir; listede hic gonderilmez. */
+    val items: List<OrderItemDto> = emptyList()
 )
 
+/** GET /marketplace/orders -> `{ orders, total, limit, offset }` */
 @Serializable
-data class OrderSyncResponseDto(
-    val success: Boolean = true,
-    val syncedCount: Int = 0,
-    val lastSyncedAt: String? = null,
-    val message: String? = null
+data class OrderListWireDto(
+    val orders: List<OrderDto> = emptyList(),
+    val total: Int = 0,
+    val limit: Int = 0,
+    val offset: Int = 0
 )
 
+/** GET /marketplace/orders/:orderId -> `{ order }` (sarmalayici!) */
 @Serializable
+data class OrderDetailWireDto(
+    val order: OrderDto
+)
+
+/**
+ * Repository'nin arayuze verdigi BIRLESIK sonuc.
+ *
+ * Bu bir TEL DTO'SU DEGIL: `integrationConnected` ve `lastSyncedAt` liste
+ * ucundan GELMIYOR, durum ucundan geliyor. Onceki surumde ikisi de bu sinifta
+ * "yoksa true" / sabit tarih varsayilaniyla duruyordu ve arayuz hicbir
+ * entegrasyon yokken "bagli, en son 28.08 tarihinde esitlendi" diyordu.
+ */
 data class OrderListResponseDto(
     val orders: List<OrderDto> = emptyList(),
     val total: Int = 0,
     val lastSyncedAt: String? = null,
-    val integrationConnected: Boolean = true
+    val integrationConnected: Boolean = false
+)
+
+@Serializable
+data class ProductPerformanceDto(
+    val windowDays: Int = 30,
+    val unitsSold: Int = 0,
+    val orderCount: Int = 0,
+    val grossSales: Double? = null,
+    val averageSellingPrice: Double? = null,
+    val returnedUnits: Int = 0,
+    val returnRate: Double? = null,
+    val commissionTotal: Double? = null,
+    val shippingTotal: Double? = null,
+    val netContribution: Double? = null,
+    /**
+     * Sunucu ekliyor: komisyon ve kargo bilesenleri eksikse arayuz "veri yok"
+     * gostermeli, SIFIR GOSTERMEMELI.
+     */
+    val financialsAvailable: Boolean = false
 )
 
 @Serializable
 data class ProductDto(
     val id: String,
-    val workspaceId: String,
-    val provider: String = "TRENDYOL", // TRENDYOL, HEPSIBURADA, N11, SHOPIFY, WOOCOMMERCE
+    val provider: String,
+    val externalId: String? = null,
     val title: String,
-    val sku: String,
+    val brand: String? = null,
+    val category: String? = null,
+    val sku: String? = null,
     val barcode: String? = null,
-    val imageUrl: String? = null,
     val salePrice: Double? = null,
     val listPrice: Double? = null,
-    val currency: String = "TRY",
-    val stock: Int = 0,
-    val onSale: Boolean = true,
-    // Performance window metrics (7d, 30d, 90d)
-    val unitsSold: Int = 0,
-    val orderCount: Int = 0,
-    val grossSales: Double? = null,
-    val returnRate: Double? = null, // percentage 0.0 - 100.0
-    // Local editable settings
+    @SerialName("stockQuantity") val stock: Int = 0,
+    val isActive: Boolean = true,
+    val imageUrl: String? = null,
+    @SerialName("syncedAt") val lastSyncedAt: String? = null,
+    val lowStock: Boolean = false,
+    val performance: ProductPerformanceDto = ProductPerformanceDto(),
     val internalNote: String? = null,
     val tags: List<String> = emptyList(),
     val lowStockThresholdOverride: Int? = null,
-    val isFavorite: Boolean = false,
-    val lastSyncedAt: String? = null
+    val isFavorite: Boolean = false
+) {
+    /**
+     * "Indirimde mi" sunucuda bir ALAN DEGIL, bir SORGU SUZGECI. Urun satiri
+     * yalniz satis ve liste fiyatini tasiyor; indirim bu ikisinden turetiliyor.
+     */
+    val onSale: Boolean get() = salePrice != null && listPrice != null && salePrice < listPrice
+
+    val unitsSold: Int get() = performance.unitsSold
+    val orderCount: Int get() = performance.orderCount
+    val grossSales: Double? get() = performance.grossSales
+    val returnRate: Double? get() = performance.returnRate
+
+    /**
+     * Sunucu urun satirinda para birimi GONDERMIYOR. Pazaryeri baglantilarinin
+     * tamami TRY calisiyor; coklu para birimi gerekirse sunucudan gelmeli.
+     */
+    val currency: String get() = "TRY"
+}
+
+/** GET /marketplace/products -> `{ products, total, threshold, windowDays }` */
+@Serializable
+data class ProductListWireDto(
+    val products: List<ProductDto> = emptyList(),
+    val total: Int = 0,
+    val threshold: Int = 0,
+    val windowDays: Int = 30
+)
+
+/** GET /marketplace/products/:productId -> `{ product, performance, capabilities }` */
+@Serializable
+data class ProductDetailWireDto(
+    val product: ProductDto,
+    val performance: ProductPerformanceDto = ProductPerformanceDto()
+)
+
+/** Repository birlesik sonucu -- bkz. OrderListResponseDto notu. */
+data class ProductListResponseDto(
+    val products: List<ProductDto> = emptyList(),
+    val total: Int = 0,
+    val lastSyncedAt: String? = null,
+    val integrationConnected: Boolean = false
 )
 
 @Serializable
@@ -468,12 +609,4 @@ data class UpdateProductSettingsRequestDto(
     val tags: List<String>? = null,
     val lowStockThresholdOverride: Int? = null,
     val isFavorite: Boolean? = null
-)
-
-@Serializable
-data class ProductListResponseDto(
-    val products: List<ProductDto> = emptyList(),
-    val total: Int = 0,
-    val lastSyncedAt: String? = null,
-    val integrationConnected: Boolean = true
 )

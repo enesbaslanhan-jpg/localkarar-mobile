@@ -32,6 +32,9 @@ import com.localkarar.app.ui.theme.*
 fun LessonReaderScreen(
     viewModel: LessonReaderViewModel,
     onNavigateToLesson: (Int, Int) -> Unit,
+    onOpenFormula: (String) -> Unit,
+    onOpenModel: (String) -> Unit,
+    onOpenDecisionTool: (String) -> Unit,
     onBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -49,6 +52,9 @@ fun LessonReaderScreen(
                         course = state.course,
                         lesson = state.lesson,
                         onNavigateToLesson = onNavigateToLesson,
+                        onOpenFormula = onOpenFormula,
+                        onOpenModel = onOpenModel,
+                        onOpenDecisionTool = onOpenDecisionTool,
                         onComplete = { viewModel.markLessonComplete { onBack() } }
                     )
                 }
@@ -62,6 +68,9 @@ private fun LessonContent(
     course: CourseDetailDto,
     lesson: LessonDetailDto,
     onNavigateToLesson: (Int, Int) -> Unit,
+    onOpenFormula: (String) -> Unit,
+    onOpenModel: (String) -> Unit,
+    onOpenDecisionTool: (String) -> Unit,
     onComplete: () -> Unit
 ) {
     LazyColumn(
@@ -136,6 +145,7 @@ private fun LessonContent(
             Divider(color = LkLineSoft, thickness = 1.dp)
             Spacer(modifier = Modifier.height(LkSpacing.Space6))
             
+            val kanonikBolumler = lesson.canonicalSections
             val ko = lesson.knowledgeObject
             if (ko != null) {
                 val metadata = ko.metadata
@@ -153,10 +163,19 @@ private fun LessonContent(
                     }
                 }
                 
-                // Main Content
-                if (!ko.content.isNullOrEmpty()) {
-                    val cleanedContent = removeDuplicateH1(ko.content, lesson.title)
-                    MarkdownViewer(content = cleanedContent)
+                /*
+                 * GOVDE.
+                 *
+                 * Kanonik derste sunucu, 3./4./5. bolumleri ve satir ici
+                 * `[ Hesaplamalar > ... ]` referanslarini govdeden CIKARIP
+                 * yapisal olarak gonderiyor. Ham govdeyi basmak, ayni
+                 * icerigi ikinci kez gostermek ve o referanslari kullaniciya
+                 * DUZ METIN olarak sizdirmak demekti -- mobilde tam bu
+                 * oluyordu.
+                 */
+                val govde = kanonikBolumler?.body ?: ko.content
+                if (!govde.isNullOrEmpty()) {
+                    MarkdownViewer(content = removeDuplicateH1(govde, lesson.title))
                     Spacer(modifier = Modifier.height(LkSpacing.Space6))
                 }
                 
@@ -262,8 +281,31 @@ private fun LessonContent(
                 }
             }
             
-            // Embedded Practice Blocks
-            if (lesson.embeddedPracticeBlocks.isNotEmpty()) {
+            /*
+             * KANONIK BOLUMLER — karar araci karti, hesaplama baglantilari
+             * ve pratik bilgi kartlari. Yayimdaki 38 dersin tamami kanonik.
+             */
+            if (kanonikBolumler != null) {
+                CanonicalSections(
+                    sections = kanonikBolumler,
+                    onOpenFormula = onOpenFormula,
+                    onOpenModel = onOpenModel,
+                    onOpenDecisionTool = onOpenDecisionTool
+                )
+            }
+
+            /*
+             * ESKI PRATIK BLOKLAR — yalniz KANONIK OLMAYAN derste.
+             *
+             * Web de ayni kosulu kullaniyor (CoursePlayerPage.jsx:474,
+             * `!isCanonical &&`): kanonik derste ayni icerik yukaridaki
+             * yapisal kartlarda zaten var, ikinci kez basmak duplikasyon.
+             *
+             * Uygulamada bu dal bugun HIC calismiyor: yayimdaki 38 dersin
+             * hepsi kanonik (olculdu 03.09.2026). Yine de duruyor, cunku
+             * kanonik olmayan bir ders yayimlanirsa bos ekran kalmasin.
+             */
+            if (kanonikBolumler == null && lesson.embeddedPracticeBlocks.isNotEmpty()) {
                 Divider(color = LkLineSoft, thickness = 1.dp)
                 Spacer(modifier = Modifier.height(LkSpacing.Space4))
                 Text(text = "Pratik ve Uygulama", style = LkTypography.getCardTitle(), color = LkTextPrimary)

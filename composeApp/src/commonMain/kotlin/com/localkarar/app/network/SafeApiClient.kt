@@ -1,5 +1,7 @@
 package com.localkarar.app.network
 
+import com.localkarar.app.core.AppLog
+
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.delete
@@ -29,7 +31,7 @@ class SafeApiClient(
         technical: String
     ) : Exception(userMessage) {
         init {
-            println("$moduleName contract violation: $technical")
+            AppLog.e(moduleName, "contract violation: $technical")
         }
     }
 
@@ -81,7 +83,7 @@ class SafeApiClient(
         return when (e) {
             is ApiError -> e
             else -> {
-                println("$moduleName request failed: ${e.message}")
+                AppLog.e(moduleName, "request failed", e)
                 ApiError.UnknownError(genericMessage())
             }
         }

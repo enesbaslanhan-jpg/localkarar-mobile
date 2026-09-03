@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+	  UNIVERSAL LINK YETKISI.
+
+	  Bu dosya YOKTU. Sonucu: ContentView.swift icindeki
+	  `onContinueUserActivity(NSUserActivityTypeBrowsingWeb)` bloguna iOS hicbir
+	  zaman ugramiyordu, cunku associated-domains yetkisi olmayan bir uygulamaya
+	  sistem universal link teslim etmez. Yani iOS tarafinda derin baglantilar
+	  bastan beri OLU idi -- kod dogru yazilmisti, yetki eksikti.
+
+	  Karsiligi sunucuda `/.well-known/apple-app-site-association` dosyasidir.
+	  Ikisi birlikte olmadan calismaz.
+	-->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:localkarar.com</string>
+		<string>applinks:www.localkarar.com</string>
+	</array>
+</dict>
+</plist>

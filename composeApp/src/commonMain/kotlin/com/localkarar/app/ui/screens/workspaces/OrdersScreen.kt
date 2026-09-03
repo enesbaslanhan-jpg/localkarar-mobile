@@ -25,9 +25,14 @@ import com.localkarar.app.ui.components.LkButton
 import com.localkarar.app.ui.components.LkButtonVariant
 import com.localkarar.app.ui.components.LkTextField
 import com.localkarar.app.ui.theme.*
+import com.localkarar.app.workspaces.DESTEKLENEN_SAGLAYICILAR
+import com.localkarar.app.workspaces.TUM_SAGLAYICILAR
 import com.localkarar.app.workspaces.OrdersViewModel
 
-private val PROVIDER_OPTIONS = listOf("TÜMÜ", "TRENDYOL", "HEPSIBURADA", "N11", "SHOPIFY", "WOOCOMMERCE")
+// WOOCOMMERCE KALDIRILDI: sunucu enum'u (ordersQuery, marketplace-routes.ts)
+// yalniz dort saglayiciyi kabul ediyor; secildiginde 422 donuyordu ve hata
+// uydurma listeye dusuruldugu icin hic gorunmuyordu.
+private val PROVIDER_OPTIONS = listOf(TUM_SAGLAYICILAR) + DESTEKLENEN_SAGLAYICILAR
 
 private val STATUS_OPTIONS = listOf(
     null to "Tümü",
@@ -153,7 +158,7 @@ fun OrdersScreen(
                 horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2)
             ) {
                 items(PROVIDER_OPTIONS) { provider ->
-                    val isSelected = (selectedProvider == null && provider == "TÜMÜ") || (selectedProvider == provider)
+                    val isSelected = (selectedProvider == null && provider == TUM_SAGLAYICILAR) || (selectedProvider == provider)
                     Box(
                         modifier = Modifier
                             .background(
@@ -166,7 +171,7 @@ fun OrdersScreen(
                                 shape = LkShapes.SM
                             )
                             .clickable {
-                                viewModel.setProviderFilter(workspaceId, if (provider == "TÜMÜ") null else provider)
+                                viewModel.setProviderFilter(workspaceId, if (provider == TUM_SAGLAYICILAR) null else provider)
                             }
                             .padding(horizontal = LkSpacing.Space3, vertical = 6.dp)
                     ) {
@@ -347,7 +352,7 @@ private fun MarketplaceOrderCard(
                     }
                     Spacer(modifier = Modifier.width(LkSpacing.Space2))
                     Text(
-                        text = order.orderNumber,
+                        text = order.orderNumber ?: "Sipariş no yok",
                         style = LkTypography.getBodyStrong(),
                         color = LkTextPrimary,
                         fontWeight = FontWeight.Bold
@@ -397,7 +402,7 @@ private fun MarketplaceOrderCard(
                 Column {
                     if (order.grossAmount != null) {
                         Text(
-                            text = "Brüt: ${order.grossAmount.toInt()} ${order.currency}",
+                            text = "Brüt: ${order.grossAmount.toInt()} ${order.currency ?: "TRY"}",
                             style = LkTypography.getMicro(),
                             color = LkTextSecondary
                         )
@@ -418,7 +423,7 @@ private fun MarketplaceOrderCard(
                         color = LkTextMuted
                     )
                     Text(
-                        text = "${order.netContribution?.toInt() ?: order.grossAmount?.toInt() ?: 0} ${order.currency}",
+                        text = "${order.netContribution?.toInt() ?: order.grossAmount?.toInt() ?: 0} ${order.currency ?: "TRY"}",
                         style = LkTypography.getBodyStrong(),
                         color = LkSuccess,
                         fontWeight = FontWeight.Bold
@@ -464,7 +469,7 @@ private fun OrderDetailDialog(
 
                 Spacer(modifier = Modifier.height(LkSpacing.Space4))
 
-                Text(text = "Sipariş No: ${order.orderNumber}", style = LkTypography.getBodyStrong(), color = LkTextPrimary)
+                Text(text = "Sipariş No: ${order.orderNumber ?: "—"}", style = LkTypography.getBodyStrong(), color = LkTextPrimary)
                 Text(text = "Pazaryeri: ${order.provider}", style = LkTypography.getBodySmall(), color = LkPrimary)
                 Text(text = "Müşteri: ${order.customerName ?: "-"}", style = LkTypography.getBodySmall(), color = LkTextSecondary)
                 Text(text = "Tarih: ${order.orderDate?.take(16)?.replace("T", " ") ?: "-"}", style = LkTypography.getBodySmall(), color = LkTextMuted)
@@ -484,13 +489,13 @@ private fun OrderDetailDialog(
                             .padding(LkSpacing.Space3)
                     ) {
                         Column {
-                            Text(text = item.title, style = LkTypography.getBodySmall(), color = LkTextPrimary, fontWeight = FontWeight.SemiBold)
+                            Text(text = item.title ?: "Ürün adı yok", style = LkTypography.getBodySmall(), color = LkTextPrimary, fontWeight = FontWeight.SemiBold)
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Text(text = "SKU: ${item.sku ?: "-"} | Adet: ${item.quantity}", style = LkTypography.getMicro(), color = LkTextMuted)
-                                Text(text = "${item.totalPrice?.toInt() ?: 0} ${order.currency}", style = LkTypography.getBodySmall(), color = LkTextPrimary)
+                                Text(text = "${item.totalPrice?.toInt() ?: 0} ${order.currency ?: "TRY"}", style = LkTypography.getBodySmall(), color = LkTextPrimary)
                             }
                         }
                     }
@@ -504,7 +509,7 @@ private fun OrderDetailDialog(
                 Text(text = "Finansal Dağılım", style = LkTypography.getBodyStrong(), color = LkTextPrimary)
                 Spacer(modifier = Modifier.height(LkSpacing.Space2))
 
-                DetailRow(label = "Brüt Tutar", value = "${order.grossAmount?.toInt() ?: 0} ${order.currency}", color = LkTextPrimary)
+                DetailRow(label = "Brüt Tutar", value = "${order.grossAmount?.toInt() ?: 0} ${order.currency ?: "TRY"}", color = LkTextPrimary)
                 if (order.commission != null) {
                     DetailRow(label = "Komisyon Kesintisi", value = "-${order.commission.toInt()} ₺", color = LkDanger)
                 }
@@ -517,7 +522,7 @@ private fun OrderDetailDialog(
                 Divider(color = LkLineSoft, modifier = Modifier.padding(vertical = 4.dp))
                 DetailRow(
                     label = "Net İşletme Katkısı",
-                    value = "${order.netContribution?.toInt() ?: order.grossAmount?.toInt() ?: 0} ${order.currency}",
+                    value = "${order.netContribution?.toInt() ?: order.grossAmount?.toInt() ?: 0} ${order.currency ?: "TRY"}",
                     color = LkSuccess,
                     isBold = true
                 )

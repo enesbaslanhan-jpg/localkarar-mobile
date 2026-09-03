@@ -103,7 +103,9 @@ data class LessonDetailDto(
     val progress: LessonProgressDto? = null,
     val prevLesson: LessonPointerDto? = null,
     val nextLesson: LessonPointerDto? = null,
-    val embeddedPracticeBlocks: List<EmbeddedPracticeBlockDto> = emptyList()
+    val embeddedPracticeBlocks: List<EmbeddedPracticeBlockDto> = emptyList(),
+    /** Yalniz KANONIK derste dolu; digerlerinde null. */
+    val canonicalSections: CanonicalSectionsDto? = null
 )
 
 @Serializable
@@ -152,9 +154,25 @@ data class KnowledgeObjectSourceWrapperDto(
 data class KnowledgeObjectSourceDto(
     val id: String,
     val title: String,
+    /**
+     * ⚠️ Sunucu bu alani GONDERMIYOR (source nesnesi:
+     * id, title, url, authorityLevel, lastChecked, createdAt).
+     * Alan duruyor cunku arayuz onu null gecip atliyor; kaldirmak
+     * LessonReaderScreen'deki yayinci satirini da kaldirmak demek.
+     */
     val publisher: String? = null,
     val authorityLevel: String? = null,
-    val url: String? = null
+    val url: String? = null,
+    /**
+     * Kaynagin son dogrulanma tarihi (ISO). Sunucu gonderiyor.
+     *
+     * ⚠️ HENUZ CIZILMIYOR. Bu tarihi gosteren tek yuzey Bilgi Nesnesi
+     * detayiydi ve o urunden kaldirildi (03.09.2026, urun sahibi karari).
+     * Alan burada duruyor cunku DTO sunucunun gercek sozlesmesini
+     * yansitiyor; ders ekranindaki kaynak listesine eklenmesi ayri bir
+     * karar.
+     */
+    val lastChecked: String? = null
 )
 
 @Serializable
@@ -220,4 +238,86 @@ data class LessonViewRequest(
 @Serializable
 data class EnrollRequest(
     val courseId: Int
+)
+
+/* ------------------------------------------------------------------ *
+ * KANONIK DERS BOLUMLERI
+ *
+ * Yayimdaki 38 dersin TAMAMI kanonik (`CANON-` kodlu) ve her birinde
+ * "Pratik Bilgi Kartlari" ile bir entegrasyon bolumu var (olculdu
+ * 03.09.2026). Webde bu bolumler yapisal kartlara ve DUGMELERE
+ * ceviriliyor; mobilde ham markdown olarak basiliyordu, yani kullanici
+ * `[ Hesaplamalar > Gercek Birim Maliyet Hesaplayicisini Ac ]` satirini
+ * DUZ METIN olarak goruyordu.
+ *
+ * Ayristirma SUNUCUDA yapiliyor (src/services/canonical-lesson.ts);
+ * boylece 600 satirlik bulanik eslestiriciyi Kotlin'de ikinci kez
+ * yazmak -- ve sessizce yanlis hesaplamaya baglama riski -- ortadan
+ * kalkiyor.
+ * ------------------------------------------------------------------ */
+
+/** Ders govdesinde gecen, kataloga COZULMUS hesaplama referansi. */
+@Serializable
+data class CanonicalCalculationRefDto(
+    val label: String = "",
+    /** Katalog kimligi ("unit-cost"). `CalculationCatalog` ile cozulur. */
+    val calculationId: String = "",
+    val title: String? = null,
+    val hasSimple: Boolean = false,
+    val hasDetailed: Boolean = false
+)
+
+/** Formul karti — gercek LaTeX tasiyor, `LkMath` ile ciziliyor. */
+@Serializable
+data class CanonicalFormulaCardDto(
+    val title: String = "",
+    val description: String = "",
+    val formulas: List<String> = emptyList(),
+    val example: CanonicalFormulaExampleDto? = null,
+    val interpretation: String = "",
+    /** Kartin basligindan cozulen hesaplama; yoksa null -> DUGME BASILMAZ. */
+    val calculationId: String? = null,
+    val decisionToolCode: String? = null,
+    val decisionToolTitle: String? = null
+)
+
+@Serializable
+data class CanonicalFormulaExampleDto(
+    val intro: String = "",
+    val formulas: List<String> = emptyList()
+)
+
+/** Hata / Dogru karti. */
+@Serializable
+data class CanonicalMistakeCardDto(
+    val title: String? = null,
+    val wrong: String? = null,
+    val correct: String? = null
+)
+
+/** Karar araci entegrasyonu (dersin 3. bolumu). */
+@Serializable
+data class CanonicalDecisionDto(
+    val toolCode: String? = null,
+    val toolTitle: String? = null,
+    val context: String = "",
+    val bullets: List<String> = emptyList(),
+    val result: String = ""
+)
+
+@Serializable
+data class CanonicalExtraDecisionDto(
+    val code: String = "",
+    val title: String = ""
+)
+
+@Serializable
+data class CanonicalSectionsDto(
+    /** 3./4./5. bolumler ve satir ici referanslar CIKARILMIS markdown. */
+    val body: String = "",
+    val decision: CanonicalDecisionDto? = null,
+    val extraDecisions: List<CanonicalExtraDecisionDto> = emptyList(),
+    val calculations: List<CanonicalCalculationRefDto> = emptyList(),
+    val formulaCards: List<CanonicalFormulaCardDto> = emptyList(),
+    val mistakeCards: List<CanonicalMistakeCardDto> = emptyList()
 )
