@@ -29,3 +29,27 @@ untracked-files.txt
 *.keystore
 *.jks
 
+
+# ---------------------------------------------------------------------------
+# Derleme artiklari ve ham gunlukler.
+#
+# Bunlar .gitignore'da olmalarina RAGMEN takip ediliyorlardi (once eklenmis,
+# sonra kural yazilmis; kural zaten izlenen dosyayi durdurmuyor).
+#
+# 🔴 Ham logcat ciktisi ve API dokumu commit'lemek gelecekteki token sizintisi
+# icin acik bir kanal: bugun icinde sir yok, ama bir dahaki sefere olabilir ve
+# kimse bakmaz.
+# ---------------------------------------------------------------------------
+.kotlin/
+logcat*.txt
+raw_json*.txt
+raw_detail.txt
+untracked-files.txt
+pre-recovery-working-tree.patch
+build_errors*.txt
+build_output.txt
+errors*.json
+errors.txt
+error_summary.txt
+window_dump*.xml
+response.json
