@@ -6,6 +6,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.localkarar.app.auth.SecureStorage
+import com.localkarar.app.core.AppPreferences
 import com.localkarar.app.core.AppContextHolder
 import com.localkarar.app.navigation.deeplink.DeepLinkDispatcher
 
@@ -19,9 +20,10 @@ class MainActivity : ComponentActivity() {
         handleIntent(intent)
 
         val secureStorage = SecureStorage(applicationContext)
+        val appPreferences = AppPreferences(applicationContext)
 
         setContent {
-            App(secureStorage = secureStorage)
+            App(secureStorage = secureStorage, appPreferences = appPreferences)
         }
     }
 

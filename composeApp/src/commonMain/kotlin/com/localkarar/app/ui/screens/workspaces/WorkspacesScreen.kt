@@ -10,11 +10,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Business
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Business
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -64,7 +65,7 @@ fun WorkspacesScreen(
                             LkEmptyState(
                                 title = "Henüz işletme yok",
                                 description = "İşletmenizi ekleyerek ödeme, tahsilat ve takip kayıtlarını yönetin.",
-                                icon = Icons.Default.Business,
+                                icon = Icons.Outlined.Business,
                                 action = {
                                     LkButton(
                                         text = "İşletme Ekle",
@@ -145,7 +146,7 @@ private fun WorkspaceCard(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
-                imageVector = Icons.Default.Business,
+                imageVector = Icons.Outlined.Business,
                 contentDescription = null,
                 tint = LkPrimary,
                 modifier = Modifier.size(20.dp)
@@ -159,7 +160,7 @@ private fun WorkspaceCard(
             )
             if (isActive) {
                 Icon(
-                    imageVector = Icons.Default.CheckCircle,
+                    imageVector = Icons.Outlined.CheckCircle,
                     contentDescription = "Aktif",
                     tint = LkSuccess,
                     modifier = Modifier.size(16.dp)
@@ -184,7 +185,7 @@ private fun WorkspaceCard(
             )
             IconButton(onClick = { showDeleteConfirm = true }) {
                 Icon(
-                    imageVector = Icons.Default.Delete,
+                    imageVector = Icons.Outlined.Delete,
                     contentDescription = "Sil",
                     tint = LkTextMuted,
                     modifier = Modifier.size(18.dp)

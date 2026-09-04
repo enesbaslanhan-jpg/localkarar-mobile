@@ -10,9 +10,10 @@ import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AttachFile
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.outlined.AttachFile
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -70,7 +71,7 @@ fun DocumentsScreen(
                         LkEmptyState(
                             title = "Henüz belge yok",
                             description = "Fatura, sözleşme veya makbuz yükleyin. e-Fatura XML dosyaları otomatik olarak çözümlenir.",
-                            icon = Icons.Default.AttachFile,
+                            icon = Icons.Outlined.AttachFile,
                             action = {
                                 LkButton(
                                     text = if (yukleniyor) "Yükleniyor..." else "Belge yükle",
@@ -170,7 +171,7 @@ private fun DocumentCard(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
-                imageVector = Icons.Default.AttachFile,
+                imageVector = Icons.Outlined.AttachFile,
                 contentDescription = null,
                 tint = LkPrimary,
                 modifier = Modifier.size(18.dp)
@@ -185,7 +186,7 @@ private fun DocumentCard(
             )
             IconButton(onClick = onDelete) {
                 Icon(
-                    imageVector = Icons.Default.Delete,
+                    imageVector = Icons.Outlined.Delete,
                     contentDescription = "Sil",
                     tint = LkTextMuted,
                     modifier = Modifier.size(18.dp)

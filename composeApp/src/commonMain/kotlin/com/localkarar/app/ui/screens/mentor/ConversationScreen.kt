@@ -11,7 +11,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material.icons.outlined.ThumbDown
 import androidx.compose.material.icons.outlined.ThumbUp
 import androidx.compose.runtime.*
@@ -90,7 +90,7 @@ fun ConversationScreen(
                 renameText = conversationTitle
                 showRenameDialog = true
             }) {
-                Icon(Icons.Default.Edit, contentDescription = "Yeniden Adlandır", tint = LkTextSecondary)
+                Icon(Icons.Outlined.Edit, contentDescription = "Yeniden Adlandır", tint = LkTextSecondary)
             }
         }
     ) {
@@ -178,7 +178,7 @@ fun ConversationScreen(
                                 modifier = Modifier.padding(10.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(Icons.Default.ErrorOutline, contentDescription = null, tint = LkDanger, modifier = Modifier.size(20.dp))
+                                Icon(Icons.Outlined.ErrorOutline, contentDescription = null, tint = LkDanger, modifier = Modifier.size(20.dp))
                                 Spacer(Modifier.width(8.dp))
                                 Text(
                                     text = err,
@@ -187,7 +187,7 @@ fun ConversationScreen(
                                     modifier = Modifier.weight(1f)
                                 )
                                 IconButton(onClick = { viewModel.clearError() }, modifier = Modifier.size(24.dp)) {
-                                    Icon(Icons.Default.Close, contentDescription = "Kapat", tint = LkDanger, modifier = Modifier.size(16.dp))
+                                    Icon(Icons.Outlined.Close, contentDescription = "Kapat", tint = LkDanger, modifier = Modifier.size(16.dp))
                                 }
                             }
                         }
@@ -301,7 +301,7 @@ private fun MessageBubble(
                         }
                         IconButton(onClick = onEdit, modifier = Modifier.size(24.dp)) {
                             Icon(
-                                Icons.Default.Edit,
+                                Icons.Outlined.Edit,
                                 contentDescription = "Mesajı Düzenle",
                                 tint = LkOnPrimary.copy(alpha = 0.8f),
                                 modifier = Modifier.size(14.dp)
@@ -330,7 +330,7 @@ private fun MessageBubble(
                         ) {
                             Row(modifier = Modifier.padding(10.dp), verticalAlignment = Alignment.Top) {
                                 Icon(
-                                    Icons.Default.Info,
+                                    Icons.Outlined.Info,
                                     contentDescription = null,
                                     tint = LkWarning,
                                     modifier = Modifier.size(16.dp).padding(top = 2.dp)
@@ -358,7 +358,7 @@ private fun MessageBubble(
                                 .background(LkTextSecondary.copy(alpha = 0.15f))
                                 .padding(horizontal = 8.dp, vertical = 4.dp)
                         ) {
-                            Icon(Icons.Default.StopCircle, contentDescription = null, tint = LkTextSecondary, modifier = Modifier.size(14.dp))
+                            Icon(Icons.Outlined.StopCircle, contentDescription = null, tint = LkTextSecondary, modifier = Modifier.size(14.dp))
                             Spacer(Modifier.width(6.dp))
                             Text("Yanıt durduruldu", style = LkTypography.getMicro(), color = LkTextSecondary)
                         }
@@ -399,7 +399,7 @@ private fun MessageBubble(
                         }
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             IconButton(onClick = { clipboardManager.setText(AnnotatedString(message.content)) }, modifier = Modifier.size(28.dp)) {
-                                Icon(Icons.Default.ContentCopy, contentDescription = "Kopyala", tint = LkTextSecondary, modifier = Modifier.size(15.dp))
+                                Icon(Icons.Outlined.ContentCopy, contentDescription = "Kopyala", tint = LkTextSecondary, modifier = Modifier.size(15.dp))
                             }
                             IconButton(onClick = onFeedback, modifier = Modifier.size(28.dp)) {
                                 Icon(Icons.Outlined.ThumbUp, contentDescription = "Faydalı", tint = LkTextSecondary, modifier = Modifier.size(15.dp))
@@ -408,7 +408,7 @@ private fun MessageBubble(
                                 Icon(Icons.Outlined.ThumbDown, contentDescription = "Faydasız", tint = LkTextSecondary, modifier = Modifier.size(15.dp))
                             }
                             IconButton(onClick = onRegenerate, modifier = Modifier.size(28.dp)) {
-                                Icon(Icons.Default.Refresh, contentDescription = "Yeniden Oluştur", tint = LkPrimary, modifier = Modifier.size(16.dp))
+                                Icon(Icons.Outlined.Refresh, contentDescription = "Yeniden Oluştur", tint = LkPrimary, modifier = Modifier.size(16.dp))
                             }
                         }
                     }
@@ -437,7 +437,7 @@ private fun CitationCard(citation: CitationDto) {
             .padding(horizontal = 8.dp, vertical = 6.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Default.MenuBook, contentDescription = null, tint = LkPrimary, modifier = Modifier.size(14.dp))
+            Icon(Icons.Outlined.MenuBook, contentDescription = null, tint = LkPrimary, modifier = Modifier.size(14.dp))
             Spacer(Modifier.width(6.dp))
             Text(
                 text = citation.title ?: citation.knowledgeObjectCode ?: citation.code ?: "İlgili Doküman",
@@ -530,7 +530,7 @@ private fun ChatInputBar(
                 colors = ButtonDefaults.buttonColors(backgroundColor = LkDanger, contentColor = LkOnPrimary),
                 shape = RoundedCornerShape(8.dp)
             ) {
-                Icon(Icons.Default.Stop, contentDescription = "Durdur")
+                Icon(Icons.Outlined.Stop, contentDescription = "Durdur")
             }
         } else {
             Button(
@@ -540,7 +540,7 @@ private fun ChatInputBar(
                 colors = ButtonDefaults.buttonColors(backgroundColor = LkPrimary, contentColor = LkOnPrimary),
                 shape = RoundedCornerShape(8.dp)
             ) {
-                Icon(Icons.Default.Send, contentDescription = "Gönder")
+                Icon(Icons.Outlined.Send, contentDescription = "Gönder")
             }
         }
     }
@@ -568,7 +568,7 @@ private fun EditMessageBar(
             ) {
                 Text("Mesajı Düzenle", style = LkTypography.getBodyStrong(), color = LkPrimary)
                 IconButton(onClick = onCancel, modifier = Modifier.size(24.dp)) {
-                    Icon(Icons.Default.Close, contentDescription = "İptal", tint = LkTextSecondary, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Outlined.Close, contentDescription = "İptal", tint = LkTextSecondary, modifier = Modifier.size(16.dp))
                 }
             }
             Spacer(Modifier.height(6.dp))

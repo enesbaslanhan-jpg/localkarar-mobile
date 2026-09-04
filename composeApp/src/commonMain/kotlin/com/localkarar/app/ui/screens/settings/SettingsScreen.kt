@@ -1,5 +1,7 @@
 package com.localkarar.app.ui.screens.settings
 
+import androidx.compose.ui.unit.sp
+import com.localkarar.app.ui.components.LkHairline
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -10,7 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,6 +23,9 @@ import androidx.compose.ui.unit.dp
 import com.localkarar.app.settings.SettingsViewModel
 import com.localkarar.app.settings.roleLabel
 import com.localkarar.app.ui.components.LkPageLayout
+import com.localkarar.app.ui.components.LkPillChip
+import com.localkarar.app.ui.theme.LocalThemeController
+import com.localkarar.app.ui.theme.ThemeMode
 import com.localkarar.app.ui.theme.*
 
 @Composable
@@ -144,7 +149,7 @@ fun SettingsScreen(
                         Text(userEmail, style = LkTypography.getBodySmall(), color = LkTextSecondary)
                     }
                     Icon(
-                        imageVector = Icons.Default.ChevronRight,
+                        imageVector = Icons.Outlined.ChevronRight,
                         contentDescription = "Profil",
                         tint = LkTextSecondary,
                         modifier = Modifier.size(20.dp)
@@ -182,19 +187,19 @@ fun SettingsScreen(
                 SettingItem(
                     label = "Profil Bilgileri",
                     description = "Görünen ad ve profil fotoğrafı",
-                    icon = Icons.Default.Person,
+                    icon = Icons.Outlined.Person,
                     onClick = onOpenProfile
                 )
                 SettingItem(
                     label = "E-posta Değiştir",
                     description = "Hesabınıza bağlı e-posta adresini güncelleyin",
-                    icon = Icons.Default.Email,
+                    icon = Icons.Outlined.Email,
                     onClick = onOpenEmail
                 )
                 SettingItem(
                     label = "Şifre Değiştir",
                     description = "Giriş şifrenizi güncelleyin (en az 10 karakter)",
-                    icon = Icons.Default.Lock,
+                    icon = Icons.Outlined.Lock,
                     onClick = onOpenPassword
                 )
             }
@@ -205,14 +210,14 @@ fun SettingsScreen(
                 SettingItem(
                     label = "İşletmelerim",
                     description = "Bağlı işletmeleri görüntüle veya değiştir",
-                    icon = Icons.Default.Business,
+                    icon = Icons.Outlined.Business,
                     onClick = onOpenWorkspaces
                 )
                 if (activeWorkspaceId != null && onOpenWorkspaceSettings != null) {
                     SettingItem(
                         label = "İşletme Ayarları",
                         description = "Para birimi, saat dilimi ve bildirimler",
-                        icon = Icons.Default.Tune,
+                        icon = Icons.Outlined.Tune,
                         onClick = { onOpenWorkspaceSettings(activeWorkspaceId) }
                     )
                 }
@@ -224,7 +229,7 @@ fun SettingsScreen(
                 SettingItem(
                     label = "Yasal Bilgiler ve Onaylar",
                     description = "Kullanım koşulları, KVKK ve onay durumu",
-                    icon = Icons.Default.Description,
+                    icon = Icons.Outlined.Description,
                     onClick = onOpenConsents
                 )
             }
@@ -235,9 +240,43 @@ fun SettingsScreen(
                 SettingItem(
                     label = "Diğer Cihazlardaki Oturumları Kapat",
                     description = "Bu cihaz haricindeki tüm açık oturumları sonlandır",
-                    icon = Icons.Default.Devices,
+                    icon = Icons.Outlined.Devices,
                     onClick = { showLogoutAllDialog = true }
                 )
+            }
+
+            /*
+             * GORUNUM.
+             *
+             * Webde tema secimi ust cubuktaki dugmede; mobilde kalici bir ust
+             * cubuk olmadigi icin Ayarlar'a kondu. Uc secenek de webdeki
+             * `ThemeContext` ile ayni: secim yapilmazsa SISTEM tercihi.
+             *
+             * Secim cikista SILINMEZ (`AppPreferences`), webde de oturumdan
+             * bagimsiz.
+             */
+            val themeController = LocalThemeController.current
+            if (themeController != null) {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    SectionHeader("GÖRÜNÜM")
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2)
+                    ) {
+                        listOf(
+                            ThemeMode.SYSTEM to "Sistem",
+                            ThemeMode.LIGHT to "Açık",
+                            ThemeMode.DARK to "Koyu"
+                        ).forEach { (mod, etiket) ->
+                            LkPillChip(
+                                label = etiket,
+                                selected = themeController.mode == mod,
+                                onClick = { themeController.select(mod) },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
+                }
             }
 
             // Section: Yardım
@@ -251,25 +290,25 @@ fun SettingsScreen(
                 SettingItem(
                     label = "Bildirimler",
                     description = "Hesabınızla ilgili gelişmeler",
-                    icon = Icons.Default.NotificationsNone,
+                    icon = Icons.Outlined.NotificationsNone,
                     onClick = onOpenNotifications
                 )
                 SettingItem(
                     label = "Kullanım Kılavuzu",
                     description = "Uygulamanın temel akışlarını öğrenin",
-                    icon = Icons.Default.MenuBook,
+                    icon = Icons.Outlined.MenuBook,
                     onClick = onOpenGuide
                 )
                 SettingItem(
                     label = "LocalKarar Hakkında",
                     description = "Amaç, kapsam ve sorumluluklar",
-                    icon = Icons.Default.Info,
+                    icon = Icons.Outlined.Info,
                     onClick = onOpenAbout
                 )
                 SettingItem(
                     label = "Destek",
                     description = "Sorun bildirin, bize yazın",
-                    icon = Icons.Default.HelpOutline,
+                    icon = Icons.Outlined.HelpOutline,
                     onClick = onOpenSupport
                 )
             }
@@ -280,7 +319,7 @@ fun SettingsScreen(
                 SettingItem(
                     label = "Hesabımı Sil",
                     description = "Tüm verileriniz kalıcı olarak silinir",
-                    icon = Icons.Default.DeleteOutline,
+                    icon = Icons.Outlined.DeleteOutline,
                     onClick = onOpenDeleteAccount,
                     danger = true
                 )
@@ -307,7 +346,7 @@ fun SettingsScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        imageVector = Icons.Default.ExitToApp,
+                        imageVector = Icons.Outlined.ExitToApp,
                         contentDescription = "Çıkış Yap",
                         tint = LkDanger,
                         modifier = Modifier.size(18.dp)
@@ -330,13 +369,26 @@ fun SettingsScreen(
 private fun SectionHeader(title: String) {
     Text(
         text = title,
-        style = LkTypography.getMicro(),
-        color = LkTextSecondary,
+        style = LkTypography.getLabel(),
+        color = LkTextMuted,
         fontWeight = FontWeight.Bold,
-        modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp)
+        letterSpacing = 0.8.sp,
+        modifier = Modifier.padding(top = LkSpacing.Space4, bottom = LkSpacing.Space1)
     )
 }
 
+/**
+ * Ayarlar satiri.
+ *
+ * 🔴 ONCEDEN HER SATIR AYRI KART IDI: 13 satirlik ekran bastan sona kart
+ * yiginiydi ve uygulamanin geri kalaniyla ayni dili konusmuyordu. Prototipte
+ * `.section-block` cercevesiz; satirlari sac teli cizgi ayirir.
+ *
+ * 🔴 IKON KUTUSU `LkSurfaceSignature` KULLANIYORDU (brand-700, temadan
+ * BAGIMSIZ koyu lacivert). Acik temada aydinlik bir yuzeyin uzerinde koyu
+ * bloklar olarak duruyordu. Prototipteki `.tactile-icon-box` ise
+ * `--surface-subtle` + ince kenarlik; artik o.
+ */
 @Composable
 private fun SettingItem(
     label: String,
@@ -345,57 +397,53 @@ private fun SettingItem(
     onClick: () -> Unit,
     danger: Boolean = false
 ) {
-    Card(
-        modifier = Modifier
+    Row(
+        Modifier
             .fillMaxWidth()
-            .clip(LkShapes.MD)
-            .border(
-                1.dp,
-                if (danger) LkDanger.copy(alpha = 0.3f) else LkLineSoft,
-                LkShapes.MD
-            )
-            .clickable(onClick = onClick),
-        backgroundColor = LkSurfacePanel,
-        elevation = 0.dp
+            .clickable(onClick = onClick)
+            .padding(vertical = LkSpacing.Space3),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            Modifier.fillMaxWidth().padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .background(
+                    if (danger) LkDanger.copy(alpha = 0.10f) else LkSurfaceSunken,
+                    LkShapes.SM
+                )
+                .border(
+                    1.dp,
+                    if (danger) LkDanger.copy(alpha = 0.30f) else LkLineSoft,
+                    LkShapes.SM
+                ),
+            contentAlignment = Alignment.Center
         ) {
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(LkShapes.SM)
-                    .background(if (danger) LkDanger.copy(alpha = 0.1f) else LkSurfaceSignature),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = label,
-                    tint = if (danger) LkDanger else LkPrimary,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-            Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
-                Text(
-                    text = label,
-                    style = LkTypography.getBody(),
-                    color = if (danger) LkDanger else LkTextPrimary,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Text(
-                    text = description,
-                    style = LkTypography.getMicro(),
-                    color = LkTextSecondary
-                )
-            }
             Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = null,
-                tint = if (danger) LkDanger.copy(alpha = 0.6f) else LkTextSecondary,
-                modifier = Modifier.size(18.dp)
+                imageVector = icon,
+                contentDescription = label,
+                tint = if (danger) LkDanger else LkPrimary,
+                modifier = Modifier.size(20.dp)
             )
         }
+        Spacer(Modifier.width(LkSpacing.Space4))
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = label,
+                style = LkTypography.getBodyStrong(),
+                color = if (danger) LkDanger else LkTextPrimary
+            )
+            Text(
+                text = description,
+                style = LkTypography.getMetadata(),
+                color = LkTextMuted
+            )
+        }
+        Icon(
+            imageVector = Icons.Outlined.ChevronRight,
+            contentDescription = null,
+            tint = if (danger) LkDanger.copy(alpha = 0.6f) else LkTextMuted,
+            modifier = Modifier.size(18.dp)
+        )
     }
+    LkHairline()
 }

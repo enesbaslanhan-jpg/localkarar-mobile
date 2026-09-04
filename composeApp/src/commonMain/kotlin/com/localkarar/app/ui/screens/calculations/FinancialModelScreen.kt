@@ -11,7 +11,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -115,7 +115,7 @@ fun FinancialModelScreen(
                     }
 
                     if (workspaceName == null) {
-                        LkInfoPanel(title = "İşletme gerekli", icon = Icons.Default.Info) {
+                        LkInfoPanel(title = "İşletme gerekli", icon = Icons.Outlined.Info) {
                             Text(text = "Bu modeli çalıştırmak için bir işletme seçmeniz gerekir.", style = LkTypography.getBodySmall(), color = LkTextSecondary)
                             Spacer(modifier = Modifier.height(LkSpacing.Space3))
                             LkButton(text = "İşletme Seç", onClick = onOpenWorkspace, modifier = Modifier.fillMaxWidth())
@@ -552,7 +552,7 @@ private fun OutputsTab(model: FinancialModelDto, runResult: FinancialModelRunRes
             }
         }
     } ?: Column(modifier = Modifier.fillMaxWidth()) {
-        LkInfoPanel(title = "Sonuç", icon = Icons.Default.Science) {
+        LkInfoPanel(title = "Sonuç", icon = Icons.Outlined.Science) {
             Text(text = "Henüz sonuç yok", style = LkTypography.getBodyStrong(), color = LkTextPrimary)
             Text(text = "Girdileri hazırlayıp modeli çalıştırın.", style = LkTypography.getBodySmall(), color = LkTextSecondary)
         }
@@ -607,15 +607,20 @@ private fun ChecksTab(model: FinancialModelDto, runResult: FinancialModelRunResp
                             Text(text = "${component.score}/100", style = LkTypography.getBodyStrong(), color = LkPrimary)
                         }
                         Spacer(modifier = Modifier.height(4.dp))
+                        /*
+                         * Renk Canvas'in DISINDA hesaplaniyor: `onDraw` bir
+                         * DrawScope lambdasi, composable degil. Tema tokenlari
+                         * artik @Composable oldugu icin orada okunamaz.
+                         */
+                        val barColor = when {
+                            component.score > 60 -> LkSuccess
+                            component.score > 30 -> LkWarning
+                            else -> LkDanger
+                        }
                         androidx.compose.foundation.Canvas(
                             modifier = Modifier.fillMaxWidth().height(4.dp),
                             onDraw = {
                                 val barWidth = (component.score / 100.0) * size.width
-                                val barColor = when {
-                                    component.score > 60 -> LkSuccess
-                                    component.score > 30 -> LkWarning
-                                    else -> LkDanger
-                                }
                                 drawRect(
                                     color = barColor,
                                     topLeft = Offset.Zero,
@@ -642,7 +647,7 @@ private fun ChecksTab(model: FinancialModelDto, runResult: FinancialModelRunResp
             }
         }
     } ?: Column(modifier = Modifier.fillMaxWidth()) {
-        LkInfoPanel(title = "Kontroller", icon = Icons.Default.Science) {
+        LkInfoPanel(title = "Kontroller", icon = Icons.Outlined.Science) {
             Text(text = "Kontrolleri görmek için modeli çalıştırın.", style = LkTypography.getBodySmall(), color = LkTextSecondary)
         }
     }
@@ -678,7 +683,7 @@ private fun SourcesTab(model: FinancialModelDto) {
                         Text(text = source.title, style = LkTypography.getBodyStrong(), color = LkTextPrimary)
                         Text(text = source.usage, style = LkTypography.getBodySmall(), color = LkTextSecondary)
                     }
-                    Icon(imageVector = Icons.Default.ArrowForward, contentDescription = null, tint = LkTextMuted, modifier = Modifier.size(20.dp))
+                    Icon(imageVector = Icons.Outlined.ArrowForward, contentDescription = null, tint = LkTextMuted, modifier = Modifier.size(20.dp))
                 }
             }
             Spacer(modifier = Modifier.height(LkSpacing.Space2))
@@ -717,10 +722,10 @@ private fun VersionsTab(model: FinancialModelDto) {
 @Composable
 fun LkValidationCheckRowPublic(check: ValidationCheckDto) {
     val (icon, color) = when {
-        check.passed -> Icons.Default.CheckCircle to LkSuccess
-        check.severity == "error" -> Icons.Default.Error to LkDanger
-        check.severity == "warning" -> Icons.Default.Warning to LkWarning
-        else -> Icons.Default.Info to LkTextSecondary
+        check.passed -> Icons.Outlined.CheckCircle to LkSuccess
+        check.severity == "error" -> Icons.Outlined.Error to LkDanger
+        check.severity == "warning" -> Icons.Outlined.Warning to LkWarning
+        else -> Icons.Outlined.Info to LkTextSecondary
     }
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
         Icon(imageVector = icon, contentDescription = null, tint = color, modifier = Modifier.size(16.dp))

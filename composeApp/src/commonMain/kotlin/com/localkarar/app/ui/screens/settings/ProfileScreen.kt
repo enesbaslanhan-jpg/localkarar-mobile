@@ -10,8 +10,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -127,7 +128,7 @@ fun ProfileScreen(
                                         modifier = Modifier.size(40.dp)
                                     ) {
                                         Icon(
-                                            Icons.Default.Edit,
+                                            Icons.Outlined.Edit,
                                             contentDescription = "Düzenle",
                                             tint = LkPrimary,
                                             modifier = Modifier.size(18.dp)
@@ -160,7 +161,7 @@ fun ProfileScreen(
                                                 }
                                             }
                                         ) {
-                                            Icon(Icons.Default.Check, contentDescription = "Kaydet", tint = LkSuccess)
+                                            Icon(Icons.Outlined.Check, contentDescription = "Kaydet", tint = LkSuccess)
                                         }
                                     }
                                 }

@@ -8,8 +8,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
@@ -87,7 +88,7 @@ fun LegalConsentsScreen(
                                             .padding(horizontal = 8.dp, vertical = 4.dp)
                                     ) {
                                         Icon(
-                                            Icons.Default.Warning,
+                                            Icons.Outlined.Warning,
                                             contentDescription = "Onay Bekliyor",
                                             tint = LkWarning,
                                             modifier = Modifier.size(14.dp)
@@ -109,7 +110,7 @@ fun LegalConsentsScreen(
                                             .padding(horizontal = 8.dp, vertical = 4.dp)
                                     ) {
                                         Icon(
-                                            Icons.Default.CheckCircle,
+                                            Icons.Outlined.CheckCircle,
                                             contentDescription = "Onaylandı",
                                             tint = LkSuccess,
                                             modifier = Modifier.size(14.dp)

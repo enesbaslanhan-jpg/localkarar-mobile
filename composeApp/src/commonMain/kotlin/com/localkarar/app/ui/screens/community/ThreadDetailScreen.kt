@@ -10,7 +10,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.outlined.Send
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -125,7 +126,7 @@ fun ThreadDetailScreen(
                         if (viewModel.isSendingMessage) {
                             CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp, color = LkPrimary)
                         } else {
-                            Icon(Icons.Default.Send, contentDescription = "Gönder", tint = if (viewModel.messageInput.isNotBlank()) LkPrimary else LkTextMuted)
+                            Icon(Icons.Outlined.Send, contentDescription = "Gönder", tint = if (viewModel.messageInput.isNotBlank()) LkPrimary else LkTextMuted)
                         }
                     }
                 }

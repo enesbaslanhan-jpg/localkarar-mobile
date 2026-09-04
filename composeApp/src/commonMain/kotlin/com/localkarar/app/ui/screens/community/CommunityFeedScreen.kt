@@ -1,5 +1,8 @@
 package com.localkarar.app.ui.screens.community
 
+import com.localkarar.app.ui.theme.LkSpacing
+import com.localkarar.app.ui.components.LkTabStyle
+import com.localkarar.app.ui.components.LkTabs
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -10,7 +13,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.FavoriteBorder
@@ -32,11 +37,23 @@ import com.localkarar.app.ui.components.LkButtonVariant
 import com.localkarar.app.ui.components.LkPageLayout
 import com.localkarar.app.ui.theme.*
 
+/**
+ * Topluluk alt bolumleri — SIRA VE ADLAR WEBDEKI ILE AYNI.
+ *
+ * Web kenar cubugu (`Sidebar.jsx:189-192`): Akis → Profil → Takip ve
+ * engelleme → Sohbetler.
+ *
+ * 🔴 IKI SAPMA DUZELTILDI:
+ *   1. Sira farkliydi (Akis, Kisiler, Sohbetler, Profil).
+ *   2. "Kisiler" webde "Takip ve engelleme" (`nav.followingAndBlocking`).
+ *      Ayni bolume iki platformda iki ad vermek, kullaniciya ayni seyi
+ *      arattirirken farkli kelime ogretiyordu.
+ */
 enum class CommunityInternalTab(val title: String) {
     FEED("Akış"),
-    MEMBERS("Kişiler"),
-    CHATS("Sohbetler"),
-    PROFILE("Profil")
+    PROFILE("Profil"),
+    MEMBERS("Takip ve engelleme"),
+    CHATS("Sohbetler")
 }
 
 @Composable
@@ -70,7 +87,7 @@ fun CommunityFeedScreen(
             // Notification Bell Icon with Badge
             Box(modifier = Modifier.padding(end = 8.dp)) {
                 IconButton(onClick = onOpenNotifications) {
-                    Icon(Icons.Default.Notifications, contentDescription = "Bildirimler", tint = LkTextPrimary)
+                    Icon(Icons.Outlined.Notifications, contentDescription = "Bildirimler", tint = LkTextPrimary)
                 }
                 if (unreadNotifs > 0) {
                     Box(
@@ -93,41 +110,30 @@ fun CommunityFeedScreen(
             }
             if (onOpenProductCenter != null) {
                 IconButton(onClick = onOpenProductCenter) {
-                    Icon(Icons.Default.Apps, contentDescription = "Ürünler", tint = LkPrimary)
+                    Icon(Icons.Outlined.Apps, contentDescription = "Ürünler", tint = LkPrimary)
                 }
             }
         }
     ) {
         Column(Modifier.fillMaxSize()) {
-            // Top internal navigation tabs (Akış, Kişiler, Sohbetler, Profil)
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(LkSurfaceCanvas)
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                CommunityInternalTab.values().forEach { tab ->
-                    val isSelected = tab == currentSubTab
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(LkShapes.MD)
-                            .background(if (isSelected) LkPrimary else LkSurfacePanel)
-                            .border(1.dp, if (isSelected) LkPrimary else LkLineSoft, LkShapes.MD)
-                            .clickable { currentSubTab = tab }
-                            .padding(vertical = 8.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = tab.title,
-                            style = LkTypography.getMicro(),
-                            color = if (isSelected) LkOnPrimary else LkTextSecondary,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                        )
-                    }
-                }
-            }
+            // §11: sekmeler ortak bilesenden.
+            //
+            // 🔴 ONCEDEN ELLE YAZILMISTI ve secili sekme `LkPrimary` zemin +
+            // beyaz yazi kullaniyordu. Koyu temada `LkPrimary` = brand-300
+            // (#7BA2B3); uzerine beyaz 1.9:1 veriyor -- §19'un 4.5:1 esiginin
+            // altinda. `LkTabs` secili segmentte `primaryFill` kullaniyor
+            // (brand-500), beyazla her iki modda 4.6:1.
+            val sekmeler = CommunityInternalTab.values().toList()
+            LkTabs(
+                tabs = sekmeler.map { it.title },
+                selectedIndex = sekmeler.indexOf(currentSubTab),
+                onSelect = { currentSubTab = sekmeler[it] },
+                // §11 varsayilani underline. SEGMENTED denendi ve "Takip ve
+                // engelleme" iki satira kirilip 34dp segmenti tasiriyordu;
+                // §11 zaten segmented'i 2-3 KISA secenek icin tanimliyor.
+                style = LkTabStyle.UNDERLINE,
+                modifier = Modifier.padding(horizontal = LkSpacing.Space4, vertical = LkSpacing.Space2)
+            )
 
             Divider(color = LkLineSoft)
 
@@ -289,7 +295,7 @@ private fun FeedTabContent(
                             backgroundColor = LkPrimary
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Add,
+                                imageVector = Icons.Outlined.Add,
                                 contentDescription = "Gönderi Oluştur",
                                 tint = LkOnPrimary
                             )
@@ -364,7 +370,7 @@ fun PostFeedCard(
                         )
                         if (post.postType == "official") {
                             Spacer(Modifier.width(4.dp))
-                            Icon(Icons.Default.Verified, contentDescription = "Resmi", tint = LkPrimary, modifier = Modifier.size(14.dp))
+                            Icon(Icons.Outlined.Verified, contentDescription = "Resmi", tint = LkPrimary, modifier = Modifier.size(14.dp))
                         }
                     }
                     Text(
@@ -376,7 +382,7 @@ fun PostFeedCard(
 
                 if (onReport != null && post.postType != "official") {
                     IconButton(onClick = onReport, modifier = Modifier.size(24.dp)) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "Seçenekler", tint = LkTextMuted, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Outlined.MoreVert, contentDescription = "Seçenekler", tint = LkTextMuted, modifier = Modifier.size(16.dp))
                     }
                 }
             }
@@ -404,7 +410,7 @@ fun PostFeedCard(
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
-                            imageVector = if (media.kind == "image") Icons.Default.Image else Icons.Default.InsertDriveFile,
+                            imageVector = if (media.kind == "image") Icons.Outlined.Image else Icons.Outlined.InsertDriveFile,
                             contentDescription = null,
                             tint = LkPrimary,
                             modifier = Modifier.size(20.dp)
@@ -488,7 +494,7 @@ fun PostFeedCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        imageVector = Icons.Default.FormatQuote,
+                        imageVector = Icons.Outlined.FormatQuote,
                         contentDescription = "Alıntıla",
                         tint = LkTextSecondary,
                         modifier = Modifier.size(16.dp)

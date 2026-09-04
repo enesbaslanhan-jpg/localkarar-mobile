@@ -8,7 +8,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -72,7 +72,7 @@ fun NotificationsScreen(
                 if (s.items.isEmpty()) {
                     Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(Icons.Default.NotificationsNone, contentDescription = null, tint = LkTextMuted, modifier = Modifier.size(48.dp))
+                            Icon(Icons.Outlined.NotificationsNone, contentDescription = null, tint = LkTextMuted, modifier = Modifier.size(48.dp))
                             Spacer(Modifier.height(12.dp))
                             Text("Henüz bildiriminiz yok", style = LkTypography.getBodyStrong(), color = LkTextPrimary)
                         }
@@ -111,13 +111,13 @@ private fun NotificationRow(
     val isUnread = notification.readAt == null
 
     val (icon, actionText) = when (notification.type) {
-        "follow" -> Icons.Default.PersonAdd to "seni takip etmeye başladı"
-        "like" -> Icons.Default.Favorite to "gönderini beğendi"
-        "reply" -> Icons.Default.Reply to "gönderine yanıt verdi"
-        "quote" -> Icons.Default.FormatQuote to "gönderini alıntıladı"
-        "message" -> Icons.Default.Chat to "sohbette mesaj gönderdi"
-        "thread_invite" -> Icons.Default.GroupAdd to "seni bir gruba davet etti"
-        else -> Icons.Default.Notifications to "bir etkileşimde bulundu"
+        "follow" -> Icons.Outlined.PersonAdd to "seni takip etmeye başladı"
+        "like" -> Icons.Outlined.Favorite to "gönderini beğendi"
+        "reply" -> Icons.Outlined.Reply to "gönderine yanıt verdi"
+        "quote" -> Icons.Outlined.FormatQuote to "gönderini alıntıladı"
+        "message" -> Icons.Outlined.Chat to "sohbette mesaj gönderdi"
+        "thread_invite" -> Icons.Outlined.GroupAdd to "seni bir gruba davet etti"
+        else -> Icons.Outlined.Notifications to "bir etkileşimde bulundu"
     }
 
     Card(

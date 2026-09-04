@@ -8,9 +8,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.PlayArrow
+import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -196,14 +197,14 @@ fun LessonListItem(lesson: LessonSummaryDto, onClick: () -> Unit) {
         
         if (lesson.isLocked) {
             Icon(
-                imageVector = Icons.Default.Lock,
+                imageVector = Icons.Outlined.Lock,
                 contentDescription = "Kilitli",
                 tint = LkTextSecondary,
                 modifier = Modifier.size(16.dp)
             )
         } else if (isCompleted) {
             Icon(
-                imageVector = Icons.Default.CheckCircle,
+                imageVector = Icons.Outlined.CheckCircle,
                 contentDescription = "Tamamlandı",
                 tint = LkSuccess,
                 modifier = Modifier.size(16.dp)

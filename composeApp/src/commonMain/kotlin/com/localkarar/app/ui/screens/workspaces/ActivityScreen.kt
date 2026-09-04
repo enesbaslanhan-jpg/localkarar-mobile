@@ -8,7 +8,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Construction
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.outlined.Construction
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -40,7 +41,7 @@ fun ActivityScreen(
                     LkEmptyState(
                         title = "Henüz etkinlik yok",
                         description = "İşletme içi değişiklikler burada izlenir.",
-                        icon = Icons.Default.Construction
+                        icon = Icons.Outlined.Construction
                     )
                 } else {
                     LazyColumn(

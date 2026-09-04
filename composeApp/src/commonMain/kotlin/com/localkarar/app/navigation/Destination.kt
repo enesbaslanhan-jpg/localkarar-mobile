@@ -31,7 +31,20 @@ sealed interface Destination {
     data class WorkspaceHome(val workspaceId: String) : Destination
     data class Records(val workspaceId: String) : Destination
     data class RecordDetail(val workspaceId: String, val recordId: String) : Destination
-    data class RecordEdit(val workspaceId: String, val recordId: String?) : Destination
+    /**
+     * Kayit formu.
+     *
+     * `presetType`/`presetDirection` YALNIZ YENI KAYITTA gecerlidir: Ana Sayfa
+     * "Hizli Islemler" dosemeleri formu dogru turde acsin diye var. Webdeki
+     * `Tracker.jsx` QUICK_ACTIONS preseti ile ayni ciftler.
+     * Duzenlemede (recordId != null) yok sayilir -- kaydin kendi turu kazanir.
+     */
+    data class RecordEdit(
+        val workspaceId: String,
+        val recordId: String?,
+        val presetType: String? = null,
+        val presetDirection: String? = null
+    ) : Destination
     data class Orders(val workspaceId: String) : Destination
     data class Products(val workspaceId: String) : Destination
     data class Documents(val workspaceId: String) : Destination

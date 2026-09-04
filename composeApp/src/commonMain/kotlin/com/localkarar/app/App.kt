@@ -19,7 +19,11 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.localkarar.app.auth.AuthRepository
 import com.localkarar.app.auth.AuthViewModel
+import androidx.compose.foundation.isSystemInDarkTheme
 import com.localkarar.app.auth.SecureStorage
+import com.localkarar.app.core.AppPreferences
+import com.localkarar.app.ui.theme.ThemeController
+import com.localkarar.app.ui.theme.ThemeMode
 import com.localkarar.app.auth.SessionState
 import com.localkarar.app.calculations.CalculationsRepository
 import com.localkarar.app.network.SafeApiClient
@@ -53,7 +57,7 @@ private enum class AuthRoute {
 }
 
 @Composable
-fun App(secureStorage: SecureStorage) {
+fun App(secureStorage: SecureStorage, appPreferences: AppPreferences) {
     var authRepoHolder: AuthRepository? = null
     val httpClient = remember {
         createHttpClient(
@@ -106,7 +110,19 @@ fun App(secureStorage: SecureStorage) {
      */
     var yeniKayit by remember { mutableStateOf(false) }
 
-    LocalKararTheme {
+    /*
+     * TEMA. Webdeki `ThemeContext` ile ayni uc durum: kullanici acik ya da
+     * koyu secebilir, secmediyse SISTEM tercihi gecerli.
+     */
+    val themeController = remember { ThemeController(appPreferences) }
+    val sistemKoyu = isSystemInDarkTheme()
+    val koyuMu = when (themeController.mode) {
+        ThemeMode.DARK -> true
+        ThemeMode.LIGHT -> false
+        ThemeMode.SYSTEM -> sistemKoyu
+    }
+
+    LocalKararTheme(darkTheme = koyuMu, themeController = themeController) {
         val sessionState by authViewModel.sessionState.collectAsState()
 
         Box(

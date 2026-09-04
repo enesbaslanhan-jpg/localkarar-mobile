@@ -9,8 +9,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -105,7 +106,7 @@ fun ResumeWidget(item: ResumeItemDto, onClick: () -> Unit, modifier: Modifier = 
                 Spacer(modifier = Modifier.height(LkSpacing.Space1))
                 Text(text = "% Tamamlandı", style = LkTypography.getBodySmall(), color = LkSuccess)
             }
-            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = LkTextSecondary)
+            Icon(Icons.Outlined.ChevronRight, contentDescription = null, tint = LkTextSecondary)
         }
     }
 }

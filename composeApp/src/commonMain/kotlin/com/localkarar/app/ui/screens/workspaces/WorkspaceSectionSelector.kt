@@ -11,7 +11,7 @@ import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,41 +39,41 @@ val WORKSPACE_SECTION_GROUPS = listOf(
     WorkspaceSectionGroup(
         groupTitle = "GENEL",
         items = listOf(
-            WorkspaceSectionItem("overview", "Genel Bakış", "Özet metrikler ve durum", Icons.Default.Dashboard) { wsId -> Destination.WorkspaceHome(wsId) },
-            WorkspaceSectionItem("records", "Kayıtlar", "Alacak, borç ve işlemler", Icons.Default.ReceiptLong) { wsId -> Destination.Records(wsId) }
+            WorkspaceSectionItem("overview", "Genel Bakış", "Özet metrikler ve durum", Icons.Outlined.Dashboard) { wsId -> Destination.WorkspaceHome(wsId) },
+            WorkspaceSectionItem("records", "Kayıtlar", "Alacak, borç ve işlemler", Icons.Outlined.ReceiptLong) { wsId -> Destination.Records(wsId) }
         )
     ),
     WorkspaceSectionGroup(
         groupTitle = "TİCARET",
         items = listOf(
-            WorkspaceSectionItem("orders", "Siparişler", "Gelen ve giden siparişler", Icons.Default.ShoppingCart) { wsId -> Destination.Orders(wsId) },
-            WorkspaceSectionItem("products", "Ürünler", "Ürün ve hizmet kataloğu", Icons.Default.Inventory2) { wsId -> Destination.Products(wsId) }
+            WorkspaceSectionItem("orders", "Siparişler", "Gelen ve giden siparişler", Icons.Outlined.ShoppingCart) { wsId -> Destination.Orders(wsId) },
+            WorkspaceSectionItem("products", "Ürünler", "Ürün ve hizmet kataloğu", Icons.Outlined.Inventory2) { wsId -> Destination.Products(wsId) }
         )
     ),
     WorkspaceSectionGroup(
         groupTitle = "OPERASYON",
         items = listOf(
-            WorkspaceSectionItem("documents", "Belgeler", "Sözleşme ve dökümanlar", Icons.Default.AttachFile) { wsId -> Destination.Documents(wsId) },
-            WorkspaceSectionItem("calendar", "Takvim", "Vade ve operasyon takvimi", Icons.Default.CalendarMonth) { wsId -> Destination.Calendar(wsId) },
-            WorkspaceSectionItem("notifications", "Bildirimler", "Sistem ve süreç uyarıları", Icons.Default.Notifications) { wsId -> Destination.Notifications(wsId) }
+            WorkspaceSectionItem("documents", "Belgeler", "Sözleşme ve dökümanlar", Icons.Outlined.AttachFile) { wsId -> Destination.Documents(wsId) },
+            WorkspaceSectionItem("calendar", "Takvim", "Vade ve operasyon takvimi", Icons.Outlined.CalendarMonth) { wsId -> Destination.Calendar(wsId) },
+            WorkspaceSectionItem("notifications", "Bildirimler", "Sistem ve süreç uyarıları", Icons.Outlined.Notifications) { wsId -> Destination.Notifications(wsId) }
         )
     ),
     WorkspaceSectionGroup(
         groupTitle = "İNSANLAR",
         items = listOf(
-            WorkspaceSectionItem("team", "Ekip", "Çalışanlar ve yetkiler", Icons.Default.Group) { wsId -> Destination.Team(wsId) },
-            WorkspaceSectionItem("contacts", "Kişiler", "Müşteri ve tedarikçiler", Icons.Default.Contacts) { wsId -> Destination.Contacts(wsId) }
+            WorkspaceSectionItem("team", "Ekip", "Çalışanlar ve yetkiler", Icons.Outlined.Group) { wsId -> Destination.Team(wsId) },
+            WorkspaceSectionItem("contacts", "Kişiler", "Müşteri ve tedarikçiler", Icons.Outlined.Contacts) { wsId -> Destination.Contacts(wsId) }
         )
     ),
     WorkspaceSectionGroup(
         groupTitle = "YÖNETİM",
         items = listOf(
-            WorkspaceSectionItem("activity", "Aktiviteler", "İşlem ve değişiklik günlüğü", Icons.Default.History) { wsId -> Destination.Activity(wsId) },
+            WorkspaceSectionItem("activity", "Aktiviteler", "İşlem ve değişiklik günlüğü", Icons.Outlined.History) { wsId -> Destination.Activity(wsId) },
             // Bu giris YOKTU: kullanici mobilden hicbir pazaryeri
             // baglayamiyordu, dolayisiyla Siparisler ve Urunler ekranlarina
             // gercek veri hicbir zaman gelmiyordu.
-            WorkspaceSectionItem("integrations", "Pazaryeri Entegrasyonları", "Trendyol, Hepsiburada, N11, Shopify", Icons.Default.Link) { wsId -> Destination.WorkspaceIntegrations(wsId) },
-            WorkspaceSectionItem("settings", "İşletme Ayarları", "İşletme profili ve yapılandırma", Icons.Default.Settings) { wsId -> Destination.WorkspaceSettings(wsId) }
+            WorkspaceSectionItem("integrations", "Pazaryeri Entegrasyonları", "Trendyol, Hepsiburada, N11, Shopify", Icons.Outlined.Link) { wsId -> Destination.WorkspaceIntegrations(wsId) },
+            WorkspaceSectionItem("settings", "İşletme Ayarları", "İşletme profili ve yapılandırma", Icons.Outlined.Settings) { wsId -> Destination.WorkspaceSettings(wsId) }
         )
     )
 )
@@ -116,7 +116,7 @@ fun WorkspaceSectionSheet(
 
             IconButton(onClick = onClose) {
                 Icon(
-                    imageVector = Icons.Default.Close,
+                    imageVector = Icons.Outlined.Close,
                     contentDescription = "Kapat",
                     tint = LkTextSecondary
                 )
@@ -183,7 +183,7 @@ fun WorkspaceSectionSheet(
                         }
                         if (isSelected) {
                             Icon(
-                                imageVector = Icons.Default.Check,
+                                imageVector = Icons.Outlined.Check,
                                 contentDescription = "Seçili",
                                 tint = LkPrimary,
                                 modifier = Modifier.size(18.dp)
@@ -219,7 +219,7 @@ fun WorkspaceSectionSheet(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
-                    imageVector = Icons.Default.SwapHoriz,
+                    imageVector = Icons.Outlined.SwapHoriz,
                     contentDescription = null,
                     tint = LkPrimary,
                     modifier = Modifier.size(20.dp)
@@ -232,7 +232,7 @@ fun WorkspaceSectionSheet(
                 )
             }
             Icon(
-                imageVector = Icons.Default.ChevronRight,
+                imageVector = Icons.Outlined.ChevronRight,
                 contentDescription = null,
                 tint = LkTextSecondary,
                 modifier = Modifier.size(18.dp)
@@ -266,7 +266,7 @@ fun WorkspaceSectionPill(
             fontWeight = FontWeight.SemiBold
         )
         Icon(
-            imageVector = Icons.Default.KeyboardArrowDown,
+            imageVector = Icons.Outlined.KeyboardArrowDown,
             contentDescription = "Bölüm Seçici",
             tint = LkPrimary,
             modifier = Modifier.size(16.dp)

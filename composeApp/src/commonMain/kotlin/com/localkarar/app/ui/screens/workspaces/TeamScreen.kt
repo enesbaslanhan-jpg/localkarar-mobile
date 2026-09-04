@@ -10,10 +10,11 @@ import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Group
-import androidx.compose.material.icons.filled.Mail
-import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Group
+import androidx.compose.material.icons.outlined.Mail
+import androidx.compose.material.icons.outlined.PersonAdd
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -149,7 +150,7 @@ private fun MemberCard(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
-                imageVector = Icons.Default.Group,
+                imageVector = Icons.Outlined.Group,
                 contentDescription = null,
                 tint = LkPrimary,
                 modifier = Modifier.size(18.dp)
@@ -176,7 +177,7 @@ private fun MemberCard(
             }
             IconButton(onClick = { showRemoveConfirm = true }) {
                 Icon(
-                    imageVector = Icons.Default.Close,
+                    imageVector = Icons.Outlined.Close,
                     contentDescription = "Çıkar",
                     tint = LkTextMuted,
                     modifier = Modifier.size(18.dp)
@@ -263,7 +264,7 @@ private fun InvitationCard(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
-            imageVector = Icons.Default.Mail,
+            imageVector = Icons.Outlined.Mail,
             contentDescription = null,
             tint = LkWarning,
             modifier = Modifier.size(18.dp)
@@ -281,7 +282,7 @@ private fun InvitationCard(
         }
         IconButton(onClick = onCancel) {
             Icon(
-                imageVector = Icons.Default.Close,
+                imageVector = Icons.Outlined.Close,
                 contentDescription = "İptal",
                 tint = LkTextMuted,
                 modifier = Modifier.size(18.dp)

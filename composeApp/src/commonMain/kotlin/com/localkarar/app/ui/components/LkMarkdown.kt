@@ -9,7 +9,8 @@ import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -200,7 +201,7 @@ private fun LkCodeBlockView(language: String?, code: String) {
                         modifier = Modifier.size(24.dp)
                     ) {
                         Icon(
-                            Icons.Default.ContentCopy,
+                            Icons.Outlined.ContentCopy,
                             contentDescription = "Kodu Kopyala",
                             tint = LkTextSecondary,
                             modifier = Modifier.size(14.dp)
@@ -326,6 +327,7 @@ private fun parseMarkdownBlocks(raw: String): List<MarkdownBlock> {
     return blocks
 }
 
+@Composable
 fun parseInlineMarkdown(text: String, defaultColor: Color): AnnotatedString {
     return buildAnnotatedString {
         var cursor = 0

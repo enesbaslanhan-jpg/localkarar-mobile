@@ -9,7 +9,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,11 +42,11 @@ fun PeopleScreen(
                 value = viewModel.searchQuery,
                 onValueChange = { viewModel.onSearchQueryChange(it) },
                 placeholder = { Text("Toplulukta kişi ara...", style = LkTypography.getBodySmall(), color = LkTextMuted) },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = LkTextSecondary) },
+                leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null, tint = LkTextSecondary) },
                 trailingIcon = {
                     if (viewModel.searchQuery.isNotEmpty()) {
                         IconButton(onClick = { viewModel.onSearchQueryChange("") }) {
-                            Icon(Icons.Default.Clear, contentDescription = "Temizle", tint = LkTextSecondary)
+                            Icon(Icons.Outlined.Clear, contentDescription = "Temizle", tint = LkTextSecondary)
                         }
                     }
                 },
@@ -84,7 +84,7 @@ fun PeopleScreen(
                 if (s.people.isEmpty()) {
                     Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(Icons.Default.PeopleOutline, contentDescription = null, tint = LkTextMuted, modifier = Modifier.size(48.dp))
+                            Icon(Icons.Outlined.PeopleOutline, contentDescription = null, tint = LkTextMuted, modifier = Modifier.size(48.dp))
                             Spacer(Modifier.height(12.dp))
                             Text(
                                 if (viewModel.searchQuery.isNotEmpty()) "Kullanıcı bulunamadı" else "Henüz kimse bulunmuyor",
@@ -214,7 +214,7 @@ fun PersonRowItem(
             // More actions menu
             Box {
                 IconButton(onClick = { showMenu = true }) {
-                    Icon(Icons.Default.MoreVert, contentDescription = "Seçenekler", tint = LkTextSecondary)
+                    Icon(Icons.Outlined.MoreVert, contentDescription = "Seçenekler", tint = LkTextSecondary)
                 }
                 DropdownMenu(
                     expanded = showMenu,

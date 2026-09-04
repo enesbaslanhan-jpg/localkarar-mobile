@@ -9,7 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -63,7 +63,7 @@ fun ComposePostSheet(
             ) {
                 Text(title, style = LkTypography.getSectionTitle(), color = LkTextPrimary)
                 IconButton(onClick = { viewModel.dismissCompose() }) {
-                    Icon(Icons.Default.Close, contentDescription = "Kapat", tint = LkTextSecondary)
+                    Icon(Icons.Outlined.Close, contentDescription = "Kapat", tint = LkTextSecondary)
                 }
             }
         },
@@ -161,7 +161,7 @@ fun ComposePostSheet(
                             if (viewModel.isUploadingMedia) {
                                 CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = LkPrimary)
                             } else {
-                                Icon(Icons.Default.AttachFile, contentDescription = "Medya Ekle", tint = LkPrimary)
+                                Icon(Icons.Outlined.AttachFile, contentDescription = "Medya Ekle", tint = LkPrimary)
                             }
                         }
                         Text(
@@ -192,7 +192,7 @@ fun ComposePostSheet(
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
-                                imageVector = if (media.kind == "image") Icons.Default.Image else Icons.Default.InsertDriveFile,
+                                imageVector = if (media.kind == "image") Icons.Outlined.Image else Icons.Outlined.InsertDriveFile,
                                 contentDescription = null,
                                 tint = LkPrimary,
                                 modifier = Modifier.size(16.dp)
@@ -206,7 +206,7 @@ fun ComposePostSheet(
                             )
                         }
                         Icon(
-                            imageVector = Icons.Default.Close,
+                            imageVector = Icons.Outlined.Close,
                             contentDescription = "Kaldır",
                             tint = LkDanger,
                             modifier = Modifier

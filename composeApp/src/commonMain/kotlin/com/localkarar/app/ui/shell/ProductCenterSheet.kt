@@ -11,7 +11,7 @@ import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,13 +48,13 @@ fun ProductCenterSheet(
                 ProductItem(
                     title = "Karar Araçları",
                     description = "Karar matrisleri & analizler",
-                    icon = Icons.Default.AccountBalance,
+                    icon = Icons.Outlined.AccountBalance,
                     destination = Destination.DecisionTools()
                 ),
                 ProductItem(
                     title = "Hesaplamalar",
                     description = "Finansal model & formüller",
-                    icon = Icons.Default.Calculate,
+                    icon = Icons.Outlined.Calculate,
                     destination = Destination.Calculations
                 )
             )
@@ -65,13 +65,13 @@ fun ProductCenterSheet(
                 ProductItem(
                     title = "Kurslar",
                     description = "Eğitim modülleri & dersler",
-                    icon = Icons.Default.School,
+                    icon = Icons.Outlined.School,
                     destination = Destination.Courses
                 ),
                 ProductItem(
                     title = "AI Mentor",
                     description = "Kişisel yapay zeka danışmanı",
-                    icon = Icons.Default.Psychology,
+                    icon = Icons.Outlined.Psychology,
                     destination = Destination.AiMentor
                 )
                 /*
@@ -94,13 +94,13 @@ fun ProductCenterSheet(
                 ProductItem(
                     title = "Haberler",
                     description = "Gündem ve mevzuat akışı",
-                    icon = Icons.Default.Newspaper,
+                    icon = Icons.Outlined.Newspaper,
                     destination = Destination.News
                 ),
                 ProductItem(
                     title = "İşletme Takibi",
                     description = "Kayıtlar, belgeler & operasyon",
-                    icon = Icons.Default.Business,
+                    icon = Icons.Outlined.Business,
                     destination = if (activeWorkspaceId != null) {
                         Destination.WorkspaceHome(activeWorkspaceId)
                     } else {
@@ -115,13 +115,13 @@ fun ProductCenterSheet(
                 ProductItem(
                     title = "Topluluk",
                     description = "Paylaşımlar ve etkileşim",
-                    icon = Icons.Default.Groups,
+                    icon = Icons.Outlined.Groups,
                     destination = Destination.Community()
                 ),
                 ProductItem(
                     title = "Profil",
                     description = "Kullanıcı bilgileri & ayarlar",
-                    icon = Icons.Default.Person,
+                    icon = Icons.Outlined.Person,
                     destination = Destination.Profile
                 )
             )
@@ -150,7 +150,7 @@ fun ProductCenterSheet(
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Apps,
+                        imageVector = Icons.Outlined.Apps,
                         contentDescription = "Ürün Merkezi",
                         tint = LkPrimary,
                         modifier = Modifier.size(20.dp)
@@ -173,7 +173,7 @@ fun ProductCenterSheet(
 
             IconButton(onClick = onClose) {
                 Icon(
-                    imageVector = Icons.Default.Close,
+                    imageVector = Icons.Outlined.Close,
                     contentDescription = "Kapat",
                     tint = LkTextSecondary
                 )

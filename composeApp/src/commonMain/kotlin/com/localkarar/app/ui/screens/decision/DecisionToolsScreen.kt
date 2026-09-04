@@ -10,8 +10,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -102,7 +103,7 @@ fun DecisionToolsScreen(
                                         value = state.searchQuery,
                                         onValueChange = { viewModel.updateSearchQuery(it) },
                                         placeholder = { Text("Araç ara", color = LkTextMuted) },
-                                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = LkTextMuted) },
+                                        leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null, tint = LkTextMuted) },
                                         modifier = Modifier.fillMaxWidth(),
                                         singleLine = true,
                                         colors = androidx.compose.material.TextFieldDefaults.outlinedTextFieldColors(
@@ -254,7 +255,7 @@ fun DecisionToolsScreen(
                                         }
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Text(if (isCompleted) "Aç" else "Sürdür", style = LkTypography.getMicro(), color = LkPrimary)
-                                            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = LkPrimary, modifier = Modifier.size(16.dp))
+                                            Icon(Icons.Outlined.ChevronRight, contentDescription = null, tint = LkPrimary, modifier = Modifier.size(16.dp))
                                         }
                                     }
                                 }

@@ -9,8 +9,9 @@ import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Apps
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.outlined.Apps
+import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,7 +44,7 @@ fun LkAppHeader(
             if (onBack != null) {
                 IconButton(onClick = onBack) {
                     Icon(
-                        imageVector = Icons.Default.ArrowBack,
+                        imageVector = Icons.Outlined.ArrowBack,
                         contentDescription = "Geri",
                         tint = LkPrimary
                     )
@@ -87,7 +88,7 @@ fun LkAppHeader(
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Apps,
+                        imageVector = Icons.Outlined.Apps,
                         contentDescription = "Ürün Merkezi",
                         tint = LkPrimary,
                         modifier = Modifier.size(16.dp)

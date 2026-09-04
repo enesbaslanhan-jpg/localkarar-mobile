@@ -9,7 +9,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,7 +60,7 @@ fun AiMentorScreen(
         onBack = onBack,
         actions = {
             IconButton(onClick = { showMemorySheet = true }) {
-                Icon(Icons.Default.Psychology, contentDescription = "Hatıralar", tint = LkPrimary)
+                Icon(Icons.Outlined.Psychology, contentDescription = "Hatıralar", tint = LkPrimary)
             }
         }
     ) {
@@ -129,7 +129,7 @@ fun AiMentorScreen(
                                 verticalArrangement = Arrangement.Center
                             ) {
                                 Icon(
-                                    imageVector = if (viewModel.selectedTab == MentorTab.ACTIVE) Icons.Default.ChatBubbleOutline else Icons.Default.Archive,
+                                    imageVector = if (viewModel.selectedTab == MentorTab.ACTIVE) Icons.Outlined.ChatBubbleOutline else Icons.Outlined.Archive,
                                     contentDescription = null,
                                     tint = LkTextSecondary,
                                     modifier = Modifier.size(48.dp)
@@ -191,7 +191,7 @@ fun AiMentorScreen(
                     modifier = Modifier.align(Alignment.BottomEnd).padding(20.dp),
                     backgroundColor = LkPrimary
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "Yeni Sohbet", tint = LkOnPrimary)
+                    Icon(Icons.Outlined.Add, contentDescription = "Yeni Sohbet", tint = LkOnPrimary)
                 }
             }
         }
@@ -325,7 +325,7 @@ private fun ConversationCard(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = if (isArchived) Icons.Default.Archive else Icons.Default.Psychology,
+                    imageVector = if (isArchived) Icons.Outlined.Archive else Icons.Outlined.Psychology,
                     contentDescription = null,
                     tint = LkPrimary,
                     modifier = Modifier.size(22.dp)
@@ -365,7 +365,7 @@ private fun ConversationCard(
             Box {
                 IconButton(onClick = { menuExpanded = true }) {
                     Icon(
-                        Icons.Default.MoreVert,
+                        Icons.Outlined.MoreVert,
                         contentDescription = "Seçenekler",
                         tint = LkTextSecondary
                     )
@@ -379,7 +379,7 @@ private fun ConversationCard(
                         menuExpanded = false
                         onRename()
                     }) {
-                        Icon(Icons.Default.Edit, contentDescription = null, tint = LkPrimary, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Outlined.Edit, contentDescription = null, tint = LkPrimary, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
                         Text("Yeniden Adlandır", color = LkTextPrimary)
                     }
@@ -388,7 +388,7 @@ private fun ConversationCard(
                         onArchiveToggle()
                     }) {
                         Icon(
-                            if (isArchived) Icons.Default.Unarchive else Icons.Default.Archive,
+                            if (isArchived) Icons.Outlined.Unarchive else Icons.Outlined.Archive,
                             contentDescription = null,
                             tint = LkPrimary,
                             modifier = Modifier.size(18.dp)
@@ -400,7 +400,7 @@ private fun ConversationCard(
                         menuExpanded = false
                         onDelete()
                     }) {
-                        Icon(Icons.Default.Delete, contentDescription = null, tint = LkDanger, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Outlined.Delete, contentDescription = null, tint = LkDanger, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
                         Text("Sil", color = LkDanger)
                     }
@@ -439,12 +439,12 @@ private fun MemorySheet(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Psychology, contentDescription = null, tint = LkPrimary)
+                        Icon(Icons.Outlined.Psychology, contentDescription = null, tint = LkPrimary)
                         Spacer(Modifier.width(8.dp))
                         Text("AI Hatıraları", style = LkTypography.getSectionTitle(), color = LkTextPrimary)
                     }
                     IconButton(onClick = onDismiss) {
-                        Icon(Icons.Default.Close, contentDescription = "Kapat", tint = LkTextSecondary)
+                        Icon(Icons.Outlined.Close, contentDescription = "Kapat", tint = LkTextSecondary)
                     }
                 }
                 Text(
@@ -616,7 +616,7 @@ private fun MemoryCard(
             }
             IconButton(onClick = onDelete) {
                 Icon(
-                    Icons.Default.Delete,
+                    Icons.Outlined.Delete,
                     contentDescription = "Sil",
                     tint = LkTextSecondary,
                     modifier = Modifier.size(18.dp)

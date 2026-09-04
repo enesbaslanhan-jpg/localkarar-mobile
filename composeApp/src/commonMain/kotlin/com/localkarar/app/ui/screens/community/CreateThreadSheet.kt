@@ -10,7 +10,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,7 +46,7 @@ fun CreateThreadSheet(
             ) {
                 Text("Yeni Sohbet Başlat", style = LkTypography.getSectionTitle(), color = LkTextPrimary)
                 IconButton(onClick = { viewModel.dismissCreateThreadSheet() }) {
-                    Icon(Icons.Default.Close, contentDescription = "Kapat", tint = LkTextSecondary)
+                    Icon(Icons.Outlined.Close, contentDescription = "Kapat", tint = LkTextSecondary)
                 }
             }
         },
@@ -81,7 +81,7 @@ fun CreateThreadSheet(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
                     placeholder = { Text("Kişi ara...", style = LkTypography.getBodySmall(), color = LkTextMuted) },
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = LkTextSecondary) },
+                    leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null, tint = LkTextSecondary) },
                     modifier = Modifier.fillMaxWidth(),
                     colors = TextFieldDefaults.outlinedTextFieldColors(
                         backgroundColor = LkSurfaceSunken,

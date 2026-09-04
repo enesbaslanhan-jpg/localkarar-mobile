@@ -16,8 +16,6 @@ sealed class CalculationsUiState {
     data class Content(
         val catalog: List<CalculationItem> = emptyList(),
         val history: List<FormulaCalculationDto> = emptyList(),
-        val trackerSummary: TrackerSummaryDto? = null,
-        val openRecords: List<BusinessRecordDto> = emptyList(),
         val isRefreshing: Boolean = false
     ) : CalculationsUiState()
     data class Error(val message: String) : CalculationsUiState()
@@ -58,23 +56,21 @@ class CalculationsViewModel(
                 val history = historyResult.getOrNull() ?: emptyList()
 
                 // Load tracker data for Finansal Görünüm
-                var trackerSummary: TrackerSummaryDto? = null
-                var openRecords: List<BusinessRecordDto> = emptyList()
-
-                if (workspaceRepository != null && activeWorkspaceId != null) {
-                    trackerSummary = workspaceRepository.getTrackerSummary(activeWorkspaceId).getOrNull()
-                    val recordsResult = workspaceRepository.getRecords(activeWorkspaceId)
-                    openRecords = recordsResult.getOrNull()?.records
-                        ?.filter { it.status != "completed" && it.status != "cancelled" }
-                        ?.sortedBy { it.dueAt ?: "9999-12-31" }
-                        ?: emptyList()
-                }
-
+                /*
+                 * TAKIP VERISI ARTIK CEKILMIYOR.
+                 *
+                 * Burada `tracker.summary` ve `tracker.list` cagriliyordu;
+                 * kaldirilan "Finansal Gorunum" sekmesi icindi. Ayni iki uc
+                 * Ana Sayfa ve Isletme Genel Bakis'ta da cagriliyor -- yani
+                 * bu ekran her acilista ucuncu kez, hic gostermedigi bir veri
+                 * icin iki istek yapiyordu.
+                 *
+                 * Webde de tam bu gerekce ile kaldirilmisti
+                 * (`frontend/src/pages/ToolsPage.jsx:195`).
+                 */
                 _uiState.value = CalculationsUiState.Content(
                     catalog = catalog,
-                    history = history,
-                    trackerSummary = trackerSummary,
-                    openRecords = openRecords
+                    history = history
                 )
             } else {
                 val message = "Hesaplamalar yüklenemedi. Lütfen tekrar deneyin."
@@ -100,23 +96,21 @@ class CalculationsViewModel(
                 val catalog = buildCalculationCatalog(formulas, models)
                 val history = historyResult.getOrNull() ?: emptyList()
 
-                var trackerSummary: TrackerSummaryDto? = null
-                var openRecords: List<BusinessRecordDto> = emptyList()
-
-                if (workspaceRepository != null && activeWorkspaceId != null) {
-                    trackerSummary = workspaceRepository.getTrackerSummary(activeWorkspaceId).getOrNull()
-                    val recordsResult = workspaceRepository.getRecords(activeWorkspaceId)
-                    openRecords = recordsResult.getOrNull()?.records
-                        ?.filter { it.status != "completed" && it.status != "cancelled" }
-                        ?.sortedBy { it.dueAt ?: "9999-12-31" }
-                        ?: emptyList()
-                }
-
+                /*
+                 * TAKIP VERISI ARTIK CEKILMIYOR.
+                 *
+                 * Burada `tracker.summary` ve `tracker.list` cagriliyordu;
+                 * kaldirilan "Finansal Gorunum" sekmesi icindi. Ayni iki uc
+                 * Ana Sayfa ve Isletme Genel Bakis'ta da cagriliyor -- yani
+                 * bu ekran her acilista ucuncu kez, hic gostermedigi bir veri
+                 * icin iki istek yapiyordu.
+                 *
+                 * Webde de tam bu gerekce ile kaldirilmisti
+                 * (`frontend/src/pages/ToolsPage.jsx:195`).
+                 */
                 _uiState.value = CalculationsUiState.Content(
                     catalog = catalog,
-                    history = history,
-                    trackerSummary = trackerSummary,
-                    openRecords = openRecords
+                    history = history
                 )
             } else if (current is CalculationsUiState.Content) {
                 _uiState.value = current.copy(isRefreshing = false)

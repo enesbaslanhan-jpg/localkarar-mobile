@@ -8,7 +8,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,7 +57,7 @@ fun ThreadsScreen(
                 if (s.threads.isEmpty() && s.invitations.isEmpty()) {
                     Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(Icons.Default.ChatBubbleOutline, contentDescription = null, tint = LkTextMuted, modifier = Modifier.size(48.dp))
+                            Icon(Icons.Outlined.ChatBubbleOutline, contentDescription = null, tint = LkTextMuted, modifier = Modifier.size(48.dp))
                             Spacer(Modifier.height(12.dp))
                             Text("Henüz sohbetiniz bulunmuyor", style = LkTypography.getBodyStrong(), color = LkTextPrimary)
                             Spacer(Modifier.height(6.dp))
@@ -114,7 +114,7 @@ fun ThreadsScreen(
                 .padding(20.dp),
             backgroundColor = LkPrimary
         ) {
-            Icon(Icons.Default.AddComment, contentDescription = "Yeni Sohbet", tint = LkOnPrimary)
+            Icon(Icons.Outlined.AddComment, contentDescription = "Yeni Sohbet", tint = LkOnPrimary)
         }
     }
 
@@ -165,7 +165,7 @@ private fun ThreadCard(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = if (thread.isGroup) Icons.Default.Group else Icons.Default.Person,
+                    imageVector = if (thread.isGroup) Icons.Outlined.Group else Icons.Outlined.Person,
                     contentDescription = null,
                     tint = if (thread.isGroup) LkPrimary else LkTextSecondary,
                     modifier = Modifier.size(24.dp)
@@ -227,7 +227,7 @@ private fun InvitationCard(
     ) {
         Column(Modifier.padding(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.MailOutline, contentDescription = null, tint = LkPrimary, modifier = Modifier.size(20.dp))
+                Icon(Icons.Outlined.MailOutline, contentDescription = null, tint = LkPrimary, modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(8.dp))
                 Text(
                     thread.name ?: "Grup Sohbeti Daveti",

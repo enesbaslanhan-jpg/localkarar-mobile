@@ -12,9 +12,10 @@ import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Today
+import androidx.compose.material.icons.outlined.Today
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -128,7 +129,7 @@ private fun MonthHeader(
         }
         IconButton(onClick = onToday) {
             Icon(
-                imageVector = Icons.Default.Today,
+                imageVector = Icons.Outlined.Today,
                 contentDescription = "Bugün",
                 tint = LkPrimary
             )

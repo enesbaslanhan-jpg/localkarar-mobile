@@ -9,7 +9,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.FavoriteBorder
@@ -175,7 +177,7 @@ fun CommunityPostDetailScreen(
                             }
                             Spacer(Modifier.width(10.dp))
                             IconButton(onClick = { viewModel.startCompose(replyTo = post) }) {
-                                Icon(Icons.Default.Send, contentDescription = "Yanıtla", tint = LkPrimary)
+                                Icon(Icons.Outlined.Send, contentDescription = "Yanıtla", tint = LkPrimary)
                             }
                         }
                     }
@@ -275,11 +277,11 @@ private fun MainPostCard(
 
                 if (isAuthor) {
                     IconButton(onClick = onDelete) {
-                        Icon(Icons.Default.Delete, contentDescription = "Sil", tint = LkDanger)
+                        Icon(Icons.Outlined.Delete, contentDescription = "Sil", tint = LkDanger)
                     }
                 } else {
                     IconButton(onClick = onReport) {
-                        Icon(Icons.Default.Flag, contentDescription = "Şikayet Et", tint = LkTextMuted)
+                        Icon(Icons.Outlined.Flag, contentDescription = "Şikayet Et", tint = LkTextMuted)
                     }
                 }
             }
@@ -305,7 +307,7 @@ private fun MainPostCard(
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
-                            imageVector = if (media.kind == "image") Icons.Default.Image else Icons.Default.InsertDriveFile,
+                            imageVector = if (media.kind == "image") Icons.Outlined.Image else Icons.Outlined.InsertDriveFile,
                             contentDescription = null,
                             tint = LkPrimary,
                             modifier = Modifier.size(24.dp)
@@ -389,7 +391,7 @@ private fun MainPostCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        imageVector = Icons.Default.FormatQuote,
+                        imageVector = Icons.Outlined.FormatQuote,
                         contentDescription = "Alıntıla",
                         tint = LkTextSecondary,
                         modifier = Modifier.size(18.dp)

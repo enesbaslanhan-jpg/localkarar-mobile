@@ -230,7 +230,8 @@ data class TrackerSummaryDto(
     val counts: TrackerCountsDto = TrackerCountsDto(),
     val nextThirtyDays: TrackerWindowDto = TrackerWindowDto(),
     val upcoming: List<BusinessRecordDto> = emptyList(),
-    val overdue: List<BusinessRecordDto> = emptyList()
+    val overdue: List<BusinessRecordDto> = emptyList(),
+    val awaitingDirection: AwaitingDirectionDto? = null
 )
 
 @Serializable
@@ -239,7 +240,30 @@ data class TrackerCountsDto(
     val overdue: Int = 0,
     val dueToday: Int = 0,
     val shipments: Int = 0,
-    val deferred: Int = 0
+    val deferred: Int = 0,
+    val awaitingDirection: Int = 0
+)
+
+/**
+ * Yonu belli olmayan ama TUTARI OLAN kayitlar.
+ *
+ * 🔴 MOBIL BU ALANI HIC OKUMUYORDU. Sunucu gonderiyor
+ * (`src/services/business-tracker.ts` -> `trackerOzetiHesapla`), web Ana
+ * Sayfa'da gosteriyor (`Dashboard.jsx:345`), mobilde karsiligi yoktu.
+ *
+ * Neden onemli: e-Fatura okundugunda VKN isletmenin vergi numarasiyla
+ * eslesmezse yon `neutral` kaliyor. Bu kayitlar `payable` ya da `receivable`
+ * toplamlarina GIRMIYOR -- yani tutari olan bir kayit hicbir yerde
+ * gorunmuyor. Sunucu yorumu bunun urun sahibi tarafindan kullanim sirasinda
+ * fark edildigini soyluyor.
+ *
+ * Tahminle borc/alacak saymak yanlis olurdu (kullanicinin alacagini borc
+ * gostermek demek); bu yuzden kendi sayaciyla gorunur oluyor.
+ */
+@Serializable
+data class AwaitingDirectionDto(
+    val count: Int = 0,
+    val amount: Double = 0.0
 )
 
 @Serializable

@@ -5,7 +5,8 @@ import androidx.compose.material.IconButton
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -38,7 +39,7 @@ fun LkPageLayout(
                             navigationIcon = if (onBack != null) {
                                 {
                                     IconButton(onClick = onBack) {
-                                        Icon(Icons.Default.ArrowBack, contentDescription = "Geri", tint = LkPrimary)
+                                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Geri", tint = LkPrimary)
                                     }
                                 }
                             } else null,

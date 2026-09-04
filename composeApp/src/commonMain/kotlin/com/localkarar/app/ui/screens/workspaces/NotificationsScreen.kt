@@ -9,8 +9,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DoneAll
-import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.outlined.DoneAll
+import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,7 +46,7 @@ fun NotificationsScreen(
                     LkEmptyState(
                         title = "Bildirim yok",
                         description = "Yeni bildirimleriniz burada görünür.",
-                        icon = Icons.Default.Notifications
+                        icon = Icons.Outlined.Notifications
                     )
                 } else {
                     LazyColumn(

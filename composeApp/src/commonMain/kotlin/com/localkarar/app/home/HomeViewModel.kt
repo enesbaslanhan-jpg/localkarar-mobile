@@ -101,11 +101,33 @@ class HomeViewModel(
             }.onFailure { exception ->
                 val errorMsg = exception.message ?: "Bilinmeyen bir hata oluştu"
                 val isAuthError = exception is com.localkarar.app.network.ApiError.Unauthorized || errorMsg == "UNAUTHORIZED"
-                
-                _uiState.value = HomeUiState.Error(
-                    if (isAuthError) "Oturum süreniz doldu." else "Bağlantı hatası veya sunucuya ulaşılamıyor.",
-                    isAuthError
-                )
+
+                /*
+                 * 🔴 ESKIDEN HER HATA "Bağlantı hatası veya sunucuya
+                 * ulaşılamıyor" diyordu. Bu YANLIS bir iddiaydi: sunucu 200
+                 * donerken bile ayni cumle cikiyordu.
+                 *
+                 * Somut vaka (03.09.2026): `quizHistory[0].feedback` DTO'da
+                 * zorunluydu, sunucu gondermiyordu. Yanit basariyla geliyor,
+                 * deserialization patliyordu. Ekran "sunucuya ulaşılamıyor"
+                 * dedigi icin once ag ve backend bosuna arandi; gercek sebep
+                 * yalniz logcat'teydi.
+                 *
+                 * Artik ag hatasi ile VERI hatasi ayriliyor. Kullaniciya ham
+                 * istisna gosterilmiyor -- o logcat'te kaliyor -- ama
+                 * gosterilen cumle dogru yeri isaret ediyor.
+                 */
+                val mesaj = when {
+                    isAuthError -> "Oturum süreniz doldu."
+                    exception is com.localkarar.app.network.ApiError.NetworkUnavailable ||
+                        exception is com.localkarar.app.network.ApiError.Timeout ->
+                        "Bağlantı hatası veya sunucuya ulaşılamıyor."
+                    exception is com.localkarar.app.network.ApiError.ServerError ->
+                        "Sunucu şu an yanıt veremiyor."
+                    else -> "Veriler okunamadı. Uygulamayı güncellemeniz gerekebilir."
+                }
+
+                _uiState.value = HomeUiState.Error(mesaj, isAuthError)
             }
         }
     }

@@ -15,13 +15,14 @@ import androidx.compose.ui.unit.dp
 import com.localkarar.app.ui.components.LkButton
 import com.localkarar.app.ui.theme.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material.icons.filled.Cancel
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.ArrowForward
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.Warning
+import androidx.compose.material.icons.outlined.Cancel
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.ArrowForward
+import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.ArrowBack
 import kotlinx.serialization.json.*
 
 @Composable
@@ -50,10 +51,10 @@ fun LkDecisionResultPanel(
         ?: if (toolCode == "DC-PROFIT-001") "Sonuç, girdiğiniz ürün başı maliyetler ve satış koşullarıyla hesaplandı." else ""
 
     val (bgColor, contentColor, icon) = when (decisionTone) {
-        "good" -> Triple(LkSuccess.copy(alpha = 0.15f), LkSuccess, Icons.Default.CheckCircle)
-        "warning" -> Triple(LkWarning.copy(alpha = 0.15f), LkWarning, Icons.Default.Warning)
-        "bad" -> Triple(LkDanger.copy(alpha = 0.1f), LkDanger, Icons.Default.Cancel)
-        else -> Triple(LkPrimary.copy(alpha = 0.1f), LkPrimary, Icons.Default.Info)
+        "good" -> Triple(LkSuccess.copy(alpha = 0.15f), LkSuccess, Icons.Outlined.CheckCircle)
+        "warning" -> Triple(LkWarning.copy(alpha = 0.15f), LkWarning, Icons.Outlined.Warning)
+        "bad" -> Triple(LkDanger.copy(alpha = 0.1f), LkDanger, Icons.Outlined.Cancel)
+        else -> Triple(LkPrimary.copy(alpha = 0.1f), LkPrimary, Icons.Outlined.Info)
     }
 
     Column(modifier = modifier.fillMaxWidth()) {
@@ -245,7 +246,7 @@ fun LkDecisionResultPanel(
             Spacer(modifier = Modifier.height(24.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
-                    imageVector = Icons.Default.Warning,
+                    imageVector = Icons.Outlined.Warning,
                     contentDescription = null,
                     tint = LkWarning,
                     modifier = Modifier.size(20.dp)
@@ -293,7 +294,7 @@ fun LkDecisionResultPanel(
             Spacer(modifier = Modifier.height(24.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
-                    imageVector = Icons.Default.CheckCircle,
+                    imageVector = Icons.Outlined.CheckCircle,
                     contentDescription = null,
                     tint = LkSuccess,
                     modifier = Modifier.size(20.dp)

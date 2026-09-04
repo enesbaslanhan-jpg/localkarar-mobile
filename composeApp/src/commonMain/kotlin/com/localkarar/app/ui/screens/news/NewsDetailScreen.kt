@@ -8,8 +8,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Launch
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.outlined.Launch
+import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -48,7 +49,7 @@ fun NewsDetailScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                Icon(Icons.Default.Warning, contentDescription = null, tint = LkWarning, modifier = Modifier.size(48.dp))
+                Icon(Icons.Outlined.Warning, contentDescription = null, tint = LkWarning, modifier = Modifier.size(48.dp))
                 Spacer(Modifier.height(12.dp))
                 Text("Haber bulunamadı.", style = LkTypography.getBodyStrong(), color = LkTextPrimary)
                 Spacer(Modifier.height(6.dp))

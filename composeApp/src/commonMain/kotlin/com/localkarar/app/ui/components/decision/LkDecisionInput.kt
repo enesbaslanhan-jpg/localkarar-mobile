@@ -22,7 +22,8 @@ import com.localkarar.app.network.dto.DecisionQuestionDto
 import com.localkarar.app.ui.components.LkTextField
 import com.localkarar.app.ui.theme.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.outlined.KeyboardArrowDown
 import androidx.compose.material.Checkbox
 import androidx.compose.material.CheckboxDefaults
 import kotlinx.serialization.json.JsonElement
@@ -120,7 +121,7 @@ fun LkDecisionInput(
                                 color = if (selectedOption != null) LkTextPrimary else LkTextMuted
                             )
                             Icon(
-                                imageVector = Icons.Default.KeyboardArrowDown,
+                                imageVector = Icons.Outlined.KeyboardArrowDown,
                                 contentDescription = "Aç",
                                 tint = LkTextMuted,
                                 modifier = Modifier.size(16.dp)

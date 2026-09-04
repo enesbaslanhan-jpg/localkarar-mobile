@@ -34,6 +34,8 @@ private val RECURRENCE_OPTIONS = listOf<String?>(null, "weekly", "monthly", "qua
 @Composable
 fun RecordEditScreen(
     viewModel: RecordEditViewModel,
+    presetType: String? = null,
+    presetDirection: String? = null,
     isEdit: Boolean,
     onSaved: () -> Unit,
     onBack: () -> Unit
@@ -51,10 +53,10 @@ fun RecordEditScreen(
             is RecordEditUiState.Content -> {
                 val initial = state.record
 
-                var type by rememberSaveable(initial?.id) { mutableStateOf(initial?.type ?: "payment") }
+                var type by rememberSaveable(initial?.id) { mutableStateOf(initial?.type ?: presetType ?: "payment") }
                 var title by rememberSaveable(initial?.id) { mutableStateOf(initial?.title ?: "") }
                 var description by rememberSaveable(initial?.id) { mutableStateOf(initial?.description ?: "") }
-                var direction by rememberSaveable(initial?.id) { mutableStateOf(initial?.direction ?: "neutral") }
+                var direction by rememberSaveable(initial?.id) { mutableStateOf(initial?.direction ?: presetDirection ?: "neutral") }
                 var amount by rememberSaveable(initial?.id) { mutableStateOf(initial?.amount?.let { LkFormatting.formatNumber(it) } ?: "") }
                 var currency by rememberSaveable(initial?.id) { mutableStateOf(initial?.currency ?: "TRY") }
                 var priority by rememberSaveable(initial?.id) { mutableStateOf(initial?.priority ?: "normal") }

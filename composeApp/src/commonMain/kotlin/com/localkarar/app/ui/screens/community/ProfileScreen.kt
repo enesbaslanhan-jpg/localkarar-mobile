@@ -9,7 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -295,7 +295,7 @@ private fun OtherProfileContent(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             profile.location?.let { loc ->
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.Default.LocationOn, contentDescription = null, tint = LkTextMuted, modifier = Modifier.size(14.dp))
+                                    Icon(Icons.Outlined.LocationOn, contentDescription = null, tint = LkTextMuted, modifier = Modifier.size(14.dp))
                                     Spacer(Modifier.width(4.dp))
                                     Text(loc, style = LkTypography.getMicro(), color = LkTextMuted)
                                 }
@@ -306,7 +306,7 @@ private fun OtherProfileContent(
                                     modifier = Modifier.clickable { openExternalUrl(web) },
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Icon(Icons.Default.Link, contentDescription = null, tint = LkPrimary, modifier = Modifier.size(14.dp))
+                                    Icon(Icons.Outlined.Link, contentDescription = null, tint = LkPrimary, modifier = Modifier.size(14.dp))
                                     Spacer(Modifier.width(4.dp))
                                     Text(web, style = LkTypography.getMicro(), color = LkPrimary)
                                 }
@@ -353,7 +353,7 @@ private fun OtherProfileContent(
                                 onClick = onToggleBlock
                             )
                             IconButton(onClick = onReport) {
-                                Icon(Icons.Default.Flag, contentDescription = "Şikayet Et", tint = LkTextMuted)
+                                Icon(Icons.Outlined.Flag, contentDescription = "Şikayet Et", tint = LkTextMuted)
                             }
                         }
                     }

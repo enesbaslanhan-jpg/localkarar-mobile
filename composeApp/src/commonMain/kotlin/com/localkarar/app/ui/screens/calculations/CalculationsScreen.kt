@@ -11,10 +11,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.*
 import androidx.compose.material.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Calculate
-import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.CalendarToday
-import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.outlined.Calculate
+import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.CalendarToday
+import androidx.compose.material.icons.outlined.AccountBalanceWallet
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,14 +38,28 @@ import com.localkarar.app.ui.components.LkEmptyState
 import com.localkarar.app.ui.components.LkErrorState
 import com.localkarar.app.ui.components.LkLoadingState
 import com.localkarar.app.ui.components.LkPageLayout
+import com.localkarar.app.ui.components.LkTabs
 import com.localkarar.app.ui.components.LkSectionHeader
 import com.localkarar.app.ui.theme.*
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
 
-private fun formatTry(amount: Double): String {
-    val formatted = kotlin.math.abs(amount).toLong().toString()
+/** Ayni pakette PricingWizard da kullaniyor; private olamaz. */
+/**
+ * Tam lira olarak bicimlendirir.
+ *
+ * 🔴 ONCEDEN `toLong()` ILE KIRPIYORDU: 1416,67 ekrana 1.416 olarak
+ * dusuyordu. Fiyatlandirma aracinda bu sistematik olarak hedef marjin
+ * ALTINDA bir fiyat gosterir -- kullanici o fiyati uygularsa her satista
+ * hedefledigi kari tutturamaz. Artik en yakin liraya yuvarlaniyor.
+ *
+ * ⚠️ Kurus yine gosterilmiyor; sunucu iki basamak dondurse de listelerde
+ * tam lira daha okunur. Kurus onemli oldugunda (fatura, mutabakat) ayri
+ * bir bicimlendirici gerekir.
+ */
+internal fun formatTry(amount: Double): String {
+    val formatted = kotlin.math.round(kotlin.math.abs(amount)).toLong().toString()
         .reversed().chunked(3).joinToString(".").reversed()
     return if (amount < 0) "-₺$formatted" else "₺$formatted"
 }
@@ -61,40 +76,36 @@ fun CalculationsScreen(
     val uiState by viewModel.uiState.collectAsState()
     val categoryFilter by viewModel.categoryFilter.collectAsState()
     var selectedTab by remember { mutableStateOf(0) }
-    val tabs = listOf("Katalog", "Finansal Görünüm", "Geçmiş")
+    /*
+     * WEB ILE AYNI IKI SEKME.
+     *
+     * 🔴 "Finansal Gorunum" KALDIRILDI. Webde de vardi ve BILEREK silindi
+     * (`frontend/src/pages/ToolsPage.jsx:219`): dort blogundan ucu Isletme
+     * Takibi'ndeki veriyi oldugu gibi tekrarliyordu -- ayni iki uc
+     * (`tracker.summary`, `tracker.list`) uc ayri ekranda cagriliyordu --
+     * dorduncusu de "Gecmis" sekmesiyle ayniydi.
+     *
+     * Mobil bu sekmeyi tasimaya devam ediyordu ve ayni gereksiz iki istegi
+     * yapiyordu. Hesaplamalar bir HESAP modulu; tahsilat/odeme defteri
+     * Isletme Takibi'ne ait. Buraya tekrar eklenmemeli.
+     */
+    val tabs = listOf("Katalog", "Geçmiş")
 
     LaunchedEffect(selectedTab) {
-        if (selectedTab == 1 || selectedTab == 2) {
-            viewModel.refresh()
-        }
+        if (selectedTab == 1) viewModel.refresh()
     }
 
     LkPageLayout(title = "Hesaplamalar", onBack = onBack) {
         Column(modifier = Modifier.fillMaxSize()) {
-            TabRow(
-                selectedTabIndex = selectedTab,
-                backgroundColor = LkSurfaceCanvas,
-                contentColor = LkPrimary,
-                indicator = { tabPositions ->
-                    TabRowDefaults.Indicator(
-                        modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
-                        color = LkPrimary
-                    )
-                }
-            ) {
-                tabs.forEachIndexed { index, tab ->
-                    Tab(
-                        selected = selectedTab == index,
-                        onClick = { selectedTab = index },
-                        text = {
-                            Text(
-                                text = tab,
-                                style = LkTypography.getBodySmall()
-                            )
-                        }
-                    )
-                }
-            }
+            // §11: sekmeler ortak bilesenden. Material TabRow kendi olcu ve
+            // renk sistemini getiriyordu (§0 ihlali).
+            LkTabs(
+                tabs = tabs,
+                selectedIndex = selectedTab,
+                onSelect = { selectedTab = it },
+                modifier = Modifier.padding(horizontal = LkSpacing.Space4)
+            )
+            Spacer(modifier = Modifier.height(LkSpacing.Space2))
 
             Box(modifier = Modifier.weight(1f)) {
                 when (val state = uiState) {
@@ -111,15 +122,10 @@ fun CalculationsScreen(
                                 onCategoryChanged = { viewModel.updateCategoryFilter(it) },
                                 onCalculationSelected = onCalculationSelected,
                                 onDetailedSelected = onDetailedSelected,
-                                onNavigateToWorkspace = onNavigateToWorkspace
-                            )
-                            1 -> FinansalGorunumTab(
-                                trackerSummary = state.trackerSummary,
-                                openRecords = state.openRecords,
-                                history = state.history,
                                 onNavigateToWorkspace = onNavigateToWorkspace,
-                                navController = navController,
-                                catalog = state.catalog
+                                onOpenPricingTool = {
+                                    navController.navigateTo(Destination.FormulaDetail("fiyat_mimarisi"))
+                                }
                             )
                             else -> GecmisTab(
                                 history = state.history,
@@ -151,7 +157,8 @@ private fun KatalogTab(
     onCategoryChanged: (String) -> Unit,
     onCalculationSelected: (CalculationItem) -> Unit,
     onDetailedSelected: ((CalculationItem) -> Unit)? = null,
-    onNavigateToWorkspace: () -> Unit
+    onNavigateToWorkspace: () -> Unit,
+    onOpenPricingTool: () -> Unit
 ) {
     val visibleItems = remember(catalog, categoryFilter) {
         if (categoryFilter == "all") catalog
@@ -162,6 +169,15 @@ private fun KatalogTab(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = LkSpacing.Space4)
     ) {
+        // Prototipteki sira: filtre haplari → Fiyatlandirma Sihirbazi →
+        // arac listesi. Sihirbaz ekranin one cikan blogu, en ustte.
+        item {
+            PricingWizardSection(
+                onOpenFullTool = onOpenPricingTool,
+                modifier = Modifier.padding(horizontal = LkSpacing.Space4, vertical = LkSpacing.Space3)
+            )
+        }
+
         // Quick workspace entry points
         item {
             Column(modifier = Modifier.padding(horizontal = LkSpacing.Space4, vertical = LkSpacing.Space3)) {
@@ -170,14 +186,14 @@ private fun KatalogTab(
                     horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space3)
                 ) {
                     QuickActionCard(
-                        icon = Icons.Default.AccountBalanceWallet,
+                        icon = Icons.Outlined.AccountBalanceWallet,
                         title = "Gelir, gider ve tahsilat",
                         subtitle = "Kayıt ekle",
                         modifier = Modifier.weight(1f),
                         onClick = onNavigateToWorkspace
                     )
                     QuickActionCard(
-                        icon = Icons.Default.Description,
+                        icon = Icons.Outlined.Description,
                         title = "Fatura ve belgeler",
                         subtitle = "Belge yükle",
                         modifier = Modifier.weight(1f),
@@ -186,7 +202,7 @@ private fun KatalogTab(
                 }
                 Spacer(modifier = Modifier.height(LkSpacing.Space3))
                 QuickActionCard(
-                    icon = Icons.Default.CalendarToday,
+                    icon = Icons.Outlined.CalendarToday,
                     title = "Ödeme takvimi",
                     subtitle = "Vadeleri ve yaklaşan işlemleri gör",
                     modifier = Modifier.fillMaxWidth(),
@@ -317,7 +333,7 @@ private fun CalculationCard(
                 )
             }
             Icon(
-                imageVector = Icons.Default.Calculate,
+                imageVector = Icons.Outlined.Calculate,
                 contentDescription = null,
                 tint = LkPrimary,
                 modifier = Modifier.size(20.dp)
@@ -338,248 +354,6 @@ private fun CalculationCard(
 }
 
 // ─── FİNANSAL GÖRÜNÜM TAB ──────────────────────────────────
-
-@Composable
-private fun FinansalGorunumTab(
-    trackerSummary: TrackerSummaryDto?,
-    openRecords: List<BusinessRecordDto>,
-    history: List<FormulaCalculationDto>,
-    onNavigateToWorkspace: () -> Unit,
-    navController: NavController,
-    catalog: List<CalculationItem>
-) {
-
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(LkSpacing.Space4),
-        verticalArrangement = Arrangement.spacedBy(LkSpacing.Space4)
-    ) {
-        // Signature / headline panel
-        item {
-            FinanceSignaturePanel(trackerSummary, openRecords, onNavigateToWorkspace)
-        }
-
-        if (trackerSummary != null) {
-            // Tahsilat ve ödeme defteri
-            item {
-                LkSectionHeader(
-                    title = "Tahsilat ve ödeme defteri",
-                    subtitle = "Yaklaşan açık kayıtlar"
-                )
-            }
-
-            if (openRecords.isEmpty()) {
-                item {
-                    Text(
-                        text = "Açık finans kaydı bulunmuyor.",
-                        style = LkTypography.getBodySmall(),
-                        color = LkTextMuted,
-                        modifier = Modifier.padding(vertical = LkSpacing.Space2)
-                    )
-                }
-            } else {
-                items(openRecords.take(7), key = { it.id }) { record ->
-                    RecordRow(record = record, onClick = onNavigateToWorkspace)
-                }
-            }
-
-            // İstisnalar - overdue records
-            val overdueRecords = openRecords.filter { record ->
-                record.dueAt != null && record.dueAt < Clock.System.todayIn(TimeZone.currentSystemDefault()).toString()
-            }
-            if (overdueRecords.isNotEmpty()) {
-                item {
-                    Spacer(modifier = Modifier.height(LkSpacing.Space2))
-                    LkSectionHeader(
-                        title = "İstisnalar",
-                        subtitle = "Önce bakılması gerekenler"
-                    )
-                }
-                items(overdueRecords.take(3), key = { "overdue-${it.id}" }) { record ->
-                    RecordRow(record = record, onClick = onNavigateToWorkspace, isOverdue = true)
-                }
-            }
-        }
-
-        // Son hesaplamalar
-        if (history.isNotEmpty()) {
-            item {
-                Spacer(modifier = Modifier.height(LkSpacing.Space2))
-                LkSectionHeader(title = "Son hesaplamalar")
-            }
-            items(history.take(4), key = { "hist-${it.id}" }) { calc ->
-                val formula = catalog.find { it.definition.formulaId == calc.formulaId }?.formula
-                if (formula != null) {
-                    FinansalGorunumHistoryRow(
-                        item = calc,
-                        onClick = { navController.navigateTo(Destination.FormulaDetail(calc.formulaId, calc)) }
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun FinansalGorunumHistoryRow(
-    item: FormulaCalculationDto,
-    onClick: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(LkSurfacePanel, LkShapes.MD)
-            .border(1.dp, LkLineStrong, LkShapes.MD)
-            .padding(LkSpacing.PadPanel)
-            .clickable(onClick = onClick)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = item.formulaName,
-                style = LkTypography.getBodyStrong(),
-                color = LkTextPrimary
-            )
-            Text(
-                text = LkDateUtils.formatDateTime(item.createdAt),
-                style = LkTypography.getMicro(),
-                color = LkTextSecondary
-            )
-        }
-        Spacer(modifier = Modifier.height(LkSpacing.Space3))
-        item.result.entries
-            .filter { it.key != "durum" }
-            .take(4)
-            .forEach { (key, value) ->
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = formulaResultLabel(key),
-                        style = LkTypography.getBodySmall(),
-                        color = LkTextSecondary
-                    )
-                    Text(
-                        text = value.displayValue(),
-                        style = LkTypography.getBodyStrong(),
-                        color = LkTextPrimary
-                    )
-                }
-            }
-    }
-}
-
-@Composable
-private fun FinanceSignaturePanel(
-    trackerSummary: TrackerSummaryDto?,
-    openRecords: List<BusinessRecordDto>,
-
-    onNavigateToWorkspace: () -> Unit
-) {
-    val overdueCount = openRecords.count { record ->
-        record.dueAt != null && record.dueAt < Clock.System.todayIn(TimeZone.currentSystemDefault()).toString()
-    }
-    val net = trackerSummary?.nextThirtyDays?.net ?: 0.0
-
-    val headline = when {
-        trackerSummary == null -> "Finansal görünümünüzü işletme kayıtlarıyla kurun"
-        overdueCount > 0 -> "Nakit görünümü kontrollü, $overdueCount kayıt dikkat istiyor"
-        net < 0 -> "Önümüzdeki 30 gün için nakit planı gerekiyor"
-        else -> "Nakit görünümü kontrollü"
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(LkSurfacePanel, LkShapes.MD)
-            .border(1.dp, LkLineStrong, LkShapes.MD)
-            .padding(LkSpacing.PadPanel)
-    ) {
-        Text(
-            text = "Finansal görünüm",
-            style = LkTypography.getMicro(),
-            color = LkTextSecondary
-        )
-        Spacer(modifier = Modifier.height(LkSpacing.Space2))
-        Text(
-            text = headline,
-            style = LkTypography.getSectionTitle(),
-            color = LkTextPrimary
-        )
-        Spacer(modifier = Modifier.height(LkSpacing.Space2))
-
-        if (trackerSummary != null) {
-            val subtitle = if (overdueCount > 0) {
-                "Geciken kayıtları ve yaklaşan vadeleri gözden geçirin."
-            } else {
-                "Yaklaşan tahsilat ve ödemeler kayıtlarınıza göre dengede."
-            }
-            Text(
-                text = subtitle,
-                style = LkTypography.getBodySmall(),
-                color = LkTextSecondary
-            )
-            Spacer(modifier = Modifier.height(LkSpacing.Space4))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                FinanceMetric(
-                    label = "Alacak",
-                    value = formatTry(trackerSummary.nextThirtyDays.receivable),
-                    caption = "30 gün"
-                )
-                FinanceMetric(
-                    label = "Borç",
-                    value = formatTry(trackerSummary.nextThirtyDays.payable),
-                    caption = "30 gün"
-                )
-                FinanceMetric(
-                    label = "Net",
-                    value = formatTry(net),
-                    caption = if (net < 0) "Plan gerekli" else "Kontrollü",
-                    isNegative = net < 0
-                )
-            }
-        } else {
-            Text(
-                text = "İşletme takibine finansal kayıt eklediğinizde özet burada oluşur.",
-                style = LkTypography.getBodySmall(),
-                color = LkTextSecondary
-            )
-            Spacer(modifier = Modifier.height(LkSpacing.Space3))
-            Button(
-                onClick = onNavigateToWorkspace,
-                colors = ButtonDefaults.buttonColors(backgroundColor = LkPrimary)
-            ) {
-                Text("İşletme kaydı ekle", color = LkSurfaceCanvas)
-            }
-        }
-    }
-}
-
-@Composable
-private fun FinanceMetric(
-    label: String,
-    value: String,
-    caption: String,
-    isNegative: Boolean = false
-) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(text = label, style = LkTypography.getMicro(), color = LkTextSecondary)
-        Text(
-            text = value,
-            style = LkTypography.getBodyStrong(),
-            color = if (isNegative) LkDanger else LkTextPrimary
-        )
-        Text(text = caption, style = LkTypography.getMicro(), color = LkTextMuted)
-    }
-}
 
 @Composable
 private fun RecordRow(

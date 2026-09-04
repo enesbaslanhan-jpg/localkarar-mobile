@@ -1,12 +1,13 @@
 package com.localkarar.app.ui.shell
 
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -21,6 +22,8 @@ import com.localkarar.app.navigation.ScopedViewModelStoreOwner
 import com.localkarar.app.navigation.rememberNavController
 import com.localkarar.app.core.AppMessages
 import com.localkarar.app.core.ConnectivityMonitor
+import com.localkarar.app.ui.components.LkDockTab
+import com.localkarar.app.ui.components.LkSoftDock
 import com.localkarar.app.ui.components.LkMembershipBanner
 import com.localkarar.app.ui.components.LkOfflineBanner
 import com.localkarar.app.ui.screens.home.HomeScreen
@@ -315,9 +318,33 @@ fun AppShell(
                         }
                     )
 
-                    Box(modifier = Modifier.fillMaxSize()) {
+                    // 🔴 BURASI `fillMaxSize()` IDI VE TUM KAYDIRILABILIR
+                    // EKRANLARI BOZUYORDU (50 ekran).
+                    //
+                    // Column icinde `fillMaxSize` KALAN yuksekligi degil TUM
+                    // yuksekligi ister; Box seritlerin altindan baslayip ekran
+                    // boyu uzuyor, yani Column'un -- ve Scaffold'un bottomBar
+                    // icin ayirdigi dolgunun -- disina tasiyordu. Sonucta her
+                    // ekranin son satiri dock'un ALTINDA kaliyordu.
+                    //
+                    // `weight(1f)` kalan yuksekligi verir; Scaffold dolgusu
+                    // artik gercekten ise yariyor.
+                    Box(modifier = Modifier.weight(1f)) {
+                    // §12 `normal` (200-260ms): ekranlar arasi gecis.
+                    // Prototipteki `.page-view { animation: fadeIn 0.25s }`
+                    // karsiligi. Onceden gecis YOKTU, ekranlar aniden
+                    // degisiyordu.
+                    //
+                    // Anahtar `destination` DEGIL sinifi: ayni ekranda
+                    // parametre degisince (ornegin baska bir kayit acilinca)
+                    // tum ekranin yeniden solmasi gereksiz kimildama olurdu.
+                    Crossfade(
+                        targetState = currentDestination,
+                        animationSpec = lkAnim(LkMotion.normal()),
+                        label = "ekranGecisi"
+                    ) { hedef ->
                     ScreenContent(
-                        destination = currentDestination,
+                        destination = hedef,
                         navController = navController,
                         user = user,
                         homeViewModel = homeViewModel,
@@ -338,6 +365,7 @@ fun AppShell(
                         onNewSession = onNewSession,
                         onLogout = onLogout
                     )
+                    }
                     }
                 }
             }
@@ -404,15 +432,16 @@ private fun ScreenContent(
         Destination.Login -> { /* Handled at app root */ }
         Destination.Home -> HomeScreen(
             viewModel = homeViewModel,
-            onNavigateToCourses = { navController.navigateTo(Destination.Courses) },
-            onNavigateToCourseDetail = { courseId -> navController.navigateTo(Destination.CourseDetail(courseId)) },
-            onNavigateToCalculations = { navController.navigateTo(Destination.Calculations) },
             onNavigateToMentor = { navController.navigateTo(Destination.AiMentor) },
             onNavigateToDecisions = { navController.navigateTo(Destination.DecisionTools()) },
             onNavigateToDecisionDetail = { code -> navController.navigateTo(Destination.DecisionTool(code)) },
             onNavigateToWorkspaces = { navController.navigateTo(Destination.Workspaces) },
             onNavigateToTracker = { workspaceId -> navController.navigateTo(Destination.Records(workspaceId)) },
-            onNavigateToEnrollments = { navController.navigateTo(Destination.Courses) },
+            onQuickAction = { workspaceId, tur, yon ->
+                navController.navigateTo(
+                    Destination.RecordEdit(workspaceId, null, presetType = tur, presetDirection = yon)
+                )
+            },
             onOpenProductCenter = onOpenProductCenter
         )
         Destination.Courses -> {
@@ -650,6 +679,8 @@ private fun ScreenContent(
             }
             RecordEditScreen(
                 viewModel = viewModel,
+                presetType = destination.presetType,
+                presetDirection = destination.presetDirection,
                 isEdit = destination.recordId != null,
                 onSaved = { navController.popBackStack() },
                 onBack = onBack
@@ -880,64 +911,59 @@ private data class NavItem(
     val getTargetDestination: (activeWorkspaceId: String?) -> Destination
 )
 
+/*
+ * Sira onaylanan prototipten: Ana Sayfa ORTADA duruyor.
+ * Onceden Ana Sayfa bastaydi; dock ortasi basparmagin en rahat
+ * ulastigi yer ve en cok kullanilan sekme oraya konuyor.
+ */
 private val PRIMARY_NAV_ITEMS = listOf(
-    NavItem("Ana Sayfa", Icons.Default.Home) { Destination.Home },
-    NavItem("İşletme Takibi", Icons.Default.Business) { activeId ->
+    NavItem("Hesaplamalar", Icons.Outlined.Calculate) { Destination.Calculations },
+    NavItem("İşletme Takibi", Icons.Outlined.Business) { activeId ->
         if (activeId != null) Destination.WorkspaceHome(activeId) else Destination.Workspaces
     },
-    NavItem("Topluluk", Icons.Default.Groups) { Destination.Community() },
-    NavItem("Hesaplamalar", Icons.Default.Calculate) { Destination.Calculations },
-    NavItem("Ayarlar", Icons.Default.Settings) { Destination.Settings }
+    NavItem("Ana Sayfa", Icons.Outlined.Home) { Destination.Home },
+    NavItem("Topluluk", Icons.Outlined.Groups) { Destination.Community() },
+    NavItem("Ayarlar", Icons.Outlined.Settings) { Destination.Settings }
 )
 
+/**
+ * Alt navigasyon — prototipteki yuzen dock.
+ *
+ * ⚠️ Scaffold'un `bottomBar` yuvasinda KALIYOR, icerigin ustune
+ * bindirilmiyor. Prototipte dock `position: absolute` ile icerigin
+ * uzerinde duruyor; oyle yapmak 13 ekranin her birinde alt dolguyu elle
+ * ayarlamayi gerektirirdi ve dolgusu unutulan ekranda son satir dock'un
+ * ALTINDA kalirdi -- derlemenin de testin de yakalayamayacagi bir hata.
+ *
+ * Bu haliyle Scaffold icerik dolgusunu kendisi hesapliyor; dock kenarlardan
+ * iceride ve yuvarlak duruyor, cevresinde zemin gorunuyor. Gorsel olarak
+ * prototipe yakin, davranis olarak guvenli.
+ */
 @Composable
 private fun LkBottomNavigation(
     currentDestination: Destination,
     activeWorkspaceId: String?,
     onNavigate: (Destination) -> Unit
 ) {
-    BottomNavigation(
-        backgroundColor = LkSurfacePanel,
-        contentColor = LkTextSecondary,
-        elevation = 0.dp,
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .border(width = 1.dp, color = LkLineStrong)
+            .background(LkSurfaceCanvas)
+            .padding(bottom = 12.dp, top = 4.dp)
     ) {
-        PRIMARY_NAV_ITEMS.forEach { item ->
-            val target = item.getTargetDestination(activeWorkspaceId)
-            val selected = isTabSelected(currentDestination, target)
-
-            BottomNavigationItem(
-                selected = selected,
-                onClick = {
-                    onNavigate(target)
-                },
-                icon = {
-                    Icon(
-                        imageVector = item.icon,
-                        contentDescription = item.label,
-                        modifier = Modifier.size(22.dp),
-                        tint = if (selected) LkPrimary else LkTextSecondary
-                    )
-                },
-                label = {
-                    Text(
-                        text = item.label,
-                        style = LkTypography.getMicro(),
-                        color = if (selected) LkPrimary else LkTextSecondary,
-                        maxLines = 1,
-                        softWrap = false,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                },
-                selectedContentColor = LkPrimary,
-                unselectedContentColor = LkTextSecondary
-            )
-        }
+        LkSoftDock(
+            tabs = PRIMARY_NAV_ITEMS.map { item ->
+                val target = item.getTargetDestination(activeWorkspaceId)
+                LkDockTab(
+                    label = item.label,
+                    icon = item.icon,
+                    selected = isTabSelected(currentDestination, target),
+                    onClick = { onNavigate(target) }
+                )
+            }
+        )
     }
 }
-
 private fun isTabSelected(current: Destination, tabTarget: Destination): Boolean {
     return when (tabTarget) {
         is Destination.Home -> current is Destination.Home

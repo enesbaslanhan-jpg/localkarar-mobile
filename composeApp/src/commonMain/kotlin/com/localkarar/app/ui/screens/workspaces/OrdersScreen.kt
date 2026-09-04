@@ -12,7 +12,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -103,7 +103,7 @@ fun OrdersScreen(
                     } else {
                         IconButton(onClick = { viewModel.syncNow(workspaceId) }) {
                             Icon(
-                                Icons.Default.Sync,
+                                Icons.Outlined.Sync,
                                 contentDescription = "Şimdi Eşitle",
                                 tint = LkPrimary
                             )
@@ -249,7 +249,7 @@ fun OrdersScreen(
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(
-                            imageVector = Icons.Default.ReceiptLong,
+                            imageVector = Icons.Outlined.ReceiptLong,
                             contentDescription = null,
                             tint = LkTextMuted,
                             modifier = Modifier.size(56.dp)
@@ -463,7 +463,7 @@ private fun OrderDetailDialog(
                         color = LkTextPrimary
                     )
                     IconButton(onClick = onDismiss, modifier = Modifier.size(24.dp)) {
-                        Icon(Icons.Default.Close, contentDescription = "Kapat", tint = LkTextMuted)
+                        Icon(Icons.Outlined.Close, contentDescription = "Kapat", tint = LkTextMuted)
                     }
                 }
 

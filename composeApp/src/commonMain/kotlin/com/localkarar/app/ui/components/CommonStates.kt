@@ -5,11 +5,12 @@ import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CloudOff
-import androidx.compose.material.icons.filled.Error
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material.icons.filled.SearchOff
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.outlined.CloudOff
+import androidx.compose.material.icons.outlined.Error
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.SearchOff
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,21 +56,22 @@ private data class HataGorunumu(
     val tekrarDenenebilir: Boolean
 )
 
+@Composable
 private fun hataGorunumu(hata: Throwable?): HataGorunumu = when (hata) {
     is ApiError.NetworkUnavailable -> HataGorunumu(
-        simge = Icons.Default.CloudOff,
+        simge = Icons.Outlined.CloudOff,
         baslik = "Bağlantı Yok",
         renk = LkTextSecondary,
         tekrarDenenebilir = true
     )
     is ApiError.Timeout -> HataGorunumu(
-        simge = Icons.Default.Schedule,
+        simge = Icons.Outlined.Schedule,
         baslik = "Yanıt Gecikti",
         renk = LkTextSecondary,
         tekrarDenenebilir = true
     )
     is ApiError.NotFound -> HataGorunumu(
-        simge = Icons.Default.SearchOff,
+        simge = Icons.Outlined.SearchOff,
         baslik = "Bulunamadı",
         renk = LkTextSecondary,
         tekrarDenenebilir = false
@@ -77,19 +79,19 @@ private fun hataGorunumu(hata: Throwable?): HataGorunumu = when (hata) {
     // Uyelik suresinin dolmasi bir "hata" degil bir DURUM; kirmizi unlem
     // yanlis sinyal verir ve tekrar denemek hicbir seyi degistirmez.
     is ApiError.MembershipExpired -> HataGorunumu(
-        simge = Icons.Default.Lock,
+        simge = Icons.Outlined.Lock,
         baslik = "Üyelik Süresi Doldu",
         renk = LkWarning,
         tekrarDenenebilir = false
     )
     is ApiError.Forbidden, is ApiError.Unauthorized -> HataGorunumu(
-        simge = Icons.Default.Lock,
+        simge = Icons.Outlined.Lock,
         baslik = "Erişim Yok",
         renk = LkWarning,
         tekrarDenenebilir = false
     )
     else -> HataGorunumu(
-        simge = Icons.Default.Error,
+        simge = Icons.Outlined.Error,
         baslik = "Bir Hata Oluştu",
         renk = LkDanger,
         tekrarDenenebilir = true
@@ -165,7 +167,7 @@ fun LkNotFoundState(
             modifier = Modifier.padding(LkSpacing.Space8)
         ) {
             Icon(
-                imageVector = Icons.Default.SearchOff,
+                imageVector = Icons.Outlined.SearchOff,
                 contentDescription = baslik,
                 tint = LkTextSecondary,
                 modifier = Modifier.size(48.dp)

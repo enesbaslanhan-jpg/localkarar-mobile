@@ -1,11 +1,14 @@
 package com.localkarar.app.ui.screens.calculations
 
+import androidx.compose.runtime.Composable
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -87,6 +90,7 @@ private fun resultTone(status: String): ResultTone {
 
 private enum class ResultTone { Success, Danger, Neutral }
 
+@Composable
 private fun ResultTone.badgeColor(): androidx.compose.ui.graphics.Color {
     return when (this) {
         ResultTone.Success -> LkSuccess
@@ -137,7 +141,7 @@ fun FormulaDetailScreen(
 
                     if (!formula.warning.isNullOrBlank()) {
                         item {
-                            LkInfoPanel(title = "Uyarı", icon = Icons.Default.Warning) {
+                            LkInfoPanel(title = "Uyarı", icon = Icons.Outlined.Warning) {
                                 Text(
                                     text = formula.warning,
                                     style = LkTypography.getBodySmall(),

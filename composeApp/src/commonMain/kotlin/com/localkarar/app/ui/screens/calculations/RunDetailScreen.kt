@@ -6,7 +6,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -92,7 +93,7 @@ fun RunDetailScreen(
 
                     if (run.warnings.isNotEmpty()) {
                         item {
-                            LkInfoPanel(title = "Uyarılar", icon = Icons.Default.Warning) {
+                            LkInfoPanel(title = "Uyarılar", icon = Icons.Outlined.Warning) {
                                 run.warnings.forEach { warning ->
                                     Text(
                                         text = "• $warning",

@@ -20,14 +20,37 @@ data class DashboardResponse(
     val demoMode: Boolean = false
 )
 
+/**
+ * Quiz denemesi gecmisi.
+ *
+ * 🔴 `feedback` ZORUNLUYDU VE SUNUCU ONU HIC GONDERMIYOR.
+ *
+ * Sunucu yalniz su bes alani doner (src/services/learnerDashboard.ts:239):
+ * `{ id, koId, score, passed, createdAt }`.
+ *
+ * Sonucu: quiz gecmisi OLAN her kullanicida `/dashboard` yaniti
+ * deserialization'da patliyor ve Ana Sayfa'nin TAMAMI "Bir Hata Oluştu --
+ * Bağlantı hatası veya sunucuya ulaşılamıyor" ekranina dusuyordu. Sunucu
+ * 200 donuyordu; hata agda degil BURADAYDI. Emulatorde yakalandi
+ * (03.09.2026), logcat: "Field 'feedback' is required ... $.quizHistory[0]".
+ *
+ * Quiz/flashcard urun karariyla kapali; ama gecmis kayitlar veritabaninda
+ * duruyor ve pano onlari donmeye devam ediyor. DTO bu yuzden tolere etmeli.
+ *
+ * ⚠️ Bu, pazaryeri DTO'larinda bulunan hatanin AYNISI: sunucunun
+ * gondermedigi bir alani zorunlu istemek. Alan eklerken sunucunun GERCEK
+ * yanitina bakilmali, tahmin edilmemeli.
+ */
 @Serializable
 data class QuizAttemptDto(
     val id: String,
     val koId: Int,
     val score: Int,
     val passed: Boolean,
-    val feedback: String,
     val createdAt: String,
+    /** Sunucu gondermiyor; ileride eklenirse diye duruyor. */
+    val feedback: String? = null,
+    /** Sunucu gondermiyor. */
     val quizId: String? = null
 )
 

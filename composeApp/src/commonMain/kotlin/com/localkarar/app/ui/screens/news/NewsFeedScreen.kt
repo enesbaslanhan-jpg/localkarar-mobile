@@ -1,5 +1,7 @@
 package com.localkarar.app.ui.screens.news
 
+import androidx.compose.runtime.Composable
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -10,7 +12,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,14 +32,14 @@ import com.localkarar.app.ui.theme.*
 
 fun categoryIcon(category: String?): ImageVector {
     return when (category?.uppercase()) {
-        "FINANS" -> Icons.Default.AccountBalance
-        "MEVZUAT" -> Icons.Default.Gavel
-        "VERGI" -> Icons.Default.Receipt
-        "IS_DUNYASI" -> Icons.Default.Business
-        "DIJITALLESME" -> Icons.Default.Smartphone
-        "DESTEK" -> Icons.Default.Handshake
-        "GENEL_EKONOMI" -> Icons.Default.TrendingUp
-        else -> Icons.Default.Article
+        "FINANS" -> Icons.Outlined.AccountBalance
+        "MEVZUAT" -> Icons.Outlined.Gavel
+        "VERGI" -> Icons.Outlined.Receipt
+        "IS_DUNYASI" -> Icons.Outlined.Business
+        "DIJITALLESME" -> Icons.Outlined.Smartphone
+        "DESTEK" -> Icons.Outlined.Handshake
+        "GENEL_EKONOMI" -> Icons.Outlined.TrendingUp
+        else -> Icons.Outlined.Article
     }
 }
 
@@ -64,6 +66,7 @@ fun importanceLabel(importance: String?): String {
     }
 }
 
+@Composable
 fun importanceColor(importance: String?): Color {
     return when (importance?.uppercase()) {
         "CRITICAL" -> LkDanger
@@ -113,7 +116,7 @@ fun NewsFeedScreen(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center
                         ) {
-                            Icon(Icons.Default.Article, contentDescription = null, tint = LkTextSecondary, modifier = Modifier.size(48.dp))
+                            Icon(Icons.Outlined.Article, contentDescription = null, tint = LkTextSecondary, modifier = Modifier.size(48.dp))
                             Spacer(Modifier.height(12.dp))
                             Text("Bu kategoride henüz haber bulunmuyor.", style = LkTypography.getBody(), color = LkTextSecondary)
                         }
@@ -293,7 +296,7 @@ private fun NewsCard(
                     color = LkTextSecondary
                 )
                 Icon(
-                    imageVector = Icons.Default.ChevronRight,
+                    imageVector = Icons.Outlined.ChevronRight,
                     contentDescription = "Detay",
                     tint = LkTextSecondary,
                     modifier = Modifier.size(16.dp)

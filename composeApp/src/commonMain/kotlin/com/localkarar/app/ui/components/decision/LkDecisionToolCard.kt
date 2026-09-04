@@ -16,27 +16,27 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.localkarar.app.ui.theme.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 
 data class ToolStatusConfig(val label: String, val bg: Color, val fg: Color)
 
 fun iconForDecisionCheck(code: String?): ImageVector {
-    if (code == null) return Icons.Default.Build
+    if (code == null) return Icons.Outlined.Build
     val c = code.uppercase()
     return when {
-        c.contains("PROFIT") -> Icons.Default.TrendingUp
-        c.contains("DISCOUNT") -> Icons.Default.ShoppingCart
-        c.contains("FREESHIP") -> Icons.Default.LocalShipping
-        c.contains("MARKETPLACE") -> Icons.Default.Store
-        c.contains("ADS") -> Icons.Default.AdsClick
-        c.contains("HIRE") -> Icons.Default.PersonAdd
-        c.contains("LOAN") -> Icons.Default.AccountBalance
-        c.contains("CASHFLOW") -> Icons.Default.AccountBalanceWallet
-        c.contains("BRANCH") -> Icons.Default.Business
-        c.contains("CAMPAIGN") -> Icons.Default.Campaign
-        c.contains("STOCK") -> Icons.Default.Inventory
-        c.contains("CONTINUE") -> Icons.Default.Search
-        else -> Icons.Default.Build
+        c.contains("PROFIT") -> Icons.Outlined.TrendingUp
+        c.contains("DISCOUNT") -> Icons.Outlined.ShoppingCart
+        c.contains("FREESHIP") -> Icons.Outlined.LocalShipping
+        c.contains("MARKETPLACE") -> Icons.Outlined.Store
+        c.contains("ADS") -> Icons.Outlined.AdsClick
+        c.contains("HIRE") -> Icons.Outlined.PersonAdd
+        c.contains("LOAN") -> Icons.Outlined.AccountBalance
+        c.contains("CASHFLOW") -> Icons.Outlined.AccountBalanceWallet
+        c.contains("BRANCH") -> Icons.Outlined.Business
+        c.contains("CAMPAIGN") -> Icons.Outlined.Campaign
+        c.contains("STOCK") -> Icons.Outlined.Inventory
+        c.contains("CONTINUE") -> Icons.Outlined.Search
+        else -> Icons.Outlined.Build
     }
 }
 
@@ -126,7 +126,7 @@ fun LkDecisionToolCard(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Icon(
-                    imageVector = Icons.Default.ArrowForward,
+                    imageVector = Icons.Outlined.ArrowForward,
                     contentDescription = null,
                     tint = LkOnPrimary,
                     modifier = Modifier.size(16.dp)

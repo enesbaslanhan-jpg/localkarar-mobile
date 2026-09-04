@@ -1,5 +1,6 @@
 package com.localkarar.app.ui.screens.courses
 
+import com.localkarar.app.ui.components.LkProgress
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -11,7 +12,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,7 +54,7 @@ fun CoursesScreen(
             ) {
                 if (activeView == CoursesViewModel.ActiveView.CATALOG) {
                     TextButton(onClick = { showFilterBar = !showFilterBar }) {
-                        Icon(Icons.Default.FilterList, contentDescription = "Filtrele", tint = LkPrimary)
+                        Icon(Icons.Outlined.FilterList, contentDescription = "Filtrele", tint = LkPrimary)
                         Spacer(Modifier.width(4.dp))
                         Text("Filtrele", style = LkTypography.getBodyStrong(), color = LkPrimary)
                     }
@@ -209,12 +210,7 @@ fun ActivePathHero(
             Spacer(modifier = Modifier.height(LkSpacing.Space4))
 
             if (activeCourse != null) {
-                LinearProgressIndicator(
-                    progress = progress / 100f,
-                    color = LkPrimary,
-                    backgroundColor = LkSurfaceSunken,
-                    modifier = Modifier.fillMaxWidth().height(8.dp).clip(LkShapes.FULL)
-                )
+                LkProgress(progress = progress / 100f)
                 Spacer(modifier = Modifier.height(LkSpacing.Space2))
                 Text("%$progress tamamlandı", style = LkTypography.getMetadata(), color = LkTextSecondary)
             }
@@ -253,7 +249,7 @@ fun FilterBar(data: CoursesStateData, viewModel: CoursesViewModel) {
             onValueChange = { viewModel.setSearch(it) },
             modifier = Modifier.fillMaxWidth(),
             placeholder = { Text("Kurs ara...") },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+            leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
             singleLine = true,
             colors = TextFieldDefaults.outlinedTextFieldColors(backgroundColor = LkSurfaceCanvas)
         )
@@ -368,12 +364,7 @@ fun EnrollmentCard(
             
             Spacer(modifier = Modifier.height(LkSpacing.Space4))
             
-            LinearProgressIndicator(
-                progress = enrollment.progress / 100f,
-                color = LkPrimary,
-                backgroundColor = LkSurfaceSunken,
-                modifier = Modifier.fillMaxWidth().height(6.dp).clip(LkShapes.FULL)
-            )
+            LkProgress(progress = enrollment.progress / 100f)
         }
     }
 }

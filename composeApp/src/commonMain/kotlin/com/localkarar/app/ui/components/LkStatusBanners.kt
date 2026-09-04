@@ -6,9 +6,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.CloudOff
-import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.CloudOff
+import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,7 +36,7 @@ fun LkOfflineBanner(gorunur: Boolean, modifier: Modifier = Modifier) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
-            imageVector = Icons.Default.CloudOff,
+            imageVector = Icons.Outlined.CloudOff,
             contentDescription = null,
             tint = LkTextSecondary,
             modifier = Modifier.size(16.dp)
@@ -103,7 +104,7 @@ fun LkMembershipBanner(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
-            imageVector = Icons.Default.Lock,
+            imageVector = Icons.Outlined.Lock,
             contentDescription = null,
             tint = if (suresiDoldu) LkOnSignature else LkWarning,
             modifier = Modifier.size(16.dp)
@@ -119,7 +120,7 @@ fun LkMembershipBanner(
         if (!suresiDoldu && onKapat != null) {
             Spacer(modifier = Modifier.width(LkSpacing.Space1))
             Icon(
-                imageVector = Icons.Default.Close,
+                imageVector = Icons.Outlined.Close,
                 contentDescription = "Kapat",
                 tint = LkTextSecondary,
                 modifier = Modifier

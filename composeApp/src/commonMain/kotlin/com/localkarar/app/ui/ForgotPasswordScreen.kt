@@ -10,8 +10,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.LockReset
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.LockReset
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -68,7 +69,7 @@ fun ForgotPasswordScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = if (resetSuccess) Icons.Default.CheckCircle else Icons.Default.LockReset,
+                        imageVector = if (resetSuccess) Icons.Outlined.CheckCircle else Icons.Outlined.LockReset,
                         contentDescription = null,
                         tint = if (resetSuccess) LkSuccess else LkPrimary,
                         modifier = Modifier.size(28.dp)

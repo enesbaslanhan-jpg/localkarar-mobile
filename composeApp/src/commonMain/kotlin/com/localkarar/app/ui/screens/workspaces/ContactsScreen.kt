@@ -12,10 +12,11 @@ import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Contacts
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Contacts
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -69,7 +70,7 @@ fun ContactsScreen(
                             LkEmptyState(
                                 title = "Henüz kişi yok",
                                 description = "Müşteri, tedarikçi ve iş ortaklarınızı ekleyin.",
-                                icon = Icons.Default.Contacts,
+                                icon = Icons.Outlined.Contacts,
                                 action = {
                                     LkButton(text = "Kişi Ekle", onClick = { showCreate = true })
                                 }
@@ -154,7 +155,7 @@ private fun ContactCard(
             }
             IconButton(onClick = onEdit) {
                 Icon(
-                    imageVector = Icons.Default.Edit,
+                    imageVector = Icons.Outlined.Edit,
                     contentDescription = "Düzenle",
                     tint = LkTextSecondary,
                     modifier = Modifier.size(18.dp)
@@ -162,7 +163,7 @@ private fun ContactCard(
             }
             IconButton(onClick = { showDeleteConfirm = true }) {
                 Icon(
-                    imageVector = Icons.Default.Delete,
+                    imageVector = Icons.Outlined.Delete,
                     contentDescription = "Sil",
                     tint = LkTextMuted,
                     modifier = Modifier.size(18.dp)

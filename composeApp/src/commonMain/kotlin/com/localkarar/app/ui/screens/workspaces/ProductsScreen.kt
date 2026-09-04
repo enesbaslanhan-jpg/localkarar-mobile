@@ -12,7 +12,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -112,7 +112,7 @@ fun ProductsScreen(
                     onValueChange = { viewModel.setSearchQuery(workspaceId, it) },
                     placeholder = "Başlık, SKU veya Barkod ile Ara...",
                     trailingContent = {
-                        Icon(Icons.Default.Search, contentDescription = null, tint = LkTextMuted)
+                        Icon(Icons.Outlined.Search, contentDescription = null, tint = LkTextMuted)
                     }
                 )
             }
@@ -307,7 +307,7 @@ fun ProductsScreen(
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(
-                            imageVector = Icons.Default.Inventory2,
+                            imageVector = Icons.Outlined.Inventory2,
                             contentDescription = null,
                             tint = LkTextMuted,
                             modifier = Modifier.size(56.dp)
@@ -441,7 +441,7 @@ private fun MarketplaceProductCard(
 
                     if (product.isFavorite) {
                         Icon(
-                            imageVector = Icons.Default.Star,
+                            imageVector = Icons.Outlined.Star,
                             contentDescription = "Favori",
                             tint = Color(0xFFFFC107),
                             modifier = Modifier.size(16.dp)
@@ -471,7 +471,7 @@ private fun MarketplaceProductCard(
                     modifier = Modifier.size(24.dp)
                 ) {
                     Icon(
-                        Icons.Default.Tune,
+                        Icons.Outlined.Tune,
                         contentDescription = "Yerel Ayarlar",
                         tint = LkTextMuted
                     )

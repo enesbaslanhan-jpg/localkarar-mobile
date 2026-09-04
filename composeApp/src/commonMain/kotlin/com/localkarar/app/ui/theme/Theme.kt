@@ -5,41 +5,52 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.darkColors
 import androidx.compose.material.lightColors
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 
 /**
  * LocalKarar dark color scheme — primary parity target.
  * Source: LOCALKARAR_DESIGN_SYSTEM.md §1 Colors (Dark column)
  */
+/**
+ * Material renk semasi — KOYU.
+ *
+ * ⚠️ Degerler `LkDarkColors` paletinden okunuyor, token getter'larindan
+ * DEGIL: tokenlar artik @Composable ve burasi ust duzey bir tanim.
+ *
+ * Bu sema yalniz Material bilesenlerinin varsayilanlarini besliyor;
+ * ekranlarin okudugu asil kaynak `LocalLkColors`.
+ */
 private val LkDarkColorScheme = darkColors(
-    primary         = LkPrimary,
-    primaryVariant  = LkPrimaryHover,
-    secondary       = LkPrimary,
-    background      = LkSurfaceCanvas,
-    surface         = LkSurfacePanel,
-    error           = LkDanger,
-    onPrimary       = LkOnPrimary,
-    onSecondary     = LkOnPrimary,
-    onBackground    = LkTextPrimary,
-    onSurface       = LkTextPrimary,
-    onError         = LkTextPrimary
+    primary         = LkDarkColors.primary,
+    primaryVariant  = LkDarkColors.primaryHover,
+    secondary       = LkDarkColors.primary,
+    background      = LkDarkColors.surfaceCanvas,
+    surface         = LkDarkColors.surfacePanel,
+    error           = LkDarkColors.danger,
+    onPrimary       = LkDarkColors.onPrimary,
+    onSecondary     = LkDarkColors.onPrimary,
+    onBackground    = LkDarkColors.textPrimary,
+    onSurface       = LkDarkColors.textPrimary,
+    onError         = LkDarkColors.textPrimary
 )
 
 /**
  * LocalKarar light color scheme — foundation ready, not yet polished.
  * Source: LOCALKARAR_DESIGN_SYSTEM.md §1 Colors (Light column)
  */
+/** Material renk semasi — ACIK. Degerler `LkLightColors` paletinden. */
 private val LkLightColorScheme = lightColors(
-    primary         = LkLightPrimary,
-    primaryVariant  = LkLightPrimaryHover,
-    secondary       = LkLightPrimary,
-    background      = LkLightSurfaceCanvas,
-    surface         = LkLightSurfacePanel,
-    error           = LkLightDanger,
-    onPrimary       = LkLightOnPrimary,
-    onSecondary     = LkLightOnPrimary,
-    onBackground    = LkLightTextPrimary,
-    onSurface       = LkLightTextPrimary,
-    onError         = LkLightTextPrimary
+    primary         = LkLightColors.primary,
+    primaryVariant  = LkLightColors.primaryHover,
+    secondary       = LkLightColors.primary,
+    background      = LkLightColors.surfaceCanvas,
+    surface         = LkLightColors.surfacePanel,
+    error           = LkLightColors.danger,
+    onPrimary       = LkLightColors.onPrimary,
+    onSecondary     = LkLightColors.onPrimary,
+    onBackground    = LkLightColors.textPrimary,
+    onSurface       = LkLightColors.textPrimary,
+    onError         = LkLightColors.textPrimary
 )
 
 /**
@@ -60,8 +71,23 @@ private val LkLightColorScheme = lightColors(
 @Composable
 fun LocalKararTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
+    themeController: ThemeController? = null,
     content: @Composable () -> Unit
 ) {
+    /*
+     * 🔴 PALET BURADAN SAGLANIYOR.
+     *
+     * Onceden yalniz `MaterialTheme.colors` degistiriliyordu; ekranlar
+     * `LkTextPrimary` gibi SABITLERI okudugu icin temanin hicbir etkisi
+     * yoktu ve uygulama koyu takiliydi. Artik tokenlar `LocalLkColors`
+     * uzerinden okunuyor ve saglanan palet gercekten uygulanıyor.
+     */
+    val palet = if (darkTheme) LkDarkColors else LkLightColors
+
+    CompositionLocalProvider(
+        LocalLkColors provides palet,
+        LocalThemeController provides themeController
+    ) {
     MaterialTheme(
         colors    = if (darkTheme) LkDarkColorScheme else LkLightColorScheme,
         typography = androidx.compose.material.Typography(
@@ -86,4 +112,5 @@ fun LocalKararTheme(
         ),
         content = content
     )
+    }
 }

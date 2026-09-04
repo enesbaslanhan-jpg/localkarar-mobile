@@ -11,9 +11,10 @@ import androidx.compose.material.Scaffold
 import androidx.compose.material.Text
 import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.DoneAll
-import androidx.compose.material.icons.filled.NotificationsNone
+import androidx.compose.material.icons.outlined.DoneAll
+import androidx.compose.material.icons.outlined.NotificationsNone
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -74,7 +75,7 @@ fun AccountNotificationsScreen(
                     if (durum is AccountNotificationsUiState.Content && durum.okunmamis > 0) {
                         IconButton(onClick = { viewModel.tumunuOkunduIsaretle() }) {
                             Icon(
-                                Icons.Default.DoneAll,
+                                Icons.Outlined.DoneAll,
                                 contentDescription = "Tümünü okundu işaretle",
                                 tint = LkPrimary
                             )
@@ -101,7 +102,7 @@ fun AccountNotificationsScreen(
                     LkEmptyState(
                         title = "Bildirim yok",
                         description = "Hesabınızla ilgili bir gelişme olduğunda burada görürsünüz.",
-                        icon = Icons.Default.NotificationsNone,
+                        icon = Icons.Outlined.NotificationsNone,
                         modifier = Modifier.padding(padding)
                     )
                 } else {

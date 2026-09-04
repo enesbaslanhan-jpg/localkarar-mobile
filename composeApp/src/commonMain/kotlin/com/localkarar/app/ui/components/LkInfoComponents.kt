@@ -4,6 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -24,6 +26,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.localkarar.app.ui.theme.LkLineStrong
 import com.localkarar.app.ui.theme.LkPrimary
+import com.localkarar.app.ui.theme.LkPrimaryFill
+import com.localkarar.app.ui.theme.LkOnPrimary
 import com.localkarar.app.ui.theme.LkShapes
 import com.localkarar.app.ui.theme.LkSpacing
 import com.localkarar.app.ui.theme.LkSurfaceCanvas
@@ -126,15 +130,23 @@ fun LkChip(
     onClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
-    val clickModifier = if (onClick != null) modifier.clickable(onClick = onClick) else modifier
-    Text(
-        text = text,
-        style = LkTypography.getMicro(),
-        color = contentColor,
-        modifier = clickModifier
+    // §11 Chip = control-sm (32dp); §19 dokunma hedefi 44dp.
+    // Onceden ~24dp idi: hem sozlesme disi hem erisilebilirlik ihlali.
+    val tiklanabilir = if (onClick != null) {
+        modifier.heightIn(min = 44.dp).clickable(onClick = onClick)
+    } else {
+        modifier
+    }
+    Box(
+        modifier = tiklanabilir
+            .padding(vertical = if (onClick != null) 6.dp else 0.dp)
+            .height(32.dp)
             .background(background, CircleShape)
-            .padding(horizontal = LkSpacing.Space3, vertical = LkSpacing.Space1)
-    )
+            .padding(horizontal = LkSpacing.Space3),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(text = text, style = LkTypography.getLabel(), color = contentColor)
+    }
 }
 
 @Composable
@@ -144,16 +156,22 @@ fun LkChip(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Text(
-        text = text,
-        style = LkTypography.getMicro(),
-        color = if (selected) LkSurfaceCanvas else LkTextSecondary,
+    // Secili zemin `primaryFill` (brand-500): §8.1 secili/primary yuzeyler
+    // icin solid brand-500 istiyor ve beyaz yaziyla her iki modda AA gecer.
+    Box(
         modifier = modifier
-            .background(
-                if (selected) LkPrimary else LkSurfaceRaised,
-                CircleShape
-            )
+            .heightIn(min = 44.dp)
             .clickable(onClick = onClick)
-            .padding(horizontal = LkSpacing.Space3, vertical = LkSpacing.Space1)
-    )
+            .padding(vertical = 6.dp)
+            .height(32.dp)
+            .background(if (selected) LkPrimaryFill else LkSurfaceRaised, CircleShape)
+            .padding(horizontal = LkSpacing.Space3),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            style = LkTypography.getLabel(),
+            color = if (selected) LkOnPrimary else LkTextSecondary
+        )
+    }
 }
