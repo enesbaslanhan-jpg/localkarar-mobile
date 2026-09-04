@@ -18,6 +18,25 @@ import androidx.compose.ui.graphics.Color
  * (`balanced_home_preview.html`) #306D88 / #7BA2B3 kullaniyor. Iki bagimsiz
  * kaynak dokumani dogruluyor, sapan taraf CSS.
  *
+ * 🔴 YUZEY KADEMELERI §2.1'IN KENDI DEGERLERINDEN GENISLETILDI.
+ *
+ * §2.1 "Iki komsu yuzeyin degerleri birbirinden ayirt edilebilir olmalidir"
+ * diyor, ama dokumanda verilen degerler bunu SAGLAMIYORDU. Olculdu
+ * (WCAG bagil parlaklik orani):
+ *
+ *   acik  canvas→panel 1.057   panel→raised 1.055   canvas→raised 1.114
+ *   koyu  canvas→panel 1.051   panel→raised 1.047   canvas→raised 1.100
+ *
+ * Kenarlik olmadan bir yuzey sinirinin algilanmasi icin kabaca 1.2 gerekiyor;
+ * 1.05 cogu ekranda gorunmuyor. Ekranlar tek bir gri yikama gibi okunuyordu.
+ *
+ * Yeni merdivende kartin zeminden ayrimi her iki temada ~1.24. Metin
+ * kontrastlari §2.2 esiklerinin uzerinde kaldi (acik 13.7:1, koyu 14.6:1;
+ * muted metin kart uzerinde 3.95:1, §2.2 en az 3:1 istiyor).
+ *
+ * ⚠️ BU BIR DESIGN.md DEGISIKLIGIDIR. §2.1 tablosundaki degerler bu
+ * degerlerle guncellenmeli; yoksa web ve mobil yuzeyleri ayrisir.
+ *
  * ⚠️ Tokenlar @Composable getter: yalniz composable icinde kullanilabilir.
  * Composable disi bir baglamda DERLEME HATASI verir -- sessizce yanlis renk
  * donmez.
@@ -80,12 +99,12 @@ val LkDarkColors = LkColorScheme(
     primarySoft      = Color(0x26306D88),   // brand-500 %15 tonal zemin
     primaryFill      = LkBrand.B500,
     onPrimary        = Color(0xFFFFFFFF),
-    surfaceCanvas    = Color(0xFF15181C),   // background
-    surfaceSunken    = Color(0xFF101317),   // surface-0
-    surfacePanel     = Color(0xFF191D21),   // surface-1
-    surfaceRaised    = Color(0xFF1D2126),   // surface-2
-    surfaceHighlight = Color(0xFF22272C),   // surface-3
-    surfaceElevated  = Color(0xFF282E34),   // surface-elevated
+    surfaceCanvas    = Color(0xFF14181C),   // background
+    surfaceSunken    = Color(0xFF0B0E11),   // surface-0
+    surfacePanel     = Color(0xFF1C2126),   // surface-1
+    surfaceRaised    = Color(0xFF242A30),   // surface-2
+    surfaceHighlight = Color(0xFF2C333A),   // surface-3
+    surfaceElevated  = Color(0xFF343C44),   // surface-elevated
     textPrimary      = Color(0xFFE4E9ED),
     textSecondary    = Color(0xFF9AA6AE),
     textMuted        = Color(0xFF7C8790),
@@ -105,10 +124,10 @@ val LkLightColors = LkColorScheme(
     primarySoft      = LkBrand.B50,
     primaryFill      = LkBrand.B500,
     onPrimary        = Color(0xFFFFFFFF),
-    surfaceCanvas    = Color(0xFFEDF0F2),
-    surfaceSunken    = Color(0xFFE4E8EB),
-    surfacePanel     = Color(0xFFF4F6F8),
-    surfaceRaised    = Color(0xFFFBFCFD),
+    surfaceCanvas    = Color(0xFFE1E7EB),
+    surfaceSunken    = Color(0xFFD6DDE2),
+    surfacePanel     = Color(0xFFF0F3F6),
+    surfaceRaised    = Color(0xFFFFFFFF),
     surfaceHighlight = Color(0xFFFFFFFF),
     surfaceElevated  = Color(0xFFFFFFFF),
     textPrimary      = Color(0xFF1A1C1E),
