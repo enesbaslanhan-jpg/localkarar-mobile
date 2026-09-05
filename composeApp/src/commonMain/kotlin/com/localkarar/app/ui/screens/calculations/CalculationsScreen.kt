@@ -1,5 +1,12 @@
 package com.localkarar.app.ui.screens.calculations
 
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.material.IconButton
+import androidx.compose.material.Icon
+import androidx.compose.material.icons.outlined.ArrowBack
+import com.localkarar.app.ui.components.LkHeroBlock
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -95,8 +102,54 @@ fun CalculationsScreen(
         if (selectedTab == 1) viewModel.refresh()
     }
 
-    LkPageLayout(title = "Hesaplamalar", onBack = onBack) {
-        Column(modifier = Modifier.fillMaxSize()) {
+    /*
+     * §24.6 — hero baslik blogu + binen yuzey.
+     *
+     * Sekmeler binen YUZEYIN icinde, hero'nun degil: sekme secimi icerigi
+     * degistiren bir kontrol, baslik degil. Hero'da olsaydi marka blogunun
+     * yuksekligi sekme sayisina gore degisirdi.
+     */
+    Column(modifier = Modifier.fillMaxSize()) {
+
+        LkHeroBlock {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        start = LkSpacing.Space4,
+                        end = LkSpacing.Space4,
+                        top = LkSpacing.Space4,
+                        bottom = LkSpacing.Space6
+                    ),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onBack) {
+                    Icon(
+                        Icons.Outlined.ArrowBack,
+                        contentDescription = "Geri",
+                        tint = LkHero.OnHero
+                    )
+                }
+                Text(
+                    text = "Hesaplamalar",
+                    style = LkTypography.getTitleS(),
+                    color = LkHero.OnHero,
+                    modifier = Modifier.weight(1f).padding(start = LkSpacing.Space2)
+                )
+            }
+        }
+
+        /* `weight(1f)` — Column icinde `fillMaxSize()` TUM yuksekligi ister. */
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .offset(y = (-22).dp)
+                .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
+                .background(LkSurfaceCanvas)
+        ) {
+            Spacer(modifier = Modifier.height(LkSpacing.Space5))
+
             // §11: sekmeler ortak bilesenden. Material TabRow kendi olcu ve
             // renk sistemini getiriyordu (§0 ihlali).
             LkTabs(

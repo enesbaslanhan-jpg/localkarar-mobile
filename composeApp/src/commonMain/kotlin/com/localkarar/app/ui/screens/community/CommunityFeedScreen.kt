@@ -1,5 +1,8 @@
 package com.localkarar.app.ui.screens.community
 
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.shape.RoundedCornerShape
+import com.localkarar.app.ui.components.LkHeroBlock
 import com.localkarar.app.ui.theme.LkSpacing
 import com.localkarar.app.ui.components.LkTabStyle
 import com.localkarar.app.ui.components.LkTabs
@@ -80,42 +83,75 @@ fun CommunityFeedScreen(
     var currentSubTab by remember(initialTab) { mutableStateOf(startingTab) }
     val unreadNotifs = notificationsViewModel.unreadCount
 
-    LkPageLayout(
-        title = "Topluluk",
-        onBack = null,
-        actions = {
-            // Notification Bell Icon with Badge
-            Box(modifier = Modifier.padding(end = 8.dp)) {
-                IconButton(onClick = onOpenNotifications) {
-                    Icon(Icons.Outlined.Notifications, contentDescription = "Bildirimler", tint = LkTextPrimary)
+    /* §24.6 — hero baslik blogu + binen yuzey. */
+    Column(Modifier.fillMaxSize()) {
+
+        LkHeroBlock {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        start = LkSpacing.Space5,
+                        end = LkSpacing.Space4,
+                        top = LkSpacing.Space4,
+                        bottom = LkSpacing.Space6
+                    ),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Topluluk",
+                    style = LkTypography.getTitleL(),
+                    color = LkHero.OnHero,
+                    modifier = Modifier.weight(1f)
+                )
+                Box {
+                    IconButton(onClick = onOpenNotifications) {
+                        Icon(
+                            Icons.Outlined.Notifications,
+                            contentDescription = "Bildirimler",
+                            tint = LkHero.OnHero
+                        )
+                    }
+                    if (unreadNotifs > 0) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(top = 6.dp, end = 6.dp)
+                                .size(16.dp)
+                                .clip(CircleShape)
+                                .background(LkDanger),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = if (unreadNotifs > 9) "9+" else "$unreadNotifs",
+                                style = LkTypography.getMicro(),
+                                color = LkOnPrimary,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
                 }
-                if (unreadNotifs > 0) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(top = 6.dp, end = 6.dp)
-                            .size(16.dp)
-                            .clip(CircleShape)
-                            .background(LkDanger),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = if (unreadNotifs > 9) "9+" else "$unreadNotifs",
-                            style = LkTypography.getMicro(),
-                            color = LkOnPrimary,
-                            fontWeight = FontWeight.Bold
+                if (onOpenProductCenter != null) {
+                    IconButton(onClick = onOpenProductCenter) {
+                        Icon(
+                            Icons.Outlined.Apps,
+                            contentDescription = "Ürünler",
+                            tint = LkHero.OnHero
                         )
                     }
                 }
             }
-            if (onOpenProductCenter != null) {
-                IconButton(onClick = onOpenProductCenter) {
-                    Icon(Icons.Outlined.Apps, contentDescription = "Ürünler", tint = LkPrimary)
-                }
-            }
         }
-    ) {
-        Column(Modifier.fillMaxSize()) {
+
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .offset(y = (-22).dp)
+                .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
+                .background(LkSurfaceCanvas)
+        ) {
+            Spacer(Modifier.height(LkSpacing.Space4))
             // §11: sekmeler ortak bilesenden.
             //
             // 🔴 ONCEDEN ELLE YAZILMISTI ve secili sekme `LkPrimary` zemin +

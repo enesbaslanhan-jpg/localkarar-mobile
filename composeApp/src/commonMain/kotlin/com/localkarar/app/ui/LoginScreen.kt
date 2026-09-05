@@ -1,5 +1,11 @@
 package com.localkarar.app.ui
 
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import com.localkarar.app.ui.components.LkBrandMark
+import com.localkarar.app.ui.components.LkHeroBlock
+import com.localkarar.app.ui.components.LkHeroTone
 import com.localkarar.app.core.SecureScreen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -55,54 +61,70 @@ fun LoginScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.loginError.collectAsState()
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(LkSurfaceCanvas)
-            .padding(LkSpacing.Space6),
-        contentAlignment = Alignment.Center
-    ) {
-        Box(
+    /*
+     * §24.6 — GIRIS AKISI: webin gradyaninin BIREBIR kendisi.
+     *
+     * `LkHeroTone.Auth` durak kumesi `--auth-gradient`'tan geliyor
+     * (#060F14 → #0E2530 → #1B4356 → #275C72 → #2F6A82, 158deg). Calisma
+     * ekranlarinin gradyani biraz acilmis bir turevi; giris oncesi akis
+     * webdekiyle AYNI gorunmeli, kullanici ayni urunde oldugunu bilsin.
+     *
+     * Marka isareti artik "LK" yazan bir kutu degil, gercek isaret
+     * (`LkBrandMark` -> local_karar_mark.png).
+     */
+    Column(modifier = Modifier.fillMaxSize()) {
+
+        LkHeroBlock(tone = LkHeroTone.Auth) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        start = LkSpacing.Space6,
+                        end = LkSpacing.Space6,
+                        top = LkSpacing.Space10,
+                        bottom = LkSpacing.Space10
+                    )
+            ) {
+                LkBrandMark(size = 58.dp)
+
+                Spacer(modifier = Modifier.height(LkSpacing.Space4))
+
+                Text(
+                    text = "İşletmen için doğru kararlar",
+                    style = LkTypography.getTitleL(),
+                    color = LkHero.OnHero,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(LkSpacing.Space2))
+
+                Text(
+                    text = "Tahmine değil, kendi rakamlarına dayanan kararlar.",
+                    style = LkTypography.getBody(),
+                    // §24.6: %85 beyaz opakligin ALTINA inilmez.
+                    color = LkHero.OnHeroSecondary,
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
+
+        Column(
             modifier = Modifier
-                .widthIn(max = 420.dp)
+                .weight(1f)
                 .fillMaxWidth()
-                .padding(LkSpacing.Space6)
+                .offset(y = (-22).dp)
+                .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
+                .background(LkSurfaceCanvas)
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
+                    .padding(horizontal = LkSpacing.Space6, vertical = LkSpacing.Space8)
             ) {
-                // App Brand
-                Box(
-                    modifier = Modifier
-                    .size(48.dp)
-                        .background(LkSurfaceSignature, shape = LkShapes.MD)
-                        .border(1.dp, LkLineSoft, LkShapes.MD),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("LK", style = LkTypography.getSectionTitle(), color = LkPrimary, fontWeight = FontWeight.Bold)
-                }
-                
-                Spacer(modifier = Modifier.height(LkSpacing.Space4))
-                
-                Text(
-                    text = "İşletmen için doğru kararlar",
-                    style = LkTypography.getDisplay(),
-                    color = LkTextPrimary,
-                    textAlign = TextAlign.Center
-                )
-                
-                Spacer(modifier = Modifier.height(LkSpacing.Space2))
-                
-                Text(
-                    text = "Tahmine değil, kendi rakamlarına dayanan kararlar.",
-                    style = LkTypography.getBody(),
-                    color = LkTextSecondary,
-                    textAlign = TextAlign.Center
-                )
-                
+
                 Spacer(modifier = Modifier.height(LkSpacing.Space6))
                 
                 if (error != null) {
