@@ -1,5 +1,12 @@
 package com.localkarar.app.ui.screens.home
 
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import com.localkarar.app.ui.components.LkMetric
+import androidx.compose.foundation.layout.offset
+import com.localkarar.app.core.LkFormatting
+import com.localkarar.app.ui.components.LkHeroBlock
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -44,10 +51,19 @@ import kotlinx.datetime.plus
 import kotlinx.datetime.DateTimeUnit
 import com.localkarar.app.ui.theme.*
 
-fun formatMoney(amount: Double?): String {
-    if (amount == null) return "₺0"
-    return "₺${amount.toInt()}" // Simplified formatter for parity matching
-}
+/*
+ * 🔴 YEREL BICIMLEYICI HEM KIRPIYOR HEM AYRAC KOYMUYORDU.
+ *
+ * Eski govde: `"₺${amount.toInt()}"`. Iki ayri hata:
+ *   1. `toInt()` KIRPAR, yuvarlamaz — ₺182.450,67 → ₺182450
+ *   2. binlik ayraci yok — yedi haneli tutarlar okunamiyordu
+ *
+ * `LkFormatting.formatMoney` ikisini de dogru yapiyor ve uygulamanin geri
+ * kalani zaten onu kullaniyor. Bu kopya yalniz Ana Sayfa'da, 7 yerde
+ * cagriliyordu; imza korunarak cekirdege yonlendirildi.
+ */
+fun formatMoney(amount: Double?): String =
+    if (amount == null) "₺0" else LkFormatting.formatMoney(amount)
 
 fun shortDate(dateStr: String?): String {
     if (dateStr.isNullOrBlank()) return ""
@@ -190,41 +206,71 @@ private fun DashboardContent(
 ) {
     val scrollState = rememberScrollState()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(scrollState)
-            .padding(horizontal = LkSpacing.Space6),
-        verticalArrangement = Arrangement.spacedBy(LkSpacing.Space6)
-        // Prototipte `.page-view { gap: 24px }` — bolumleri BOSLUK ayirir.
-    ) {
-        // Baslik — prototipteki selamlama.
-        //
-        // Uc dugmeli [Hesapla | Mentor | Karar Ver] satiri KALDIRILDI (urun
-        // sahibi karari, 04.09.2026). Hesaplamalar zaten alt dockta; Mentor
-        // asagidaki seritte; Karar Araclari, Kurslar ve Haberler ise sagdaki
-        // izgara dugmesinin actigi Urun Merkezinde. Yani erisim kaybi yok.
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(top = LkSpacing.Space6),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "${gunSelamlamasi()}, ${ilkAd(state.dashboardData.user.name)}",
-                    style = LkTypography.getPageTitle(),
-                    color = LkTextPrimary
-                )
-                Text(
-                    text = "Bugün işletmenizde ne önemli?",
-                    style = LkTypography.getBody(),
-                    color = LkTextSecondary
-                )
+    /*
+     * §24.6 — HERO BASLIK BLOGU + BINEN YUZEY.
+     *
+     * Hero TAM GENISLIK; yatay dolgu hero'nun ICINDE, disinda degil. Disarida
+     * olsaydi marka blogu kenarlara degmezdi ve desen bozulurdu.
+     *
+     * Kaydirma binen yuzeyde; hero sabit. Selamlama ve 30 gunluk net yukari
+     * kaymiyor — finans uygulamalarinda hakim rakamin ekranda kalmasi
+     * beklenen davranis.
+     */
+    Column(Modifier.fillMaxSize()) {
+
+        LkHeroBlock {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        start = LkSpacing.Space5,
+                        end = LkSpacing.Space5,
+                        top = LkSpacing.Space5
+                    ),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = gunSelamlamasi(),
+                        style = LkTypography.getLabelM(),
+                        // §24.6: hero icinde metin %85 beyaz opakligin ALTINA inmez.
+                        color = LkHero.OnHeroSecondary
+                    )
+                    Text(
+                        text = ilkAd(state.dashboardData.user.name),
+                        style = LkTypography.getTitleL(),
+                        color = LkHero.OnHero
+                    )
+                }
+                IconButton(onClick = onOpenProductCenter) {
+                    Icon(
+                        Icons.Outlined.GridView,
+                        contentDescription = "Tüm Modüller",
+                        tint = LkHero.OnHero
+                    )
+                }
             }
-            IconButton(onClick = onOpenProductCenter) {
-                Icon(Icons.Outlined.GridView, contentDescription = "Tüm Modüller", tint = LkPrimary)
-            }
+            Spacer(Modifier.height(LkSpacing.Space6))
         }
+
+        /*
+         * `weight(1f)` — `fillMaxSize()` DEGIL. Column icinde `fillMaxSize()`
+         * KALAN degil TUM yuksekligi ister; onceki turda 50 ekranin son satiri
+         * bu yuzden dock altinda kaliyordu.
+         */
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .offset(y = (-22).dp)
+                .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
+                .background(LkSurfaceCanvas)
+                .verticalScroll(scrollState)
+                .padding(horizontal = LkSpacing.Space5),
+            verticalArrangement = Arrangement.spacedBy(LkSpacing.Space6)
+        ) {
+        Spacer(Modifier.height(LkSpacing.Space5))
 
         // Business Pulse
         BusinessPulseCard(
@@ -258,7 +304,8 @@ private fun DashboardContent(
         // Dock Scaffold'un bottomBar'inda; alt dolguyu Scaffold hesapliyor.
         // Burada yalniz son bolumun dock'a yapismamasi icin nefes payi var.
         Spacer(modifier = Modifier.height(LkSpacing.Space6))
-    }
+        }   // binen yuzey
+    }       // hero + yuzey
 }
 
 /**
@@ -302,30 +349,108 @@ private fun BusinessPulseCard(tracker: TrackerSummaryDto?, onNavigateToWorkspace
         if (gecikmis > 0) append(", $gecikmis kayıt gecikmiş durumda.") else append(", geciken kaydın yok.")
     }
 
-    LkSection(
-        title = "Business Pulse",
-        trailing = { LkPulseBadge("Son 30 Gün") }
+    /*
+     * §24 OZET KARTI — koyu zemin, 24dp dolgu, kodla cizilmis lekeler.
+     *
+     * Ekranin TEK hakim rakami 30 gunluk net; tahsilat ve odeme ikincil.
+     * Onceki surumde ucu de esit agirliktaydi ve hicbiri one cikmiyordu.
+     *
+     * Lekeler kodla ciziliyor — gorsel dosyasi yok, iki temada da calisiyor.
+     * Web'de `SahneDeseni` icin kullanilan teknigin aynisi.
+     */
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .lkElevation(LkElevation.MD, LkShapes.Card)
+            .clip(LkShapes.Card)
+            .background(
+                Brush.linearGradient(
+                    listOf(LkBrand.B700, Color(0xFF16333F))
+                )
+            )
+            .clickable { onNavigateToWorkspaces() }
     ) {
-        Text(ozet, style = LkTypography.getBodySmall(), color = LkTextSecondary)
-        Row(
-            modifier = Modifier.fillMaxWidth().clickable { onNavigateToWorkspaces() },
-            horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space3)
-        ) {
-            PulseMetric("Tahsilat", formatMoney(tracker.nextThirtyDays?.receivable), LkTextPrimary, Modifier.weight(1f))
-            PulseMetric("Ödeme", formatMoney(tracker.nextThirtyDays?.payable), LkTextPrimary, Modifier.weight(1f))
-            PulseMetric(
-                "Net",
-                (if (net > 0) "+" else "") + formatMoney(net),
-                // Sifir olumlu DEGIL: net 0 iken yesil "kazanctasin" izlenimi
-                // verirdi. Uc durum ayri.
-                when {
-                    net < 0 -> LkDanger
-                    net > 0 -> LkSuccess
-                    else -> LkTextPrimary
-                },
-                Modifier.weight(1f)
+        Canvas(Modifier.matchParentSize()) {
+            drawCircle(
+                color = Color(0x6B55879D),
+                radius = size.minDimension * 0.42f,
+                center = Offset(size.width * 1.02f, -size.height * 0.18f)
+            )
+            drawCircle(
+                color = Color(0x3D7BA2B3),
+                radius = size.minDimension * 0.26f,
+                center = Offset(size.width * 0.86f, size.height * 1.18f)
+            )
+            drawCircle(
+                color = Color(0x0FFFFFFF),
+                radius = size.minDimension * 0.15f,
+                center = Offset(-size.width * 0.04f, size.height * 0.82f)
             )
         }
+
+        Column(Modifier.padding(LkSpacing.PadCard)) {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "30 GÜNLÜK NET",
+                    style = LkTypography.getMetadata(),
+                    color = LkHero.OnHeroSecondary
+                )
+                LkPulseBadge("Son 30 Gün")
+            }
+            Spacer(Modifier.height(LkSpacing.Space2))
+
+            /* Sayarak yukselen hakim rakam; tabular figurlerle ciziliyor. */
+            LkMetric(
+                hedef = net,
+                bicimle = { v -> (if (v > 0) "+" else "") + formatMoney(v) },
+                renk = LkHero.OnHero
+            )
+
+            Spacer(Modifier.height(LkSpacing.Space5))
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(Color(0x29FFFFFF))
+            )
+            Spacer(Modifier.height(LkSpacing.Space4))
+
+            Row(Modifier.fillMaxWidth()) {
+                PulseMetric(
+                    "TAHSİLAT",
+                    formatMoney(tracker.nextThirtyDays?.receivable),
+                    LkHero.OnHero,
+                    Modifier.weight(1f)
+                )
+                Box(
+                    Modifier
+                        .width(1.dp)
+                        .height(38.dp)
+                        .background(Color(0x29FFFFFF))
+                )
+                PulseMetric(
+                    "ÖDEME",
+                    formatMoney(tracker.nextThirtyDays?.payable),
+                    LkHero.OnHero,
+                    Modifier.weight(1f).padding(start = LkSpacing.Space4)
+                )
+            }
+        }
+    }
+
+    /*
+     * Net'in isareti ARTIK RENKLE DEGIL, ozet cumlesiyle anlatiliyor.
+     * Koyu kart uzerinde yesil/kirmizi §19 esigini gecmiyordu; ayrica
+     * durumun tek basina renge yaslanmamasi §24 kurali.
+     */
+    Text(ozet, style = LkTypography.getBodySmall(), color = LkTextSecondary)
+
+    /* `LkSection` baslik ZORUNLU istiyor; burada baslik yok — duz Column. */
+    Column(verticalArrangement = Arrangement.spacedBy(LkSpacing.Space3)) {
 
         // Yonu belirsiz kayitlar: tutari var ama hicbir toplama girmiyorlar.
         // Webde de Ana Sayfa'da gosteriliyor (`Dashboard.jsx:345`). Bu satir
