@@ -64,7 +64,46 @@ Codex'in yarım tasarım turu (55 dosya) `archive/codex-yarim` dalına alındı;
 
 ---
 
-## 2. Sırada — Aşama 1, 2, 3
+## 1b. Aşama 1, 2, 3 — TAMAMLANDI
+
+| commit | ne |
+|---|---|
+| `fbff520` | Aşama 1 — token katmanı §24'e göre |
+| `1b5062b` | Aşama 2 — `LkHero`, `LkSheet`, 8 temel bileşen |
+| `1d6efda` | Ana Sayfa |
+| `0436d37` | İşletme Takibi + Profil (`LkCoverHeader`) |
+| `5a7a727` | Hesaplamalar + Giriş + Topluluk akışı |
+
+Altı ana ekranın hepsi hero + binen yüzey düzeninde. Derleme temiz,
+42 test geçiyor.
+
+### ⚠️ HENÜZ YAPILMAYAN: görsel doğrulama
+
+**Hiçbir ekran emülatörde görülmedi.** Derleme ve testler tek kanıt;
+renkler, hizalar, taşmalar doğrulanmadı. Ürün sahibi doğrulamayı sona
+bırakmayı seçti (05.09.2026). Emülatör turu yapılmadan kalan 48 ekrana
+geçilmemeli — sistemsel bir hata varsa hepsinde birden çıkar.
+
+### Bu turda bulunan gerçek hatalar
+
+1. `Elevation.kt` `isSystemInDarkTheme()` okuyup `ThemeController`'ı
+   atlıyordu; kullanıcı açık tema seçtiğinde ama sistem koyuyken açık
+   temaya koyu tema gölgesi çiziliyordu.
+2. `HomeScreen.formatMoney` `"₺${amount.toInt()}"` idi — hem kırpıyor hem
+   binlik ayracı koymuyordu. ₺182.450,67 → "₺182450".
+3. Mockup'ın yüzey merdiveni ölçümde geriliyordu (1.134 < 1.20);
+   alınmadı, §24.7'ye yazıldı.
+
+### Bekleyen karar: görüntü yükleme kütüphanesi
+
+`coverUrl` ve `avatarUrl` sunucudan geliyor ve DTO'da var, ama projede
+**hiçbir görüntü yükleme kütüphanesi yok** — ne Coil, ne Kamel. Kapak ve
+avatar şu an kodla çiziliyor (gradyan + baş harf). Gerçek fotoğraf için
+Coil 3 gibi bir bağımlılık kararı gerekiyor; §24 kapsamında değil.
+
+---
+
+## 2. Aşama 1, 2, 3 — planlanan içerik (referans)
 
 ### Aşama 1 — Token katmanı (`ui/theme/`)
 
