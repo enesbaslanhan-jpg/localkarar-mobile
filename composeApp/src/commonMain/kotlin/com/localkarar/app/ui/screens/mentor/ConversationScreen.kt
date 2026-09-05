@@ -268,9 +268,14 @@ private fun MessageBubble(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
     ) {
+        /*
+     * Mentor balonu artik YUKSELTILMIS yuzeyde. Acik temada LkSurfacePanel
+     * ile zemin neredeyse ayni beyazdi ve balonun nerede bittigi
+     * gorulmuyordu.
+     */
         Card(
             modifier = Modifier.fillMaxWidth(if (isUser) 0.85f else 0.95f),
-            backgroundColor = if (isUser) LkPrimary else LkSurfacePanel,
+            backgroundColor = if (isUser) LkPrimary else LkSurfaceRaised,
             elevation = 0.dp,
             shape = RoundedCornerShape(
                 topStart = 16.dp,

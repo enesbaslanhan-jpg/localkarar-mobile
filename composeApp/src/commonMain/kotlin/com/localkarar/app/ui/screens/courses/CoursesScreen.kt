@@ -28,6 +28,8 @@ import com.localkarar.app.ui.components.LkErrorState
 import com.localkarar.app.ui.components.LkLoadingState
 import com.localkarar.app.ui.components.LkHeroPage
 import com.localkarar.app.ui.components.LkCourseCard
+import com.localkarar.app.ui.components.LkCard
+import com.localkarar.app.ui.components.LkPressable
 import com.localkarar.app.ui.theme.*
 
 @Composable
@@ -180,15 +182,9 @@ fun ActivePathHero(
 ) {
     val activeCourse = data.enrollments.firstOrNull { it.status == "in_progress" }
 
-    Surface(
-        color = LkSurfacePanel,
-        shape = LkShapes.MD,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = LkSpacing.Space4)
-            .border(1.dp, LkLineSoft, LkShapes.MD)
-    ) {
-        Column(modifier = Modifier.padding(LkSpacing.Space5)) {
+    /* §24: kenarlikli Surface degil yukseltilmis kart. */
+    LkCard(modifier = Modifier.padding(horizontal = LkSpacing.Space4)) {
+        Column {
             val label = if (activeCourse != null) "AKTİF ÖĞRENME" else "KURS KATALOĞU"
             val title = activeCourse?.courseTitle ?: "İşletmeni güçlendiren uygulamalı kurslar"
             val progress = activeCourse?.progress ?: 0
@@ -308,15 +304,16 @@ fun EnrollmentCard(
     enrollment: DashboardEnrollmentDto,
     onNavigateToCourseDetail: (Int) -> Unit
 ) {
-    Surface(
-        color = LkSurfacePanel,
-        shape = LkShapes.MD,
-        modifier = Modifier
-            .fillMaxWidth()
-            .border(1.dp, LkLineSoft, LkShapes.MD)
-            .clickable { onNavigateToCourseDetail(enrollment.courseId) }
+    /*
+     * §24: kenarlikli Surface degil yukseltilmis kart; basma geri bildirimi
+     * LkPressable'dan geliyor.
+     */
+    LkPressable(
+        onClick = { onNavigateToCourseDetail(enrollment.courseId) },
+        modifier = Modifier.fillMaxWidth()
     ) {
-        Column(modifier = Modifier.padding(LkSpacing.Space5)) {
+      LkCard {
+        Column {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(
                     enrollment.courseTitle,
@@ -366,5 +363,6 @@ fun EnrollmentCard(
             
             LkProgress(progress = enrollment.progress / 100f)
         }
+      }
     }
 }

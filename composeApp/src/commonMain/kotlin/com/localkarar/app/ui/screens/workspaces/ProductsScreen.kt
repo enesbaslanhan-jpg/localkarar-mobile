@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.localkarar.app.network.dto.ProductDto
 import com.localkarar.app.ui.components.LkButton
+import com.localkarar.app.ui.components.LkCard
 import com.localkarar.app.ui.components.LkButtonVariant
 import com.localkarar.app.ui.components.LkNumericField
 import com.localkarar.app.ui.components.LkTextField
@@ -396,13 +397,11 @@ private fun MarketplaceProductCard(
     val isOutOfStock = product.stock == 0
     val isLowStock = product.stock in 1..5
 
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(LkSurfacePanel, LkShapes.MD)
-            .border(1.dp, LkLineSoft, LkShapes.MD)
-            .padding(LkSpacing.Space4)
-    ) {
+    /*
+     * §24: kenarlikli kabuk degil yukseltilmis yuzey. Yaricap 20dp,
+     * ic dolgu 20dp (PadCard) -- onceki 16dp'de rozetler kenara yapisiyordu.
+     */
+    LkCard {
         Column(modifier = Modifier.fillMaxWidth()) {
             Row(
                 modifier = Modifier.fillMaxWidth(),

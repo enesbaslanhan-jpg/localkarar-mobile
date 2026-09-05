@@ -21,6 +21,9 @@ import com.localkarar.app.ui.components.LkButton
 import com.localkarar.app.ui.components.LkButtonVariant
 import com.localkarar.app.ui.components.LkEmptyState
 import com.localkarar.app.ui.components.LkErrorState
+import com.localkarar.app.ui.components.LkHairline
+import com.localkarar.app.ui.components.LkPressable
+import com.localkarar.app.ui.components.LkRowGroup
 import com.localkarar.app.ui.components.LkLoadingState
 import com.localkarar.app.ui.components.LkHeroPage
 import com.localkarar.app.ui.theme.*
@@ -64,18 +67,24 @@ fun NotificationsScreen(
                                 )
                             }
                         }
-                        items(state.notifications, key = { it.id }) { notification ->
-                            NotificationCard(
-                                title = notification.title ?: "Bildirim",
-                                body = notification.body,
-                                createdAt = notification.createdAt,
-                                isRead = notification.readAt != null,
-                                onClick = {
-                                    if (notification.readAt == null) {
-                                        viewModel.markRead(notification.id)
-                                    }
+                        /* Tek yukseltilmis yuzey; her bildirim kendi cercevesinde degil. */
+                        item {
+                            LkRowGroup {
+                                state.notifications.forEachIndexed { i, notification ->
+                                    NotificationCard(
+                                        title = notification.title ?: "Bildirim",
+                                        body = notification.body,
+                                        createdAt = notification.createdAt,
+                                        isRead = notification.readAt != null,
+                                        onClick = {
+                                            if (notification.readAt == null) {
+                                                viewModel.markRead(notification.id)
+                                            }
+                                        }
+                                    )
+                                    if (i != state.notifications.lastIndex) LkHairline()
                                 }
-                            )
+                            }
                         }
                     }
                 }
@@ -92,43 +101,54 @@ private fun NotificationCard(
     isRead: Boolean,
     onClick: () -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(LkSurfacePanel, LkShapes.MD)
-            .border(1.dp, if (isRead) LkLineSoft else LkPrimary.copy(alpha = 0.5f), LkShapes.MD)
-            .clickable(onClick = onClick)
-            .padding(LkSpacing.PadPanel),
-        verticalAlignment = Alignment.Top
-    ) {
-        Box(
-            modifier = Modifier
-                .size(8.dp)
-                .background(if (isRead) LkTextMuted else LkPrimary, androidx.compose.foundation.shape.CircleShape)
-                .padding(top = LkSpacing.Space2)
-        )
-        Spacer(modifier = Modifier.width(LkSpacing.Space3))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = if (isRead) LkTypography.getBodySmall() else LkTypography.getBodyStrong(),
-                color = LkTextPrimary
+    /*
+     * §24 satir anatomisi -- ama LkListRow KULLANILMADI: bildirimin govdesi
+     * cumle uzunlugunda ve LkListRow alt satiri tek satira kirpiyor. Burada
+     * govde iki satira kadar aciliyor, cunku bildirimi acacak bir detay
+     * ekrani yok; okunacak yer bu satirin kendisi.
+     *
+     * Okunmamis olma OKUNMUS/OKUNMAMIS ayrimi yalnizca nokta rengiyle degil,
+     * baslik agirligiyla da veriliyor.
+     */
+    LkPressable(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.padding(LkSpacing.PadCard),
+            verticalAlignment = Alignment.Top
+        ) {
+            Box(
+                modifier = Modifier
+                    .padding(top = 6.dp)
+                    .size(8.dp)
+                    .background(
+                        if (isRead) LkLineStrong else LkPrimary,
+                        androidx.compose.foundation.shape.CircleShape
+                    )
             )
-            if (!body.isNullOrBlank()) {
-                Spacer(modifier = Modifier.height(LkSpacing.Space1))
+            Spacer(modifier = Modifier.width(LkSpacing.Space3))
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = body,
-                    style = LkTypography.getMetadata(),
-                    color = LkTextSecondary
+                    text = title,
+                    style = if (isRead) LkTypography.getBodySmall() else LkTypography.getBodyStrong(),
+                    color = LkTextPrimary
                 )
-            }
-            createdAt?.let {
-                Spacer(modifier = Modifier.height(LkSpacing.Space1))
-                Text(
-                    text = LkDateUtils.formatTimeAgo(it),
-                    style = LkTypography.getMicro(),
-                    color = LkTextMuted
-                )
+                if (!body.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(LkSpacing.Space1))
+                    Text(
+                        text = body,
+                        style = LkTypography.getMetadata(),
+                        color = LkTextSecondary,
+                        maxLines = 2,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
+                }
+                createdAt?.let {
+                    Spacer(modifier = Modifier.height(LkSpacing.Space1))
+                    Text(
+                        text = LkDateUtils.formatTimeAgo(it),
+                        style = LkTypography.getMicro(),
+                        color = LkTextMuted
+                    )
+                }
             }
         }
     }

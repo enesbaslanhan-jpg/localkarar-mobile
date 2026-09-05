@@ -26,6 +26,10 @@ import com.localkarar.app.ui.components.LkHeroPage
 import com.localkarar.app.ui.components.LkPillChip
 import com.localkarar.app.ui.theme.LocalThemeController
 import com.localkarar.app.ui.theme.ThemeMode
+import com.localkarar.app.ui.components.LkAvatar
+import com.localkarar.app.ui.components.LkCard
+import com.localkarar.app.ui.components.LkPressable
+import com.localkarar.app.ui.components.LkRowGroup
 import com.localkarar.app.ui.theme.*
 
 @Composable
@@ -93,34 +97,14 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Profile Header Card
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(LkShapes.MD)
-                    .border(1.dp, LkLineStrong, LkShapes.MD)
-                    .clickable(onClick = onOpenProfile),
-                backgroundColor = LkSurfacePanel,
-                elevation = 0.dp
-            ) {
+            /* §24: kenarlikli Material Card degil yukseltilmis LkCard. */
+            LkPressable(onClick = onOpenProfile, modifier = Modifier.fillMaxWidth()) {
+              LkCard {
                 Row(
-                    Modifier.fillMaxWidth().padding(16.dp),
+                    Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(CircleShape)
-                            .background(LkSurfaceSignature)
-                            .border(1.dp, LkLineStrong, CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = userName.take(1).uppercase().ifBlank { "U" },
-                            style = LkTypography.getSectionTitle(),
-                            color = LkPrimary,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                    LkAvatar(ad = userName, boyut = 48.dp)
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -155,6 +139,7 @@ fun SettingsScreen(
                         modifier = Modifier.size(20.dp)
                     )
                 }
+              }
             }
 
             viewModel?.notice?.let {
@@ -182,8 +167,9 @@ fun SettingsScreen(
             }
 
             // Section: Hesap
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
                 SectionHeader("HESAP")
+                LkRowGroup {
                 SettingItem(
                     label = "Profil Bilgileri",
                     description = "Görünen ad ve profil fotoğrafı",
@@ -200,49 +186,61 @@ fun SettingsScreen(
                     label = "Şifre Değiştir",
                     description = "Giriş şifrenizi güncelleyin (en az 10 karakter)",
                     icon = Icons.Outlined.Lock,
-                    onClick = onOpenPassword
+                    onClick = onOpenPassword,
+                    ayrac = false
                 )
+                }
             }
 
             // Section: İşletme
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
                 SectionHeader("İŞLETME")
+                LkRowGroup {
                 SettingItem(
                     label = "İşletmelerim",
                     description = "Bağlı işletmeleri görüntüle veya değiştir",
                     icon = Icons.Outlined.Business,
-                    onClick = onOpenWorkspaces
+                    onClick = onOpenWorkspaces,
+                    ayrac = activeWorkspaceId != null && onOpenWorkspaceSettings != null
                 )
                 if (activeWorkspaceId != null && onOpenWorkspaceSettings != null) {
                     SettingItem(
                         label = "İşletme Ayarları",
                         description = "Para birimi, saat dilimi ve bildirimler",
                         icon = Icons.Outlined.Tune,
-                        onClick = { onOpenWorkspaceSettings(activeWorkspaceId) }
+                        onClick = { onOpenWorkspaceSettings(activeWorkspaceId) },
+                        ayrac = false
                     )
+                }
                 }
             }
 
             // Section: Gizlilik ve Yasal
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
                 SectionHeader("GİZLİLİK VE YASAL")
+                LkRowGroup {
                 SettingItem(
                     label = "Yasal Bilgiler ve Onaylar",
                     description = "Kullanım koşulları, KVKK ve onay durumu",
                     icon = Icons.Outlined.Description,
-                    onClick = onOpenConsents
+                    onClick = onOpenConsents,
+                    ayrac = false
                 )
+                }
             }
 
             // Section: Oturum
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
                 SectionHeader("OTURUM")
+                LkRowGroup {
                 SettingItem(
                     label = "Diğer Cihazlardaki Oturumları Kapat",
                     description = "Bu cihaz haricindeki tüm açık oturumları sonlandır",
                     icon = Icons.Outlined.Devices,
-                    onClick = { showLogoutAllDialog = true }
+                    onClick = { showLogoutAllDialog = true },
+                    ayrac = false
                 )
+                }
             }
 
             /*
@@ -285,8 +283,9 @@ fun SettingsScreen(
             // karşılığı olmadığı için salt okunur moda düşen kullanıcı
             // uygulamadan destek isteyemiyordu (destek formu üyelik
             // kapısından muaf olan tek yazma yolu).
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
                 SectionHeader("YARDIM")
+                LkRowGroup {
                 SettingItem(
                     label = "Bildirimler",
                     description = "Hesabınızla ilgili gelişmeler",
@@ -309,20 +308,25 @@ fun SettingsScreen(
                     label = "Destek",
                     description = "Sorun bildirin, bize yazın",
                     icon = Icons.Outlined.HelpOutline,
-                    onClick = onOpenSupport
+                    onClick = onOpenSupport,
+                    ayrac = false
                 )
+                }
             }
 
             // Section: Hesap İşlemleri
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
                 SectionHeader("HESAP İŞLEMLERİ")
+                LkRowGroup {
                 SettingItem(
                     label = "Hesabımı Sil",
                     description = "Tüm verileriniz kalıcı olarak silinir",
                     icon = Icons.Outlined.DeleteOutline,
                     onClick = onOpenDeleteAccount,
-                    danger = true
+                    danger = true,
+                    ayrac = false
                 )
+                }
             }
 
             Spacer(Modifier.height(8.dp))
@@ -395,37 +399,38 @@ private fun SettingItem(
     description: String,
     icon: ImageVector,
     onClick: () -> Unit,
-    danger: Boolean = false
+    danger: Boolean = false,
+    /** Bolumun son satirinda kapali; grubun alt kenarina cizgi yapismasin. */
+    ayrac: Boolean = true
 ) {
-    Row(
+    /*
+     * §24 ikon kutucugu: 44dp, 15dp yaricap, LkSurfaceTile zemin.
+     * Onceki 36dp kutunun kenarligi vardi -- olculdugunde kutu ile yuzey
+     * arasindaki kontrast 1.14 idi, sinir gorulmuyordu; kenarlik o eksigi
+     * kapatmak icin konmustu. Olculmus LkSurfaceTile ile kenarlik gereksiz.
+     */
+    LkPressable(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
+      Row(
         Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = LkSpacing.Space3),
+            .padding(horizontal = LkSpacing.PadCard, vertical = LkSpacing.Space3),
         verticalAlignment = Alignment.CenterVertically
-    ) {
+      ) {
         Box(
             modifier = Modifier
-                .size(36.dp)
-                .background(
-                    if (danger) LkDanger.copy(alpha = 0.10f) else LkSurfaceSunken,
-                    LkShapes.SM
-                )
-                .border(
-                    1.dp,
-                    if (danger) LkDanger.copy(alpha = 0.30f) else LkLineSoft,
-                    LkShapes.SM
-                ),
+                .size(44.dp)
+                .clip(androidx.compose.foundation.shape.RoundedCornerShape(15.dp))
+                .background(if (danger) LkDanger.copy(alpha = 0.12f) else LkSurfaceTile),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = label,
-                tint = if (danger) LkDanger else LkPrimary,
-                modifier = Modifier.size(20.dp)
+                tint = if (danger) LkDanger else LkTileInk,
+                modifier = Modifier.size(21.dp)
             )
         }
-        Spacer(Modifier.width(LkSpacing.Space4))
+        Spacer(Modifier.width(LkSpacing.Space3))
         Column(Modifier.weight(1f)) {
             Text(
                 text = label,
@@ -444,6 +449,7 @@ private fun SettingItem(
             tint = if (danger) LkDanger.copy(alpha = 0.6f) else LkTextMuted,
             modifier = Modifier.size(18.dp)
         )
+      }
     }
-    LkHairline()
+    if (ayrac) LkHairline()
 }

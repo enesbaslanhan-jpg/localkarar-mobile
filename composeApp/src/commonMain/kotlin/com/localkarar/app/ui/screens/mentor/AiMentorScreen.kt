@@ -28,6 +28,8 @@ import com.localkarar.app.ui.components.LkButton
 import com.localkarar.app.ui.components.LkButtonVariant
 import com.localkarar.app.ui.components.LkHeroPage
 import com.localkarar.app.ui.shell.SystemBackHandler
+import com.localkarar.app.ui.components.LkCard
+import com.localkarar.app.ui.components.LkPressable
 import com.localkarar.app.ui.theme.*
 
 @Composable
@@ -305,23 +307,20 @@ private fun ConversationCard(
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
 
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp)
-            .clickable(onClick = onClick),
-        backgroundColor = LkSurfacePanel,
-        elevation = 0.dp,
-        shape = RoundedCornerShape(12.dp)
+    /* §24: duz Material Card degil yukseltilmis LkCard, 20dp yaricap. */
+    LkPressable(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
     ) {
+      LkCard(padding = LkSpacing.Space4) {
         Row(
-            modifier = Modifier.padding(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 Modifier
-                    .size(40.dp)
-                    .background(LkPrimary.copy(alpha = 0.15f), CircleShape),
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(15.dp))
+                    .background(LkSurfaceTile),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -407,6 +406,7 @@ private fun ConversationCard(
                 }
             }
         }
+      }
     }
 }
 
@@ -455,13 +455,8 @@ private fun MemorySheet(
                 Spacer(Modifier.height(12.dp))
 
                 // New Memory Input
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    backgroundColor = LkSurfaceCanvas,
-                    shape = RoundedCornerShape(8.dp),
-                    elevation = 0.dp
-                ) {
-                    Column(Modifier.padding(12.dp)) {
+                LkCard(padding = LkSpacing.Space4) {
+                    Column {
                         Text("Yeni Hatıra Ekle", style = LkTypography.getBodyStrong(), color = LkTextPrimary)
                         Spacer(Modifier.height(6.dp))
                         OutlinedTextField(
@@ -581,14 +576,8 @@ private fun MemoryCard(
     memory: MemoryDto,
     onDelete: () -> Unit
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        backgroundColor = LkSurfaceCanvas,
-        shape = RoundedCornerShape(8.dp),
-        elevation = 0.dp
-    ) {
+    LkCard(padding = LkSpacing.Space4) {
         Row(
-            modifier = Modifier.padding(10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(Modifier.weight(1f)) {

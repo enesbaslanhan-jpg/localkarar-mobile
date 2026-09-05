@@ -46,6 +46,9 @@ import com.localkarar.app.ui.components.LkErrorState
 import com.localkarar.app.ui.components.LkLoadingState
 import com.localkarar.app.ui.components.LkTabs
 import com.localkarar.app.ui.components.LkSectionHeader
+import com.localkarar.app.ui.components.LkCard
+import com.localkarar.app.ui.components.LkListRow
+import com.localkarar.app.ui.components.LkPressable
 import com.localkarar.app.ui.theme.*
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
@@ -319,20 +322,24 @@ private fun QuickActionCard(
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
-    Column(
-        modifier = modifier
-            .background(LkSurfacePanel, LkShapes.MD)
-            .border(1.dp, LkLineStrong, LkShapes.MD)
-            .clickable(onClick = onClick)
-            .padding(LkSpacing.Space3)
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = LkPrimary,
-            modifier = Modifier.size(20.dp)
-        )
-        Spacer(modifier = Modifier.height(LkSpacing.Space2))
+    LkPressable(onClick = onClick, modifier = modifier) {
+      LkCard(padding = LkSpacing.Space4) {
+        /* §24 ikon kutucugu; ciplak ikon degil. */
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .clip(RoundedCornerShape(15.dp))
+                .background(LkSurfaceTile),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = LkTileInk,
+                modifier = Modifier.size(21.dp)
+            )
+        }
+        Spacer(modifier = Modifier.height(LkSpacing.Space3))
         Text(
             text = title,
             style = LkTypography.getBodySmall(),
@@ -345,6 +352,7 @@ private fun QuickActionCard(
             color = LkTextSecondary,
             maxLines = 1
         )
+      }
     }
 }
 
@@ -355,15 +363,13 @@ private fun CalculationCard(
     onOpenDetailed: (() -> Unit)? = null,
     onOpenQuick: (() -> Unit)? = null
 ) {
-    Column(
+    LkPressable(
+        onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = LkSpacing.Space4, vertical = LkSpacing.Space1)
-            .background(LkSurfacePanel, LkShapes.MD)
-            .border(1.dp, LkLineStrong, LkShapes.MD)
-            .clickable(onClick = onClick)
-            .padding(LkSpacing.PadPanel)
     ) {
+      LkCard {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -402,6 +408,7 @@ private fun CalculationCard(
                 LkChip(text = "Detaylı analiz mevcut", onClick = onOpenDetailed)
             }
         }
+      }
     }
 }
 
@@ -413,44 +420,35 @@ private fun RecordRow(
     onClick: () -> Unit,
     isOverdue: Boolean = false
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(LkSurfacePanel, LkShapes.MD)
-            .border(1.dp, if (isOverdue) LkDanger.copy(alpha = 0.3f) else LkLineStrong, LkShapes.MD)
-            .clickable(onClick = onClick)
-            .padding(LkSpacing.Space3),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = record.title,
-                style = LkTypography.getBodySmall(),
-                color = LkTextPrimary
-            )
-            val directionLabel = if (record.type == "receivable" || record.direction == "receivable") "Tahsilat" else "Ödeme"
-            val dateLabel = record.dueAt?.let { LkDateUtils.formatDate(it) }?.ifBlank { "Tarih yok" } ?: "Tarih yok"
-            Text(
-                text = "$dateLabel · $directionLabel",
-                style = LkTypography.getMicro(),
-                color = LkTextSecondary
-            )
-        }
-        Column(horizontalAlignment = Alignment.End) {
-            Text(
-                text = if (record.amount != null) formatTry(record.amount) else "—",
-                style = LkTypography.getBodyStrong(),
-                color = LkTextPrimary
-            )
-            val statusText = if (isOverdue || (record.dueAt != null && record.dueAt < Clock.System.todayIn(TimeZone.currentSystemDefault()).toString())) "Gecikti" else "Planlı"
-            Text(
-                text = statusText,
-                style = LkTypography.getMicro(),
-                color = if (statusText == "Gecikti") LkDanger else LkTextMuted
+    val alacak = record.type == "receivable" || record.direction == "receivable"
+    val directionLabel = if (alacak) "Tahsilat" else "Ödeme"
+    val dateLabel = record.dueAt?.let { LkDateUtils.formatDate(it) }?.ifBlank { "Tarih yok" } ?: "Tarih yok"
+    val gecikti = isOverdue ||
+        (record.dueAt != null && record.dueAt < Clock.System.todayIn(TimeZone.currentSystemDefault()).toString())
+
+    /*
+     * §24 satir anatomisi -- Kayitlar ekraniyla AYNI ikon sozlugu ve ayni
+     * duzen. Onceden bu ekranin kendi satir bicimi vardi ve ayni kayit iki
+     * ekranda iki farkli sekilde goruntuleniyordu.
+     *
+     * Gecikme rengin yaninda "Gecikti" KELIMESIYLE de veriliyor.
+     */
+    LkListRow(
+        baslik = record.title,
+        altBaslik = listOf(dateLabel, if (gecikti) "Gecikti" else "Planlı").joinToString(" · "),
+        kategori = directionLabel,
+        tutar = if (record.amount != null) formatTry(record.amount) else null,
+        tutarRengi = if (gecikti) LkDanger else LkTextPrimary,
+        onClick = onClick,
+        ikon = {
+            Icon(
+                if (alacak) Icons.Outlined.SouthWest else Icons.Outlined.NorthEast,
+                contentDescription = null,
+                tint = if (gecikti) LkDanger else LkTileInk,
+                modifier = Modifier.size(21.dp)
             )
         }
-    }
+    )
 }
 
 // ─── GEÇMİŞ TAB ────────────────────────────────────────────
@@ -492,14 +490,13 @@ private fun HistoryRow(
     calculationItem: CalculationItem,
     onClick: () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(LkSurfacePanel, LkShapes.MD)
-            .border(1.dp, LkLineStrong, LkShapes.MD)
-            .padding(LkSpacing.PadPanel)
-            .clickable(onClick = onClick)
-    ) {
+    /*
+     * Onceki halde .padding() .clickable()'DAN ONCE geliyordu: dokunma alani
+     * dolgunun disinda kaliyor, kartin kenarina basinca hicbir sey olmuyordu.
+     * LkPressable tum karti tiklanabilir yapiyor.
+     */
+    LkPressable(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
+      LkCard {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -537,6 +534,7 @@ private fun HistoryRow(
                     )
                 }
             }
+      }
     }
 }
 

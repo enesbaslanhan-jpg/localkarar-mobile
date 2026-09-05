@@ -19,7 +19,12 @@ import androidx.compose.ui.unit.dp
 import com.localkarar.app.community.ThreadsViewModel
 import com.localkarar.app.core.LkDateUtils
 import com.localkarar.app.network.dto.CommunityThreadDto
+import com.localkarar.app.ui.components.LkAvatar
 import com.localkarar.app.ui.components.LkButton
+import com.localkarar.app.ui.components.LkCard
+import com.localkarar.app.ui.components.LkHairline
+import com.localkarar.app.ui.components.LkPressable
+import com.localkarar.app.ui.components.LkRowGroup
 import com.localkarar.app.ui.components.LkButtonVariant
 import com.localkarar.app.ui.theme.*
 
@@ -93,13 +98,18 @@ fun ThreadsScreen(
                             }
                         }
 
-                        // Joined Threads
-                        items(s.threads, key = { it.id }) { thread ->
-                            ThreadCard(
-                                thread = thread,
-                                currentUserId = currentUserId,
-                                onClick = { onOpenThread(thread.id) }
-                            )
+                        // Joined Threads — tek yukseltilmis yuzey
+                        item {
+                            LkRowGroup {
+                                s.threads.forEachIndexed { i, thread ->
+                                    ThreadCard(
+                                        thread = thread,
+                                        currentUserId = currentUserId,
+                                        onClick = { onOpenThread(thread.id) }
+                                    )
+                                    if (i != s.threads.lastIndex) LkHairline()
+                                }
+                            }
                         }
                     }
                 }
@@ -143,33 +153,31 @@ private fun ThreadCard(
 
     val lastMessage = thread.messages.firstOrNull()
 
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        backgroundColor = LkSurfacePanel,
-        shape = LkShapes.MD,
-        elevation = 0.dp
-    ) {
+    LkPressable(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(horizontal = LkSpacing.PadCard, vertical = LkSpacing.Space3),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(CircleShape)
-                    .background(if (thread.isGroup) LkPrimarySoft else LkSurfaceSunken),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = if (thread.isGroup) Icons.Outlined.Group else Icons.Outlined.Person,
-                    contentDescription = null,
-                    tint = if (thread.isGroup) LkPrimary else LkTextSecondary,
-                    modifier = Modifier.size(24.dp)
-                )
+            if (thread.isGroup) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(LkSurfaceTile),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Group,
+                        contentDescription = null,
+                        tint = LkTileInk,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+            } else {
+                /* Kisinin bas harfi; herkes ayni genel ikon degil. */
+                LkAvatar(ad = displayName, boyut = 44.dp)
             }
 
             Spacer(Modifier.width(12.dp))
@@ -219,13 +227,9 @@ private fun InvitationCard(
     onAccept: () -> Unit,
     onDecline: () -> Unit
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        backgroundColor = LkSurfaceSunken,
-        shape = LkShapes.MD,
-        elevation = 0.dp
-    ) {
-        Column(Modifier.padding(12.dp)) {
+    /* Davet gercekten bir kart: iki eylem dugmesi tasiyor. */
+    LkCard {
+        Column {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Outlined.MailOutline, contentDescription = null, tint = LkPrimary, modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(8.dp))

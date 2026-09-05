@@ -23,6 +23,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.localkarar.app.network.dto.OrderDto
 import com.localkarar.app.ui.components.LkButton
+import com.localkarar.app.ui.components.LkCard
+import com.localkarar.app.ui.components.LkPressable
 import com.localkarar.app.ui.components.LkButtonVariant
 import com.localkarar.app.ui.components.LkTextField
 import com.localkarar.app.ui.theme.*
@@ -317,14 +319,12 @@ private fun MarketplaceOrderCard(
         else -> LkTextSecondary to "Yeni Sipariş"
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(LkSurfacePanel, LkShapes.MD)
-            .border(1.dp, LkLineSoft, LkShapes.MD)
-            .clickable { onClick() }
-            .padding(LkSpacing.Space4)
-    ) {
+    /*
+     * §24: kenarlikli kabuk degil yukseltilmis yuzey. Tiklama LkCard'in
+     * disinda kaldigi icin basma geri bildirimi LkPressable'dan geliyor.
+     */
+    LkPressable(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
+      LkCard {
         Column(modifier = Modifier.fillMaxWidth()) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -426,6 +426,7 @@ private fun MarketplaceOrderCard(
                 }
             }
         }
+      }
     }
 }
 

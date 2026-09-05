@@ -28,6 +28,8 @@ import com.localkarar.app.news.NewsViewModel
 import com.localkarar.app.ui.components.LkButton
 import com.localkarar.app.ui.components.LkButtonVariant
 import com.localkarar.app.ui.components.LkHeroPage
+import com.localkarar.app.ui.components.LkCard
+import com.localkarar.app.ui.components.LkPressable
 import com.localkarar.app.ui.theme.*
 
 fun categoryIcon(category: String?): ImageVector {
@@ -209,16 +211,14 @@ private fun NewsCard(
     article: NewsArticleDto,
     onClick: () -> Unit
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(LkShapes.MD)
-            .border(1.dp, LkLineSoft, LkShapes.MD)
-            .clickable(onClick = onClick),
-        backgroundColor = LkSurfacePanel,
-        elevation = 0.dp
-    ) {
-        Column(Modifier.padding(16.dp)) {
+    /*
+     * §24: Material Card + elle cizilmis kenarlik degil, LkCard.
+     * Yaricap 20dp, ic dolgu PadCard -- kategori ve onem rozetleri artik
+     * kenara yapismiyor.
+     */
+    LkPressable(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
+      LkCard {
+        Column {
             Row(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -303,5 +303,6 @@ private fun NewsCard(
                 )
             }
         }
+      }
     }
 }

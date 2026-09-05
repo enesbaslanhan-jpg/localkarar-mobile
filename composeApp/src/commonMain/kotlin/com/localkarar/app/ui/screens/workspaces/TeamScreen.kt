@@ -20,11 +20,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.localkarar.app.core.LkDateUtils
+import com.localkarar.app.ui.components.LkAvatar
 import com.localkarar.app.ui.components.LkButton
 import com.localkarar.app.ui.components.LkButtonVariant
 import com.localkarar.app.ui.components.LkChip
 import com.localkarar.app.ui.components.LkEmptyState
 import com.localkarar.app.ui.components.LkErrorState
+import com.localkarar.app.ui.components.LkHairline
+import com.localkarar.app.ui.components.LkListRow
+import com.localkarar.app.ui.components.LkRowGroup
 import com.localkarar.app.ui.components.LkLoadingState
 import com.localkarar.app.ui.components.LkHeroPage
 import com.localkarar.app.ui.components.LkSectionHeader
@@ -76,36 +80,47 @@ fun TeamScreen(
                             }
 
                             item { LkSectionHeader(title = "Üyeler", subtitle = "${state.members.size} üye") }
-                            items(state.members) { member ->
-                                MemberCard(
-                                    name = member.name,
-                                    email = member.email,
-                                    role = member.role,
-                                    status = member.status,
-                                    joinedAt = member.joinedAt,
-                                    onRoleChange = { newRole ->
-                                        actionError = null
-                                        viewModel.changeRole(member.id, newRole) { actionError = it }
-                                    },
-                                    onRemove = {
-                                        actionError = null
-                                        viewModel.removeMember(member.id) { actionError = it }
+                            /* Tek yukseltilmis yuzey; her uye kendi kartinda degil. */
+                            item {
+                                LkRowGroup {
+                                    state.members.forEachIndexed { i, member ->
+                                        MemberCard(
+                                            name = member.name,
+                                            email = member.email,
+                                            role = member.role,
+                                            status = member.status,
+                                            joinedAt = member.joinedAt,
+                                            onRoleChange = { newRole ->
+                                                actionError = null
+                                                viewModel.changeRole(member.id, newRole) { actionError = it }
+                                            },
+                                            onRemove = {
+                                                actionError = null
+                                                viewModel.removeMember(member.id) { actionError = it }
+                                            }
+                                        )
+                                        if (i != state.members.lastIndex) LkHairline()
                                     }
-                                )
+                                }
                             }
 
                             if (state.invitations.isNotEmpty()) {
                                 item { LkSectionHeader(title = "Bekleyen Davetler") }
-                                items(state.invitations) { invitation ->
-                                    InvitationCard(
-                                        email = invitation.email,
-                                        role = invitation.role,
-                                        createdAt = invitation.createdAt,
-                                        onCancel = {
-                                            actionError = null
-                                            viewModel.cancelInvitation(invitation.id) { actionError = it }
+                                item {
+                                    LkRowGroup {
+                                        state.invitations.forEachIndexed { i, invitation ->
+                                            InvitationCard(
+                                                email = invitation.email,
+                                                role = invitation.role,
+                                                createdAt = invitation.createdAt,
+                                                onCancel = {
+                                                    actionError = null
+                                                    viewModel.cancelInvitation(invitation.id) { actionError = it }
+                                                }
+                                            )
+                                            if (i != state.invitations.lastIndex) LkHairline()
                                         }
-                                    )
+                                    }
                                 }
                             }
                         }
@@ -141,40 +156,30 @@ private fun MemberCard(
     var showRoleDialog by remember { mutableStateOf(false) }
     var showRemoveConfirm by remember { mutableStateOf(false) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(LkSurfacePanel, LkShapes.MD)
-            .border(1.dp, LkLineStrong, LkShapes.MD)
-            .padding(LkSpacing.PadPanel)
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = Icons.Outlined.Group,
-                contentDescription = null,
-                tint = LkPrimary,
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(modifier = Modifier.width(LkSpacing.Space2))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = name,
-                    style = LkTypography.getBodyStrong(),
-                    color = LkTextPrimary
-                )
-                Text(
-                    text = email,
-                    style = LkTypography.getMetadata(),
-                    color = LkTextSecondary
-                )
-            }
-            IconButton(onClick = { showRoleDialog = true }) {
-                Text(
-                    text = roleLabel(role),
-                    style = LkTypography.getMicro(),
-                    color = LkPrimary
-                )
-            }
+    /*
+     * §24 satir anatomisi. Onceden her uye kenarlikli bir karttaydi ve rol
+     * bir IconButton'in icine sikismis duz metindi -- tiklanabilir oldugu
+     * anlasilmiyordu.
+     *
+     * Artik rol dikey ayracli kategori sutununda ve SATIRIN KENDISI rol
+     * degistirme kutusunu aciyor. Cikarma dugmesi sagda ayri duruyor.
+     *
+     * Daveti kabul etmemis uye "Davet bekliyor" diye KELIMEYLE belirtiliyor;
+     * status alani onceden hic gosterilmiyordu.
+     */
+    val altSatir = listOfNotNull(
+        email,
+        if (status != "active") "Davet bekliyor"
+        else joinedAt?.let { "Katılım: ${LkDateUtils.formatDate(it)}" }
+    ).joinToString(" · ")
+
+    LkListRow(
+        baslik = name,
+        altBaslik = altSatir,
+        kategori = roleLabel(role),
+        onClick = { showRoleDialog = true },
+        ikon = { LkAvatar(ad = name, boyut = 44.dp) },
+        sag = {
             IconButton(onClick = { showRemoveConfirm = true }) {
                 Icon(
                     imageVector = Icons.Outlined.Close,
@@ -184,14 +189,7 @@ private fun MemberCard(
                 )
             }
         }
-        joinedAt?.let {
-            Text(
-                text = "Katılım: ${LkDateUtils.formatDate(it)}",
-                style = LkTypography.getMicro(),
-                color = LkTextMuted
-            )
-        }
-    }
+    )
 
     if (showRoleDialog) {
         androidx.compose.material.AlertDialog(
@@ -255,40 +253,29 @@ private fun InvitationCard(
     createdAt: String?,
     onCancel: () -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(LkSurfacePanel, LkShapes.MD)
-            .border(1.dp, LkLineStrong, LkShapes.MD)
-            .padding(LkSpacing.PadPanel),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = Icons.Outlined.Mail,
-            contentDescription = null,
-            tint = LkWarning,
-            modifier = Modifier.size(18.dp)
-        )
-        Spacer(modifier = Modifier.width(LkSpacing.Space2))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(text = email, style = LkTypography.getBodySmall(), color = LkTextPrimary)
-            createdAt?.let {
-                Text(
-                    text = "${roleLabel(role)} • ${LkDateUtils.formatDate(it)}",
-                    style = LkTypography.getMicro(),
-                    color = LkTextMuted
+    LkListRow(
+        baslik = email,
+        altBaslik = createdAt?.let { "Davet: ${LkDateUtils.formatDate(it)}" },
+        kategori = roleLabel(role),
+        ikon = {
+            Icon(
+                imageVector = Icons.Outlined.Mail,
+                contentDescription = null,
+                tint = LkWarning,
+                modifier = Modifier.size(21.dp)
+            )
+        },
+        sag = {
+            IconButton(onClick = onCancel) {
+                Icon(
+                    imageVector = Icons.Outlined.Close,
+                    contentDescription = "İptal",
+                    tint = LkTextMuted,
+                    modifier = Modifier.size(18.dp)
                 )
             }
         }
-        IconButton(onClick = onCancel) {
-            Icon(
-                imageVector = Icons.Outlined.Close,
-                contentDescription = "İptal",
-                tint = LkTextMuted,
-                modifier = Modifier.size(18.dp)
-            )
-        }
-    }
+    )
 }
 
 @Composable

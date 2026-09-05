@@ -22,6 +22,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.localkarar.app.network.dto.WorkspaceSummaryDto
 import com.localkarar.app.ui.components.LkButton
+import com.localkarar.app.ui.components.LkHairline
+import com.localkarar.app.ui.components.LkListRow
+import com.localkarar.app.ui.components.LkRowGroup
 import com.localkarar.app.ui.components.LkButtonVariant
 import com.localkarar.app.ui.components.LkEmptyState
 import com.localkarar.app.ui.components.LkErrorState
@@ -86,17 +89,23 @@ fun WorkspacesScreen(
                                         modifier = Modifier.fillMaxWidth()
                                     )
                                 }
-                                items(state.workspaces) { workspace ->
-                                    WorkspaceCard(
-                                        workspace = workspace,
-                                        isActive = workspace.id == activeWorkspaceId,
-                                        onOpen = { onOpenWorkspace(workspace.id) },
-                                        onDelete = {
-                                            viewModel.deleteWorkspace(workspace.id) { success ->
-                                                actionError = if (success) null else "İşletme silinemedi."
-                                            }
+                                /* Tek yukseltilmis yuzey; kart yigini degil. */
+                                item {
+                                    LkRowGroup {
+                                        state.workspaces.forEachIndexed { i, workspace ->
+                                            WorkspaceCard(
+                                                workspace = workspace,
+                                                isActive = workspace.id == activeWorkspaceId,
+                                                onOpen = { onOpenWorkspace(workspace.id) },
+                                                onDelete = {
+                                                    viewModel.deleteWorkspace(workspace.id) { success ->
+                                                        actionError = if (success) null else "İşletme silinemedi."
+                                                    }
+                                                }
+                                            )
+                                            if (i != state.workspaces.lastIndex) LkHairline()
                                         }
-                                    )
+                                    }
                                 }
                             }
                         }
@@ -136,28 +145,31 @@ private fun WorkspaceCard(
     onDelete: () -> Unit
 ) {
     var showDeleteConfirm by remember { mutableStateOf(false) }
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(LkSurfacePanel, LkShapes.MD)
-            .border(1.dp, if (isActive) LkPrimary.copy(alpha = 0.6f) else LkLineStrong, LkShapes.MD)
-            .clickable(onClick = onOpen)
-            .padding(LkSpacing.PadPanel)
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+    /*
+     * §24 satir anatomisi. Onceden her isletme kenarlikli bir karttaydi ve
+     * AKTIF isletme yalnizca kenarlik renginden anlasiliyordu -- renk tek
+     * basina bilgi tasiyamaz (§19).
+     *
+     * Artik aktiflik "Aktif" kelimesiyle alt satirda yaziyor, ustune yesil
+     * tik ikonu esligiyle.
+     */
+    LkListRow(
+        baslik = workspace.name,
+        altBaslik = listOfNotNull(
+            if (isActive) "Aktif" else null,
+            workspace.sector?.takeIf { it.isNotBlank() },
+            "${workspace.memberCount} üye"
+        ).joinToString(" · "),
+        onClick = onOpen,
+        ikon = {
             Icon(
                 imageVector = Icons.Outlined.Business,
                 contentDescription = null,
-                tint = LkPrimary,
-                modifier = Modifier.size(20.dp)
+                tint = if (isActive) LkSuccess else LkTileInk,
+                modifier = Modifier.size(21.dp)
             )
-            Spacer(modifier = Modifier.width(LkSpacing.Space2))
-            Text(
-                text = workspace.name,
-                style = LkTypography.getBodyStrong(),
-                color = LkTextPrimary,
-                modifier = Modifier.weight(1f)
-            )
+        },
+        sag = {
             if (isActive) {
                 Icon(
                     imageVector = Icons.Outlined.CheckCircle,
@@ -166,23 +178,6 @@ private fun WorkspaceCard(
                     modifier = Modifier.size(16.dp)
                 )
             }
-        }
-        if (!workspace.sector.isNullOrBlank()) {
-            Spacer(modifier = Modifier.height(LkSpacing.Space1))
-            Text(
-                text = workspace.sector,
-                style = LkTypography.getMetadata(),
-                color = LkTextSecondary
-            )
-        }
-        Spacer(modifier = Modifier.height(LkSpacing.Space2))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = "${workspace.memberCount} üye",
-                style = LkTypography.getMetadata(),
-                color = LkTextMuted,
-                modifier = Modifier.weight(1f)
-            )
             IconButton(onClick = { showDeleteConfirm = true }) {
                 Icon(
                     imageVector = Icons.Outlined.Delete,
@@ -192,7 +187,7 @@ private fun WorkspaceCard(
                 )
             }
         }
-    }
+    )
     if (showDeleteConfirm) {
         androidx.compose.material.AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },

@@ -536,7 +536,8 @@ private fun TasksPanel(
                 tamam = r.status == "completed",
                 oncelik = priorityLevel(r.priority),
                 tarih = shortDate(r.dueAt),
-                tur = RECORD_TYPE_LABEL[r.type] ?: "Kayıt"
+                tur = RECORD_TYPE_LABEL[r.type] ?: "Kayıt",
+                yon = r.direction
             )
         }
     } else {
@@ -546,7 +547,8 @@ private fun TasksPanel(
                 tamam = t.status == "completed",
                 oncelik = null,
                 tarih = shortDate(t.updatedAt ?: t.createdAt),
-                tur = "Öğrenme"
+                tur = "Öğrenme",
+                yon = null
             )
         }
     }
@@ -600,7 +602,9 @@ private data class GorevSatiri(
     val tamam: Boolean,
     val oncelik: String?,
     val tarih: String,
-    val tur: String
+    val tur: String,
+    /** "receivable" / "payable" / null (ogrenme gorevi). */
+    val yon: String?
 )
 
 /*
@@ -627,8 +631,19 @@ private fun GorevSatiriGorunumu(satir: GorevSatiri, onClick: () -> Unit) {
         kategori = satir.tur.takeIf { it.isNotBlank() },
         onClick = onClick,
         ikon = {
+            /*
+             * Kayitlar ekraniyla AYNI ikon sozlugu: para giren asagi-sol,
+             * cikan yukari-sag. Bos daire kaldirildi -- liste zaten
+             * tamamlanmamis kayitlari suzuyor, tik dali hic calismiyordu.
+             */
             Icon(
-                if (satir.tamam) Icons.Outlined.CheckCircle else Icons.Outlined.RadioButtonUnchecked,
+                when {
+                    satir.tamam -> Icons.Outlined.CheckCircle
+                    satir.yon == "receivable" -> Icons.Outlined.SouthWest
+                    satir.yon == "payable" -> Icons.Outlined.NorthEast
+                    satir.yon == null -> Icons.Outlined.School
+                    else -> Icons.Outlined.ReceiptLong
+                },
                 contentDescription = null,
                 tint = if (satir.tamam) LkSuccess else LkTileInk,
                 modifier = Modifier.size(21.dp)
