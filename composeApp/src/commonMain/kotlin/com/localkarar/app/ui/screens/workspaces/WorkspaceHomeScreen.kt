@@ -1,5 +1,10 @@
 package com.localkarar.app.ui.screens.workspaces
 
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import com.localkarar.app.ui.components.LkHeroBlock
+import com.localkarar.app.ui.theme.LkTypography.numeric
 import com.localkarar.app.ui.components.LkButton
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -8,6 +13,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
@@ -66,18 +72,90 @@ fun WorkspaceHomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    LkPageLayout(
-        title = "İşletme Takibi",
-        onBack = onBack,
-        actions = {
-            WorkspaceSectionPill(
-                sectionName = "Genel Bakış",
-                onClick = onOpenSectionSelector,
-                modifier = Modifier.padding(end = 12.dp)
-            )
+    val state = uiState
+
+    /*
+     * §24.6 — hero baslik blogu + binen yuzey.
+     *
+     * Ekranin iki hakim rakami (30 gunluk alacak ve borc) LISTEDEN CIKIP
+     * hero'ya tasindi. Onceden dort metrik listenin icinde esit agirliktaydi;
+     * ekran acildiginda ilk okunan sey isletmenin adiydi, parasi degil.
+     *
+     * `LkPageLayout` kullanilmiyor: baslik cubugu marka blogunun ICINDE.
+     */
+    Column(Modifier.fillMaxSize()) {
+
+        LkHeroBlock {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        start = LkSpacing.Space4,
+                        end = LkSpacing.Space4,
+                        top = LkSpacing.Space4
+                    ),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onBack) {
+                    Icon(
+                        Icons.Outlined.ArrowBack,
+                        contentDescription = "Geri",
+                        tint = LkHero.OnHero
+                    )
+                }
+                Text(
+                    text = "İşletme Takibi",
+                    style = LkTypography.getTitleS(),
+                    color = LkHero.OnHero,
+                    modifier = Modifier.weight(1f).padding(start = LkSpacing.Space2)
+                )
+                WorkspaceSectionPill(
+                    sectionName = "Genel Bakış",
+                    onClick = onOpenSectionSelector
+                )
+            }
+
+            if (state is WorkspaceHomeUiState.Content) {
+                val ozet = state.summary
+                if (ozet != null) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = LkSpacing.Space5, vertical = LkSpacing.Space4)
+                    ) {
+                        HeroTutar(
+                            "30 GÜN ALACAK",
+                            LkFormatting.formatMoney(ozet.nextThirtyDays.receivable, state.workspace.currency),
+                            Modifier.weight(1f)
+                        )
+                        Box(
+                            Modifier
+                                .width(1.dp)
+                                .height(40.dp)
+                                .background(androidx.compose.ui.graphics.Color(0x29FFFFFF))
+                        )
+                        HeroTutar(
+                            "30 GÜN BORÇ",
+                            LkFormatting.formatMoney(ozet.nextThirtyDays.payable, state.workspace.currency),
+                            Modifier.weight(1f).padding(start = LkSpacing.Space4)
+                        )
+                    }
+                }
+            }
+            Spacer(Modifier.height(LkSpacing.Space6))
         }
-    ) {
-        when (val state = uiState) {
+
+        /* `weight(1f)` — Column icinde `fillMaxSize()` KALAN degil TUM
+           yuksekligi ister; icerik dock altinda kalirdi. */
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .offset(y = (-22).dp)
+                .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
+                .background(LkSurfaceCanvas)
+        ) {
+        when (state) {
             is WorkspaceHomeUiState.Loading -> LkLoadingState()
             is WorkspaceHomeUiState.Error -> LkErrorState(
                 message = state.message,
@@ -86,7 +164,12 @@ fun WorkspaceHomeScreen(
             is WorkspaceHomeUiState.Content -> {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(LkSpacing.Space4),
+                    contentPadding = PaddingValues(
+                        start = LkSpacing.Space4,
+                        end = LkSpacing.Space4,
+                        top = LkSpacing.Space5,
+                        bottom = LkSpacing.Space4
+                    ),
                     verticalArrangement = Arrangement.spacedBy(LkSpacing.Space4)
                 ) {
                     item {
@@ -117,23 +200,12 @@ fun WorkspaceHomeScreen(
                                         Modifier.weight(1f)
                                     )
                                 }
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space3)
-                                ) {
-                                    OzetMetrik(
-                                        "30 Gün Alacak",
-                                        LkFormatting.formatMoney(summary.nextThirtyDays.receivable, state.workspace.currency),
-                                        LkTextPrimary,
-                                        Modifier.weight(1f)
-                                    )
-                                    OzetMetrik(
-                                        "30 Gün Borç",
-                                        LkFormatting.formatMoney(summary.nextThirtyDays.payable, state.workspace.currency),
-                                        LkTextPrimary,
-                                        Modifier.weight(1f)
-                                    )
-                                }
+                                /*
+                                 * 30 gunluk alacak ve borc BURADAN KALKTI —
+                                 * hero'ya tasindilar. Ayni rakami iki yerde
+                                 * gostermek hiyerarsiyi bozar ve kullaniciya
+                                 * iki farkli sey sanilma riski verir.
+                                 */
 
                                 // Yonu belirsiz kayitlar hicbir toplama girmiyor;
                                 // kendi satiri olmadan ekranda hic gorunmuyorlar.
@@ -226,6 +298,22 @@ fun WorkspaceHomeScreen(
                 }
             }
         }
+        }   // binen yuzey
+    }       // hero + yuzey
+}
+
+/** Hero icindeki tutar. Etiket §24.6 geregi %85 beyaz opaklikta. */
+@Composable
+private fun HeroTutar(etiket: String, deger: String, modifier: Modifier = Modifier) {
+    Column(modifier) {
+        Text(etiket, style = LkTypography.getMetadata(), color = LkHero.OnHeroSecondary)
+        Spacer(Modifier.height(LkSpacing.Space1))
+        Text(
+            deger,
+            style = LkTypography.getTitleS().numeric(),
+            color = LkHero.OnHero,
+            maxLines = 1
+        )
     }
 }
 

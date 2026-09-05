@@ -1,5 +1,6 @@
 package com.localkarar.app.ui.screens.community
 
+import com.localkarar.app.ui.components.LkCoverHeader
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -249,40 +250,30 @@ private fun OtherProfileContent(
         contentPadding = PaddingValues(bottom = 24.dp)
     ) {
         item {
-            // Profile Header Card
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                backgroundColor = LkSurfacePanel,
-                shape = LkShapes.MD,
-                elevation = 0.dp
+            /*
+             * §24 SOSYAL PROFIL DESENI — kapak + binen avatar.
+             *
+             * Onceden kart icinde 56dp'lik bir daire vardi; profil "bir liste
+             * satiri" gibi duruyordu. Sunucu ve DTO `coverUrl` tasiyordu ama
+             * ekranda hicbir karsiligi yoktu.
+             *
+             * ⚠️ Fotograf hala CIZILMIYOR: projede goruntu yukleme kutuphanesi
+             * yok (bkz. LkCoverHeader). Yerlesim dogru, gorsel gelince
+             * yalniz iki kutunun icerigi degisecek.
+             */
+            LkCoverHeader(
+                ad = profile.name,
+                kapakUrl = profile.coverUrl,
+                avatarUrl = profile.avatarUrl
             ) {
-                Column(Modifier.padding(16.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(56.dp)
-                                .clip(CircleShape)
-                                .background(LkPrimarySoft),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                (profile.name.take(1)).uppercase(),
-                                style = LkTypography.getPageTitle(),
-                                color = LkPrimary,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-
-                        Spacer(Modifier.width(16.dp))
-
-                        Column(Modifier.weight(1f)) {
-                            Text(profile.name, style = LkTypography.getSectionTitle(), color = LkTextPrimary, fontWeight = FontWeight.Bold)
-                            profile.role?.let { role ->
-                                Text(role, style = LkTypography.getMicro(), color = LkPrimary)
-                            }
-                        }
+                Column(Modifier.padding(horizontal = 20.dp)) {
+                    Text(
+                        profile.name,
+                        style = LkTypography.getTitleL(),
+                        color = LkTextPrimary
+                    )
+                    profile.role?.let { role ->
+                        Text(role, style = LkTypography.getMicro(), color = LkPrimary)
                     }
 
                     if (!profile.bio.isNullOrBlank()) {
