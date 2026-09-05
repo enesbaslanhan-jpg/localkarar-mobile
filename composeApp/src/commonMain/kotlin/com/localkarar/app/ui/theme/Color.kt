@@ -159,6 +159,33 @@ val LocalLkColors = staticCompositionLocalOf { LkDarkColors }
 val LocalLkIsDark = staticCompositionLocalOf { true }
 
 // ──────────────────────────────────────────────────────────────────
+// §24 IKON KUTUCUGU YUZEYI
+// ──────────────────────────────────────────────────────────────────
+
+/*
+ * 🔴 `LkPrimarySoft` KUTUCUK ZEMINI OLARAK YETERSIZDI.
+ *
+ * Koyu temada brand-500 %15 alfa ile zemine bindiginde fiili renk #18252C
+ * cikiyor. Olculdu: kutucuk/zemin parlaklik orani 1.138 -- kenarliksiz bir
+ * yuzey sinirinin algilanmasi icin gereken ~1.20'nin ALTINDA. Emulator
+ * ekraninda dosemeler zemine karisiyordu, kutucuk gibi durmuyorlardi.
+ *
+ * Bu tokenlar olculerek secildi:
+ *   koyu  #22303A -> zemine 1.318, uzerine beyaz 13.53:1
+ *   acik  #C3D3DE -> zemine 1.229, beyaz karta 1.534, uzerine brand-600 5.29:1
+ *
+ * `LkPrimarySoft` DEGISTIRILMEDI: tonal zemin olarak baska yerlerde dogru
+ * calisiyor; sorun onun kutucuk olarak kullanilmasiydi.
+ */
+val LkSurfaceTile: Color
+    @Composable @ReadOnlyComposable
+    get() = if (LocalLkIsDark.current) Color(0xFF22303A) else Color(0xFFC3D3DE)
+
+val LkTileInk: Color
+    @Composable @ReadOnlyComposable
+    get() = if (LocalLkIsDark.current) Color(0xFF9CC2D3) else LkBrand.B600
+
+// ──────────────────────────────────────────────────────────────────
 // §24.6 HERO GRADYANI
 // ──────────────────────────────────────────────────────────────────
 

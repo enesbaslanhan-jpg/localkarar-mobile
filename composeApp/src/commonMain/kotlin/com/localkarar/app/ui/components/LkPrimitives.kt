@@ -43,7 +43,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.localkarar.app.ui.theme.LkElevation
 import com.localkarar.app.ui.theme.LkLineSoft
-import com.localkarar.app.ui.theme.LkPrimarySoft
+import com.localkarar.app.ui.theme.LkSurfaceTile
+import com.localkarar.app.ui.theme.LkTileInk
 import com.localkarar.app.ui.theme.LkShapes
 import com.localkarar.app.ui.theme.LkSpacing
 import com.localkarar.app.ui.theme.LkSurfaceRaised
@@ -204,7 +205,7 @@ fun LkIconTile(
                     .fillMaxWidth()
                     .aspectRatio(1f)
                     .clip(RoundedCornerShape(20.dp))
-                    .background(LkPrimarySoft),
+                    .background(LkSurfaceTile),
                 contentAlignment = Alignment.Center
             ) { ikon() }
         }
@@ -246,7 +247,7 @@ fun LkListRow(
                 modifier = Modifier
                     .size(44.dp)
                     .clip(RoundedCornerShape(15.dp))
-                    .background(LkPrimarySoft),
+                    .background(LkSurfaceTile),
                 contentAlignment = Alignment.Center
             ) { ikon() }
             Box(Modifier.width(LkSpacing.Space3))

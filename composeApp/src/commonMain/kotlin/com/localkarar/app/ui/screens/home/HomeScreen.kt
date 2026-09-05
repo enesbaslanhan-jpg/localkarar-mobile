@@ -1,5 +1,9 @@
 package com.localkarar.app.ui.screens.home
 
+import com.localkarar.app.ui.components.LkCard
+import com.localkarar.app.ui.components.LkIconTile
+import com.localkarar.app.ui.components.LkRowGroup
+import com.localkarar.app.ui.components.LkListRow
 import androidx.compose.foundation.Canvas
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -565,22 +569,27 @@ private fun TasksPanel(
         gruplar.forEachIndexed { grupSira, grup ->
             Text(
                 text = grup,
-                style = LkTypography.getMicro(),
+                style = LkTypography.getMetadata(),
                 color = LkTextMuted,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 0.8.sp,
                 modifier = Modifier.padding(top = if (grupSira == 0) 0.dp else LkSpacing.Space3)
             )
 
-            val grupSatirlari = gruplu[grup].orEmpty()
-            grupSatirlari.forEachIndexed { i, satir ->
-                GorevSatiriGorunumu(
-                    satir = satir,
-                    onClick = { if (activeWorkspaceId != null) onNavigateToTracker(activeWorkspaceId) }
-                )
-                // Son satirdan sonra cizgi yok — prototipteki :last-child.
-                val sonSatir = grupSira == gruplar.lastIndex && i == grupSatirlari.lastIndex
-                if (!sonSatir) LkHairline()
+            /*
+             * §24 — grubun satirlari TEK YUKSELTILMIS YUZEYDE toplaniyor.
+             * Onceden zeminin uzerinde serbest duruyorlardi ve liste bir
+             * nesne gibi degil, dagilmis metin gibi okunuyordu.
+             */
+            LkRowGroup {
+                val grupSatirlari = gruplu[grup].orEmpty()
+                grupSatirlari.forEachIndexed { i, satir ->
+                    GorevSatiriGorunumu(
+                        satir = satir,
+                        onClick = { if (activeWorkspaceId != null) onNavigateToTracker(activeWorkspaceId) }
+                    )
+                    if (i != grupSatirlari.lastIndex) LkHairline()
+                }
             }
         }
     }
@@ -594,46 +603,55 @@ private data class GorevSatiri(
     val tur: String
 )
 
+/*
+ * §24 SATIR ANATOMISI — ikon kutucugu | baslik + tarih | kategori | oncelik.
+ *
+ * 🔴 ONCEDEN DUZ BIR SATIRDI: bos daire + iki satir metin. Referans
+ * kitlerdeki okunur satir yapisi (ikon kutucugu ve DIKEY AYRACLI kategori
+ * sutunu) hicbir yerde kullanilmiyordu; `LkListRow` yazilmis ama tek bir
+ * ekrana bile baglanmamisti.
+ *
+ * Tamamlanan gorev ikon kutucugunun RENGIYLE degil, ikonun kendisiyle de
+ * ayirt ediliyor (tik / bos daire) — durum tek basina renge yaslanmaz.
+ */
 @Composable
 private fun GorevSatiriGorunumu(satir: GorevSatiri, onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = LkSpacing.Space3),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            if (satir.tamam) Icons.Outlined.CheckCircle else Icons.Outlined.RadioButtonUnchecked,
-            contentDescription = null,
-            tint = if (satir.tamam) LkSuccess else LkTextMuted,
-            modifier = Modifier.size(22.dp)
-        )
-        Spacer(modifier = Modifier.width(LkSpacing.Space4))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(satir.baslik, style = LkTypography.getBodyStrong(), color = LkTextPrimary)
-            Text(
-                text = listOf(satir.tarih, satir.tur).filter { it.isNotBlank() }.joinToString(" · "),
-                style = LkTypography.getMicro(),
-                color = LkTextMuted
-            )
-        }
-        if (satir.oncelik != null) {
-            val oncelikRengi = when (satir.oncelik) {
-                "high" -> LkDanger
-                "low" -> LkSuccess
-                else -> LkWarning
-            }
-            Text(
-                PRIORITY_LABEL[satir.oncelik] ?: "Orta",
-                style = LkTypography.getMicro(),
-                color = oncelikRengi,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.width(LkSpacing.Space2))
-        }
-        Icon(Icons.Outlined.ChevronRight, contentDescription = null, tint = LkTextMuted, modifier = Modifier.size(16.dp))
+    val oncelikRengi = when (satir.oncelik) {
+        "high" -> LkDanger
+        "low" -> LkSuccess
+        else -> LkWarning
     }
+    LkListRow(
+        baslik = satir.baslik,
+        altBaslik = satir.tarih.takeIf { it.isNotBlank() },
+        kategori = satir.tur.takeIf { it.isNotBlank() },
+        onClick = onClick,
+        ikon = {
+            Icon(
+                if (satir.tamam) Icons.Outlined.CheckCircle else Icons.Outlined.RadioButtonUnchecked,
+                contentDescription = null,
+                tint = if (satir.tamam) LkSuccess else LkTileInk,
+                modifier = Modifier.size(21.dp)
+            )
+        },
+        sag = {
+            if (satir.oncelik != null) {
+                Text(
+                    PRIORITY_LABEL[satir.oncelik] ?: "Orta",
+                    style = LkTypography.getMetadata(),
+                    color = oncelikRengi,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(start = LkSpacing.Space3)
+                )
+            }
+            Icon(
+                Icons.Outlined.ChevronRight,
+                contentDescription = null,
+                tint = LkTextMuted,
+                modifier = Modifier.padding(start = LkSpacing.Space2).size(16.dp)
+            )
+        }
+    )
 }
 
 /**
@@ -670,38 +688,59 @@ private fun QuickActionsCard(
             // SpaceBetween ile dosemeler kendi metin genisliklerinde kaliyordu
             // ve "Yeni Tahsilat" gibi uzun etiketler kirpiliyordu; esit
             // sutun genisligi bunu cozer.
+            /*
+             * §24 IKON DOSEMESI IZGARASI.
+             *
+             * 🔴 ONCEDEN `LkTactileAction` KULLANILIYORDU ve kutucuk zemini
+             * `LkPrimarySoft` idi: koyu temada zemine karisip kutucuk gibi
+             * durmuyordu (olculdu, oran 1.138 < 1.20). Artik `LkIconTile`
+             * ve olculmus `LkSurfaceTile`.
+             */
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space3)
             ) {
                 HIZLI_ISLEMLER.forEach { islem ->
-                    LkTactileAction(
-                        icon = islem.ikon,
-                        label = islem.etiket,
+                    LkIconTile(
+                        etiket = islem.etiket,
                         onClick = { onQuickAction(activeWorkspaceId, islem.tur, islem.yon) },
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        ikon = {
+                            Icon(
+                                islem.ikon,
+                                contentDescription = null,
+                                tint = LkTileInk,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
                     )
                 }
             }
         }
 
         Spacer(Modifier.height(LkSpacing.Space2))
-        LkHairline()
 
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(top = LkSpacing.Space2),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text("Kararsız kaldığında AI Mentor", style = LkTypography.getBodyStrong(), color = LkTextPrimary)
-                Text(
-                    "Yalnızca ihtiyaç olduğunda açılır; ekranda sürekli durmaz.",
-                    style = LkTypography.getMicro(),
-                    color = LkTextMuted
-                )
+        /* Mentor seridi artik kendi yuzeyinde — sac teli cizgiyle degil. */
+        LkCard(padding = LkSpacing.Space4) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        "Kararsız kaldığında AI Mentor",
+                        style = LkTypography.getBodyStrong(),
+                        color = LkTextPrimary
+                    )
+                    Text(
+                        "Yalnızca ihtiyaç olduğunda açılır; ekranda sürekli durmaz.",
+                        style = LkTypography.getMetadata(),
+                        color = LkTextMuted
+                    )
+                }
+                Spacer(modifier = Modifier.width(LkSpacing.Space3))
+                LkButton(text = "Danış", variant = LkButtonVariant.SECONDARY, onClick = onNavigateToMentor)
             }
-            Spacer(modifier = Modifier.width(LkSpacing.Space3))
-            LkButton(text = "Danış", variant = LkButtonVariant.SECONDARY, onClick = onNavigateToMentor)
         }
     }
 }
@@ -740,29 +779,32 @@ private fun DecisionsPanel(
             return@LkSection
         }
 
-        kararlar.forEachIndexed { sira, oturum ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onNavigateToDecisionDetail(oturum.id) }
-                    .padding(vertical = LkSpacing.Space3),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    Icons.Outlined.AccountBalance,
-                    contentDescription = null,
-                    tint = LkPrimary,
-                    modifier = Modifier.size(20.dp)
+        /* §24 — kararlar da tek yukseltilmis yuzeyde, ayni satir anatomisiyle. */
+        LkRowGroup {
+            kararlar.forEachIndexed { sira, oturum ->
+                LkListRow(
+                    baslik = oturum.decisionCheckTitle,
+                    altBaslik = shortDate(oturum.completedAt),
+                    onClick = { onNavigateToDecisionDetail(oturum.id) },
+                    ikon = {
+                        Icon(
+                            Icons.Outlined.AccountBalance,
+                            contentDescription = null,
+                            tint = LkTileInk,
+                            modifier = Modifier.size(21.dp)
+                        )
+                    },
+                    sag = {
+                        Icon(
+                            Icons.Outlined.ChevronRight,
+                            contentDescription = null,
+                            tint = LkTextMuted,
+                            modifier = Modifier.padding(start = LkSpacing.Space2).size(16.dp)
+                        )
+                    }
                 )
-                Spacer(modifier = Modifier.width(LkSpacing.Space4))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(oturum.decisionCheckTitle, style = LkTypography.getBodyStrong(), color = LkTextPrimary)
-                    Text(shortDate(oturum.completedAt), style = LkTypography.getMetadata(), color = LkTextMuted)
-                }
-                Icon(Icons.Outlined.ChevronRight, contentDescription = null, tint = LkTextMuted, modifier = Modifier.size(16.dp))
+                if (sira != kararlar.lastIndex) LkHairline()
             }
-            // Son satirdan sonra cizgi yok.
-            if (sira != kararlar.lastIndex) LkHairline()
         }
     }
 }
