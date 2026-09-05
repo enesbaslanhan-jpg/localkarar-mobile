@@ -27,7 +27,7 @@ import com.localkarar.app.network.dto.NewsArticleDto
 import com.localkarar.app.news.NewsViewModel
 import com.localkarar.app.ui.components.LkButton
 import com.localkarar.app.ui.components.LkButtonVariant
-import com.localkarar.app.ui.components.LkPageLayout
+import com.localkarar.app.ui.components.LkHeroPage
 import com.localkarar.app.ui.theme.*
 
 fun categoryIcon(category: String?): ImageVector {
@@ -85,7 +85,7 @@ fun NewsFeedScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    LkPageLayout(title = "Haberler", onBack = onBack) {
+    LkHeroPage(title = "Haberler", onBack = onBack) {
         Column(Modifier.fillMaxSize()) {
             CategoryRow(
                 categories = viewModel.categories,

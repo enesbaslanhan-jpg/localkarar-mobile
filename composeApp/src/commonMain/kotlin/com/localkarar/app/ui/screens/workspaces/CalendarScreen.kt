@@ -27,7 +27,7 @@ import com.localkarar.app.network.dto.BusinessRecordDto
 import com.localkarar.app.ui.components.LkErrorState
 import com.localkarar.app.ui.components.LkInfoPanel
 import com.localkarar.app.ui.components.LkLoadingState
-import com.localkarar.app.ui.components.LkPageLayout
+import com.localkarar.app.ui.components.LkHeroPage
 import com.localkarar.app.ui.theme.*
 import com.localkarar.app.workspaces.CalendarUiState
 import com.localkarar.app.workspaces.CalendarViewModel
@@ -42,7 +42,7 @@ fun CalendarScreen(
     val uiState by viewModel.uiState.collectAsState()
     var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
 
-    LkPageLayout(title = "Takvim", onBack = onBack) {
+    LkHeroPage(title = "Takvim", onBack = onBack) {
         when (val state = uiState) {
             is CalendarUiState.Loading -> LkLoadingState()
             is CalendarUiState.Error -> LkErrorState(

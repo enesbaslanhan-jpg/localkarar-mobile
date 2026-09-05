@@ -36,7 +36,7 @@ import com.localkarar.app.ui.components.LkChip
 import com.localkarar.app.ui.components.LkErrorState
 import com.localkarar.app.ui.components.LkInfoPanel
 import com.localkarar.app.ui.components.LkNumericField
-import com.localkarar.app.ui.components.LkPageLayout
+import com.localkarar.app.ui.components.LkHeroPage
 import com.localkarar.app.ui.components.LkResultRow
 import com.localkarar.app.ui.components.LkSectionHeader
 import com.localkarar.app.ui.components.LkTextField
@@ -65,7 +65,7 @@ fun FinancialModelScreen(
     val scenarioRuns = remember { mutableStateMapOf<String, FinancialModelRunResponseDto>() }
     val scrollState = rememberScrollState()
 
-    LkPageLayout(title = "Detaylı Analiz", onBack = onBack) {
+    LkHeroPage(title = "Detaylı Analiz", onBack = onBack) {
         when (val state = uiState) {
             is FinancialModelUiState.Loading -> com.localkarar.app.ui.components.LkLoadingState()
             is FinancialModelUiState.Error -> LkErrorState(

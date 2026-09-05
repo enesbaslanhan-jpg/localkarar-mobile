@@ -27,7 +27,7 @@ import com.localkarar.app.settings.SettingsViewModel
 import com.localkarar.app.settings.roleLabel
 import com.localkarar.app.ui.components.LkButton
 import com.localkarar.app.ui.components.LkButtonVariant
-import com.localkarar.app.ui.components.LkPageLayout
+import com.localkarar.app.ui.components.LkHeroPage
 import com.localkarar.app.ui.theme.*
 
 @Composable
@@ -46,7 +46,7 @@ fun ProfileScreen(
         }
     }
 
-    LkPageLayout(title = "Profil Bilgileri", onBack = onBack) {
+    LkHeroPage(title = "Profil Bilgileri", onBack = onBack) {
         Column(
             Modifier
                 .fillMaxSize()

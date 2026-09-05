@@ -34,7 +34,7 @@ import com.localkarar.app.network.dto.MessageDto
 import com.localkarar.app.ui.components.LkButton
 import com.localkarar.app.ui.components.LkButtonVariant
 import com.localkarar.app.ui.components.LkMarkdown
-import com.localkarar.app.ui.components.LkPageLayout
+import com.localkarar.app.ui.components.LkHeroPage
 import com.localkarar.app.ui.theme.*
 
 data class ParsedDisclaimer(
@@ -82,7 +82,7 @@ fun ConversationScreen(
 
     val conversationTitle = (state as? ConversationViewModel.UiState.Content)?.conversation?.title ?: "Sohbet"
 
-    LkPageLayout(
+    LkHeroPage(
         title = conversationTitle,
         onBack = onBack,
         actions = {

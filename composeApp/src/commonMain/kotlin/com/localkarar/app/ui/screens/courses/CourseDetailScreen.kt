@@ -26,7 +26,7 @@ import com.localkarar.app.network.dto.CourseDetailDto
 import com.localkarar.app.network.dto.LessonSummaryDto
 import com.localkarar.app.ui.components.LkErrorState
 import com.localkarar.app.ui.components.LkLoadingState
-import com.localkarar.app.ui.components.LkPageLayout
+import com.localkarar.app.ui.components.LkHeroPage
 
 import com.localkarar.app.ui.theme.*
 
@@ -38,7 +38,7 @@ fun CourseDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    LkPageLayout(title = "Eğitim Detayı", onBack = onBack) {
+    LkHeroPage(title = "Eğitim Detayı", onBack = onBack) {
         Box(modifier = Modifier.fillMaxSize()) {
             when (val state = uiState) {
                 is CourseDetailUiState.Loading -> LkLoadingState()

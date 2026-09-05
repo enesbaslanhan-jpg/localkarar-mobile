@@ -19,7 +19,7 @@ import com.localkarar.app.ui.components.LkChip
 import com.localkarar.app.ui.components.LkEmptyState
 import com.localkarar.app.ui.components.LkErrorState
 import com.localkarar.app.ui.components.LkLoadingState
-import com.localkarar.app.ui.components.LkPageLayout
+import com.localkarar.app.ui.components.LkHeroPage
 import com.localkarar.app.ui.theme.*
 import com.localkarar.app.workspaces.RecordsUiState
 import com.localkarar.app.workspaces.RecordsViewModel
@@ -60,7 +60,7 @@ fun RecordsScreen(
     val uiState by viewModel.uiState.collectAsState()
     var statusFilter by remember { mutableStateOf<String?>(null) }
 
-    LkPageLayout(title = "Takip", onBack = onBack) {
+    LkHeroPage(title = "Takip", onBack = onBack) {
         Column(modifier = Modifier.fillMaxSize()) {
             LazyColumn(modifier = Modifier.weight(1f)) {
                 item {

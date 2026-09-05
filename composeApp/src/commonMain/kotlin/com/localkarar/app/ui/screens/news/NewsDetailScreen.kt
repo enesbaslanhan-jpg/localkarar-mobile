@@ -25,7 +25,7 @@ import com.localkarar.app.news.NewsViewModel
 import com.localkarar.app.ui.components.LkButton
 import com.localkarar.app.ui.components.LkInfoPanel
 import com.localkarar.app.ui.components.LkLoadingState
-import com.localkarar.app.ui.components.LkPageLayout
+import com.localkarar.app.ui.components.LkHeroPage
 import com.localkarar.app.ui.theme.*
 
 @Composable
@@ -37,10 +37,10 @@ fun NewsDetailScreen(
     val uiState by viewModel.uiState.collectAsState()
     val article = viewModel.articleById(articleId)
 
-    LkPageLayout(title = "Haber Detayı", onBack = onBack) {
+    LkHeroPage(title = "Haber Detayı", onBack = onBack) {
         if (article == null && uiState is NewsViewModel.UiState.Loading) {
             LkLoadingState()
-            return@LkPageLayout
+            return@LkHeroPage
         }
 
         if (article == null) {
@@ -59,7 +59,7 @@ fun NewsDetailScreen(
                 Spacer(Modifier.height(8.dp))
                 LkButton(text = "Haberlere Dön", onClick = onBack)
             }
-            return@LkPageLayout
+            return@LkHeroPage
         }
 
         Column(

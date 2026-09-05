@@ -21,7 +21,7 @@ import com.localkarar.app.ui.components.LkButtonVariant
 import com.localkarar.app.ui.components.LkErrorState
 import com.localkarar.app.ui.components.LkInfoPanel
 import com.localkarar.app.ui.components.LkLoadingState
-import com.localkarar.app.ui.components.LkPageLayout
+import com.localkarar.app.ui.components.LkHeroPage
 import com.localkarar.app.ui.components.LkResultRow
 import com.localkarar.app.ui.theme.*
 import com.localkarar.app.workspaces.RecordDetailUiState
@@ -39,7 +39,7 @@ fun RecordDetailScreen(
     var showDeferDialog by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
-    LkPageLayout(title = "Kayıt Detayı", onBack = onBack) {
+    LkHeroPage(title = "Kayıt Detayı", onBack = onBack) {
         when (val state = uiState) {
             is RecordDetailUiState.Loading -> LkLoadingState()
             is RecordDetailUiState.Error -> LkErrorState(

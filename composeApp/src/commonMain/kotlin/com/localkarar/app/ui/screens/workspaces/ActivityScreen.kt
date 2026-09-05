@@ -17,7 +17,7 @@ import com.localkarar.app.core.LkDateUtils
 import com.localkarar.app.ui.components.LkEmptyState
 import com.localkarar.app.ui.components.LkErrorState
 import com.localkarar.app.ui.components.LkLoadingState
-import com.localkarar.app.ui.components.LkPageLayout
+import com.localkarar.app.ui.components.LkHeroPage
 import com.localkarar.app.ui.theme.*
 import com.localkarar.app.workspaces.ActivityUiState
 import com.localkarar.app.workspaces.ActivityViewModel
@@ -29,7 +29,7 @@ fun ActivityScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    LkPageLayout(title = "Etkinlik", onBack = onBack) {
+    LkHeroPage(title = "Etkinlik", onBack = onBack) {
         when (val state = uiState) {
             is ActivityUiState.Loading -> LkLoadingState()
             is ActivityUiState.Error -> LkErrorState(

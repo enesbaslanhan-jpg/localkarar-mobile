@@ -22,7 +22,7 @@ import com.localkarar.app.network.dto.LessonDetailDto
 import com.localkarar.app.network.dto.KnowledgeObjectMetadataDto
 import com.localkarar.app.ui.components.LkErrorState
 import com.localkarar.app.ui.components.LkLoadingState
-import com.localkarar.app.ui.components.LkPageLayout
+import com.localkarar.app.ui.components.LkHeroPage
 import com.localkarar.app.ui.components.MarkdownViewer
 import com.localkarar.app.ui.components.LkButton
 import com.localkarar.app.ui.components.LkButtonVariant
@@ -39,7 +39,7 @@ fun LessonReaderScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    LkPageLayout(title = "Ders", onBack = onBack) {
+    LkHeroPage(title = "Ders", onBack = onBack) {
         Box(modifier = Modifier.fillMaxSize()) {
             when (val state = uiState) {
                 is LessonReaderUiState.Loading -> LkLoadingState()

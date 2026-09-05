@@ -18,7 +18,7 @@ import com.localkarar.app.core.displayValue
 import com.localkarar.app.ui.components.LkErrorState
 import com.localkarar.app.ui.components.LkInfoPanel
 import com.localkarar.app.ui.components.LkLoadingState
-import com.localkarar.app.ui.components.LkPageLayout
+import com.localkarar.app.ui.components.LkHeroPage
 import com.localkarar.app.ui.components.LkResultRow
 import com.localkarar.app.ui.components.LkSectionHeader
 import com.localkarar.app.ui.theme.*
@@ -30,7 +30,7 @@ fun RunDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    LkPageLayout(title = "Çalışma Detayı", onBack = onBack) {
+    LkHeroPage(title = "Çalışma Detayı", onBack = onBack) {
         when (val state = uiState) {
             is RunDetailUiState.Loading -> LkLoadingState()
             is RunDetailUiState.Error -> LkErrorState(

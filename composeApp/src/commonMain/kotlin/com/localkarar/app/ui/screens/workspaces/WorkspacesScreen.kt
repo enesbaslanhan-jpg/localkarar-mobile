@@ -26,7 +26,7 @@ import com.localkarar.app.ui.components.LkButtonVariant
 import com.localkarar.app.ui.components.LkEmptyState
 import com.localkarar.app.ui.components.LkErrorState
 import com.localkarar.app.ui.components.LkLoadingState
-import com.localkarar.app.ui.components.LkPageLayout
+import com.localkarar.app.ui.components.LkHeroPage
 import com.localkarar.app.ui.components.LkTextField
 import com.localkarar.app.ui.theme.*
 import com.localkarar.app.workspaces.WorkspacesUiState
@@ -43,7 +43,7 @@ fun WorkspacesScreen(
     var showCreateDialog by remember { mutableStateOf(false) }
     var actionError by remember { mutableStateOf<String?>(null) }
 
-    LkPageLayout(title = "İşletme Takibi", onBack = onBack) {
+    LkHeroPage(title = "İşletme Takibi", onBack = onBack) {
         Column(modifier = Modifier.fillMaxSize()) {
             if (actionError != null) {
                 Text(

@@ -26,7 +26,7 @@ import com.localkarar.app.network.dto.CourseDto
 import com.localkarar.app.network.dto.DashboardEnrollmentDto
 import com.localkarar.app.ui.components.LkErrorState
 import com.localkarar.app.ui.components.LkLoadingState
-import com.localkarar.app.ui.components.LkPageLayout
+import com.localkarar.app.ui.components.LkHeroPage
 import com.localkarar.app.ui.components.LkCourseCard
 import com.localkarar.app.ui.theme.*
 
@@ -42,7 +42,7 @@ fun CoursesScreen(
 
     val title = if (activeView == CoursesViewModel.ActiveView.ENROLLMENTS) "Kayıtlarım" else "Kurslar"
     
-    LkPageLayout(
+    LkHeroPage(
         title = title
     ) {
         Column(modifier = Modifier.fillMaxSize()) {

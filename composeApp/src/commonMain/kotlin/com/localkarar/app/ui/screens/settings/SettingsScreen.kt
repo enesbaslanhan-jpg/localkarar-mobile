@@ -22,7 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.localkarar.app.settings.SettingsViewModel
 import com.localkarar.app.settings.roleLabel
-import com.localkarar.app.ui.components.LkPageLayout
+import com.localkarar.app.ui.components.LkHeroPage
 import com.localkarar.app.ui.components.LkPillChip
 import com.localkarar.app.ui.theme.LocalThemeController
 import com.localkarar.app.ui.theme.ThemeMode
@@ -84,7 +84,7 @@ fun SettingsScreen(
         )
     }
 
-    LkPageLayout(title = "Ayarlar", onBack = null) {
+    LkHeroPage(title = "Ayarlar", onBack = null) {
         Column(
             Modifier
                 .fillMaxSize()

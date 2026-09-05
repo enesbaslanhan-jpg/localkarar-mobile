@@ -22,7 +22,7 @@ import com.localkarar.app.core.openExternalUrl
 import com.localkarar.app.network.ApiConfig
 import com.localkarar.app.settings.SettingsViewModel
 import com.localkarar.app.ui.components.LkButton
-import com.localkarar.app.ui.components.LkPageLayout
+import com.localkarar.app.ui.components.LkHeroPage
 import com.localkarar.app.ui.theme.*
 
 @Composable
@@ -34,7 +34,7 @@ fun LegalConsentsScreen(
         viewModel.loadConsents()
     }
 
-    LkPageLayout(title = "Yasal Bilgiler ve Onaylar", onBack = onBack) {
+    LkHeroPage(title = "Yasal Bilgiler ve Onaylar", onBack = onBack) {
         Column(
             Modifier
                 .fillMaxSize()

@@ -22,7 +22,7 @@ import com.localkarar.app.ui.components.LkButtonVariant
 import com.localkarar.app.ui.components.LkEmptyState
 import com.localkarar.app.ui.components.LkErrorState
 import com.localkarar.app.ui.components.LkLoadingState
-import com.localkarar.app.ui.components.LkPageLayout
+import com.localkarar.app.ui.components.LkHeroPage
 import com.localkarar.app.ui.theme.*
 import com.localkarar.app.workspaces.NotificationsUiState
 import com.localkarar.app.workspaces.NotificationsViewModel
@@ -34,7 +34,7 @@ fun NotificationsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    LkPageLayout(title = "Bildirimler", onBack = onBack) {
+    LkHeroPage(title = "Bildirimler", onBack = onBack) {
         when (val state = uiState) {
             is NotificationsUiState.Loading -> LkLoadingState()
             is NotificationsUiState.Error -> LkErrorState(

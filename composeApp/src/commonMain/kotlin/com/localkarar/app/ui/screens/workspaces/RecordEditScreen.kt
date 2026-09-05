@@ -17,7 +17,7 @@ import com.localkarar.app.ui.components.LkDateField
 import com.localkarar.app.ui.components.LkErrorState
 import com.localkarar.app.ui.components.LkLoadingState
 import com.localkarar.app.ui.components.LkNumericField
-import com.localkarar.app.ui.components.LkPageLayout
+import com.localkarar.app.ui.components.LkHeroPage
 import com.localkarar.app.ui.components.LkSectionHeader
 import com.localkarar.app.ui.components.LkTextField
 import com.localkarar.app.ui.theme.*
@@ -43,7 +43,7 @@ fun RecordEditScreen(
     val uiState by viewModel.uiState.collectAsState()
     var actionError by rememberSaveable { mutableStateOf<String?>(null) }
 
-    LkPageLayout(title = if (isEdit) "Kaydı Düzenle" else "Yeni Kayıt", onBack = onBack) {
+    LkHeroPage(title = if (isEdit) "Kaydı Düzenle" else "Yeni Kayıt", onBack = onBack) {
         when (val state = uiState) {
             is RecordEditUiState.Loading -> LkLoadingState()
             is RecordEditUiState.Error -> LkErrorState(

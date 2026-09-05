@@ -17,7 +17,7 @@ import com.localkarar.app.ui.components.LkChip
 import com.localkarar.app.ui.components.LkEmptyState
 import com.localkarar.app.ui.components.LkErrorState
 import com.localkarar.app.ui.components.LkLoadingState
-import com.localkarar.app.ui.components.LkPageLayout
+import com.localkarar.app.ui.components.LkHeroPage
 import com.localkarar.app.ui.theme.*
 
 @Composable
@@ -28,7 +28,7 @@ fun ModelRunsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    LkPageLayout(title = "Model Çalışmaları", onBack = onBack) {
+    LkHeroPage(title = "Model Çalışmaları", onBack = onBack) {
         when (val state = uiState) {
             is ModelRunsUiState.Loading -> LkLoadingState()
             is ModelRunsUiState.Error -> LkErrorState(
@@ -41,7 +41,7 @@ fun ModelRunsScreen(
                         title = "Henüz model çalışması yok",
                         description = "Finansal görünüm modellerini çalıştırdığınızda sonuçlar burada listelenir."
                     )
-                    return@LkPageLayout
+                    return@LkHeroPage
                 }
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),

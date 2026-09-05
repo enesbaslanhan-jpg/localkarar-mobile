@@ -27,7 +27,7 @@ import com.localkarar.app.network.dto.CommunityPostDto
 import com.localkarar.app.network.dto.QuotedPostDto
 import com.localkarar.app.ui.components.LkButton
 import com.localkarar.app.ui.components.LkButtonVariant
-import com.localkarar.app.ui.components.LkPageLayout
+import com.localkarar.app.ui.components.LkHeroPage
 import com.localkarar.app.ui.theme.*
 
 @Composable
@@ -47,7 +47,7 @@ fun CommunityPostDetailScreen(
         viewModel.loadPostDetail(postId)
     }
 
-    LkPageLayout(
+    LkHeroPage(
         title = "Gönderi",
         onBack = onBack
     ) {

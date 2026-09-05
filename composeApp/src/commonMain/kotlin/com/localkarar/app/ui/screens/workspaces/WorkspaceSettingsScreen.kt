@@ -11,7 +11,7 @@ import com.localkarar.app.ui.components.LkButton
 import com.localkarar.app.ui.components.LkChip
 import com.localkarar.app.ui.components.LkErrorState
 import com.localkarar.app.ui.components.LkLoadingState
-import com.localkarar.app.ui.components.LkPageLayout
+import com.localkarar.app.ui.components.LkHeroPage
 import com.localkarar.app.ui.components.LkSectionHeader
 import com.localkarar.app.ui.theme.*
 import com.localkarar.app.workspaces.WorkspaceSettingsUiState
@@ -28,7 +28,7 @@ fun WorkspaceSettingsScreen(
     var actionError by remember { mutableStateOf<String?>(null) }
     var savedNotice by remember { mutableStateOf(false) }
 
-    LkPageLayout(title = "İşletme Ayarları", onBack = onBack) {
+    LkHeroPage(title = "İşletme Ayarları", onBack = onBack) {
         when (val state = uiState) {
             is WorkspaceSettingsUiState.Loading -> LkLoadingState()
             is WorkspaceSettingsUiState.Error -> LkErrorState(

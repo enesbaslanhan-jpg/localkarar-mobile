@@ -16,7 +16,7 @@ import androidx.compose.ui.unit.dp
 import com.localkarar.app.auth.UserDto
 import com.localkarar.app.settings.SettingsViewModel
 import com.localkarar.app.ui.components.LkButton
-import com.localkarar.app.ui.components.LkPageLayout
+import com.localkarar.app.ui.components.LkHeroPage
 import com.localkarar.app.ui.theme.*
 
 @Composable
@@ -28,7 +28,7 @@ fun EmailChangeScreen(
     // Kimlik bilgisi girilen ekran: ekran goruntusu ve son-uygulamalar
     // kucuk resmi engelleniyor. Gerekce SecureScreen belgesinde.
     SecureScreen()
-    LkPageLayout(title = "E-posta Değiştir", onBack = onBack) {
+    LkHeroPage(title = "E-posta Değiştir", onBack = onBack) {
         Column(
             Modifier
                 .fillMaxSize()

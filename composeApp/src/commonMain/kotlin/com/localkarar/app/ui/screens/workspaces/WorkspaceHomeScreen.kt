@@ -43,7 +43,6 @@ import com.localkarar.app.ui.components.LkErrorState
 import com.localkarar.app.ui.components.LkInfoPanel
 import com.localkarar.app.ui.components.LkLoadingState
 import com.localkarar.app.ui.components.LkMetricCard
-import com.localkarar.app.ui.components.LkPageLayout
 import com.localkarar.app.ui.components.LkSection
 import com.localkarar.app.ui.components.LkTactileAction
 import com.localkarar.app.ui.components.LkHairline

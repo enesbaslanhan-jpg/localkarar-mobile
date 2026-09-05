@@ -22,7 +22,7 @@ import com.localkarar.app.decision.DecisionToolsUiState
 import com.localkarar.app.decision.DecisionToolsViewModel
 import com.localkarar.app.ui.components.LkErrorState
 import com.localkarar.app.ui.components.LkLoadingState
-import com.localkarar.app.ui.components.LkPageLayout
+import com.localkarar.app.ui.components.LkHeroPage
 import com.localkarar.app.ui.components.decision.LkDecisionToolCard
 import com.localkarar.app.ui.theme.*
 import com.localkarar.app.network.dto.DecisionCheckListDto
@@ -36,7 +36,7 @@ fun DecisionToolsScreen(
     val uiState by viewModel.uiState.collectAsState()
     var actionError by remember { mutableStateOf<String?>(null) }
 
-    LkPageLayout(
+    LkHeroPage(
         title = "Karar Araçları", 
         onBack = onBack,
         actions = {

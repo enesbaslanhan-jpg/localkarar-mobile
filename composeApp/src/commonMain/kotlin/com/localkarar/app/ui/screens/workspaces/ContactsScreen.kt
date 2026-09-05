@@ -29,7 +29,7 @@ import com.localkarar.app.ui.components.LkChip
 import com.localkarar.app.ui.components.LkEmptyState
 import com.localkarar.app.ui.components.LkErrorState
 import com.localkarar.app.ui.components.LkLoadingState
-import com.localkarar.app.ui.components.LkPageLayout
+import com.localkarar.app.ui.components.LkHeroPage
 import com.localkarar.app.ui.components.LkSectionHeader
 import com.localkarar.app.ui.components.LkTextField
 import com.localkarar.app.ui.theme.*
@@ -48,7 +48,7 @@ fun ContactsScreen(
     var showCreate by remember { mutableStateOf(false) }
     var actionError by remember { mutableStateOf<String?>(null) }
 
-    LkPageLayout(title = "Kişiler", onBack = onBack) {
+    LkHeroPage(title = "Kişiler", onBack = onBack) {
         Column(modifier = Modifier.fillMaxSize()) {
             if (actionError != null) {
                 Text(

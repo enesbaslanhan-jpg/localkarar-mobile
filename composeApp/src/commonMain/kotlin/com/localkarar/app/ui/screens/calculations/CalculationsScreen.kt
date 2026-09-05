@@ -44,7 +44,6 @@ import com.localkarar.app.ui.components.LkChip
 import com.localkarar.app.ui.components.LkEmptyState
 import com.localkarar.app.ui.components.LkErrorState
 import com.localkarar.app.ui.components.LkLoadingState
-import com.localkarar.app.ui.components.LkPageLayout
 import com.localkarar.app.ui.components.LkTabs
 import com.localkarar.app.ui.components.LkSectionHeader
 import com.localkarar.app.ui.theme.*

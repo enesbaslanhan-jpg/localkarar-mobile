@@ -28,7 +28,7 @@ import com.localkarar.app.ui.components.LkEmptyState
 import com.localkarar.app.ui.components.LkErrorState
 import com.localkarar.app.ui.components.LkInfoPanel
 import com.localkarar.app.ui.components.LkLoadingState
-import com.localkarar.app.ui.components.LkPageLayout
+import com.localkarar.app.ui.components.LkHeroPage
 import com.localkarar.app.ui.theme.*
 import com.localkarar.app.workspaces.DocumentsUiState
 import com.localkarar.app.workspaces.DocumentsViewModel
@@ -58,7 +58,7 @@ fun DocumentsScreen(
         }
     }
 
-    LkPageLayout(title = "Belgeler", onBack = onBack) {
+    LkHeroPage(title = "Belgeler", onBack = onBack) {
         Box(modifier = Modifier.fillMaxSize()) {
             when (val state = uiState) {
                 is DocumentsUiState.Loading -> LkLoadingState()

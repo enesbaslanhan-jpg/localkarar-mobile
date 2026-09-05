@@ -26,7 +26,7 @@ import com.localkarar.app.network.dto.ConversationListItemDto
 import com.localkarar.app.network.dto.MemoryDto
 import com.localkarar.app.ui.components.LkButton
 import com.localkarar.app.ui.components.LkButtonVariant
-import com.localkarar.app.ui.components.LkPageLayout
+import com.localkarar.app.ui.components.LkHeroPage
 import com.localkarar.app.ui.shell.SystemBackHandler
 import com.localkarar.app.ui.theme.*
 
@@ -55,7 +55,7 @@ fun AiMentorScreen(
         }
     }
 
-    LkPageLayout(
+    LkHeroPage(
         title = "AI Mentor",
         onBack = onBack,
         actions = {

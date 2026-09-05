@@ -11,7 +11,7 @@ import com.localkarar.app.decision.DecisionToolUiState
 import com.localkarar.app.decision.DecisionToolViewModel
 import com.localkarar.app.ui.components.LkErrorState
 import com.localkarar.app.ui.components.LkLoadingState
-import com.localkarar.app.ui.components.LkPageLayout
+import com.localkarar.app.ui.components.LkHeroPage
 
 @Composable
 fun DecisionToolScreen(
@@ -28,7 +28,7 @@ fun DecisionToolScreen(
         }
     }
 
-    LkPageLayout(
+    LkHeroPage(
         title = "Karar Aracı",
         onBack = onBack
     ) {

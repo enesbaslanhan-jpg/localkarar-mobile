@@ -12,7 +12,7 @@ import com.localkarar.app.decision.DecisionSessionViewModel
 import com.localkarar.app.ui.components.LkButton
 import com.localkarar.app.ui.components.LkErrorState
 import com.localkarar.app.ui.components.LkLoadingState
-import com.localkarar.app.ui.components.LkPageLayout
+import com.localkarar.app.ui.components.LkHeroPage
 import com.localkarar.app.ui.components.decision.LkDecisionInput
 import com.localkarar.app.ui.components.decision.LkDecisionResultPanel
 import com.localkarar.app.ui.theme.LkSpacing
@@ -27,7 +27,7 @@ fun DecisionSessionScreen(
     val uiState by viewModel.uiState.collectAsState()
     var actionError by remember { mutableStateOf<String?>(null) }
 
-    LkPageLayout(title = "Karar Aracı", onBack = onBack) {
+    LkHeroPage(title = "Karar Aracı", onBack = onBack) {
         Column(modifier = Modifier.fillMaxSize()) {
             if (actionError != null) {
                 Text(
