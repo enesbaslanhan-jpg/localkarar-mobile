@@ -1,5 +1,6 @@
 package com.localkarar.app.ui.screens.settings
 
+import com.localkarar.app.ui.components.LkHeroPage
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -45,55 +46,46 @@ fun AccountNotificationsScreen(
 
     LaunchedEffect(Unit) { viewModel.yukle() }
 
-    Scaffold(
-        backgroundColor = LkSurfaceCanvas,
-        topBar = {
-            TopAppBar(
-                backgroundColor = LkSurfacePanel,
-                contentColor = LkTextPrimary,
-                elevation = 0.dp,
-                title = {
-                    Column {
-                        Text(text = "Bildirimler", style = LkTypography.getSectionTitle())
-                        val durum = uiState
-                        if (durum is AccountNotificationsUiState.Content && durum.okunmamis > 0) {
-                            Text(
-                                text = "${durum.okunmamis} okunmamış",
-                                style = LkTypography.getMicro(),
-                                color = LkPrimary
-                            )
-                        }
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Geri")
-                    }
-                },
-                actions = {
-                    val durum = uiState
-                    if (durum is AccountNotificationsUiState.Content && durum.okunmamis > 0) {
-                        IconButton(onClick = { viewModel.tumunuOkunduIsaretle() }) {
-                            Icon(
-                                Icons.Outlined.DoneAll,
-                                contentDescription = "Tümünü okundu işaretle",
-                                tint = LkPrimary
-                            )
-                        }
-                    }
+    /* §0: ham Scaffold + TopAppBar yerine hero kabugu. */
+    LkHeroPage(
+        title = "Bildirimler",
+        onBack = onNavigateBack,
+        actions = {
+            val d = uiState
+            if (d is AccountNotificationsUiState.Content && d.okunmamis > 0) {
+                IconButton(onClick = { viewModel.tumunuOkunduIsaretle() }) {
+                    Icon(
+                        Icons.Outlined.DoneAll,
+                        contentDescription = "Tümünü okundu işaretle",
+                        tint = LkHero.OnHero
+                    )
                 }
-            )
+            }
+        },
+        heroExtra = {
+            val d = uiState
+            if (d is AccountNotificationsUiState.Content && d.okunmamis > 0) {
+                Text(
+                    text = "${d.okunmamis} okunmamış",
+                    style = LkTypography.getMetadata(),
+                    color = LkHero.OnHeroSecondary,
+                    modifier = Modifier.padding(
+                        start = LkSpacing.Space5,
+                        top = LkSpacing.Space2
+                    )
+                )
+            }
         }
-    ) { padding ->
+    ) {
         when (val durum = uiState) {
             is AccountNotificationsUiState.Loading ->
-                LkLoadingState(modifier = Modifier.padding(padding))
+                LkLoadingState(modifier = Modifier)
 
             is AccountNotificationsUiState.Error ->
                 LkErrorState(
                     message = durum.mesaj,
                     onRetry = { viewModel.yukle() },
-                    modifier = Modifier.padding(padding),
+                    modifier = Modifier,
                     hata = durum.hata
                 )
 
@@ -103,11 +95,11 @@ fun AccountNotificationsScreen(
                         title = "Bildirim yok",
                         description = "Hesabınızla ilgili bir gelişme olduğunda burada görürsünüz.",
                         icon = Icons.Outlined.NotificationsNone,
-                        modifier = Modifier.padding(padding)
+                        modifier = Modifier
                     )
                 } else {
                     LazyColumn(
-                        modifier = Modifier.fillMaxSize().padding(padding),
+                        modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(LkSpacing.Space4),
                         verticalArrangement = Arrangement.spacedBy(LkSpacing.Space2)
                     ) {

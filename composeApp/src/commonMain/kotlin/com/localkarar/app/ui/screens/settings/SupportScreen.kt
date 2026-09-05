@@ -1,5 +1,6 @@
 package com.localkarar.app.ui.screens.settings
 
+import com.localkarar.app.ui.components.LkHeroPage
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -56,36 +57,27 @@ fun SupportScreen(
     val gonderildi by viewModel.gonderildi.collectAsState()
     val hata by viewModel.hata.collectAsState()
 
-    Scaffold(
-        backgroundColor = LkSurfaceCanvas,
-        topBar = {
-            TopAppBar(
-                backgroundColor = LkSurfacePanel,
-                contentColor = LkTextPrimary,
-                elevation = 0.dp,
-                title = {
-                    Column {
-                        Text(text = "Destek", style = LkTypography.getSectionTitle())
-                        Text(
-                            text = "Sorununuzu yazın, dönüş yapalım",
-                            style = LkTypography.getMicro(),
-                            color = LkTextMuted
-                        )
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Geri")
-                    }
-                }
+    /* §0: ham Scaffold + TopAppBar yerine hero kabugu. */
+    LkHeroPage(
+        title = "Destek",
+        onBack = onNavigateBack,
+        heroExtra = {
+            Text(
+                text = "Sorununuzu yazın, dönüş yapalım",
+                style = LkTypography.getMetadata(),
+                color = LkHero.OnHeroSecondary,
+                modifier = Modifier.padding(
+                    start = LkSpacing.Space5,
+                    top = LkSpacing.Space2
+                )
             )
         }
-    ) { padding ->
+    ) {
         if (gonderildi) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding)
+                    
                     .padding(LkSpacing.Space8),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
@@ -112,13 +104,13 @@ fun SupportScreen(
                 Spacer(modifier = Modifier.height(LkSpacing.Space8))
                 LkButton(text = "Kapat", onClick = onNavigateBack)
             }
-            return@Scaffold
+            return@LkHeroPage
         }
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
+                
                 .verticalScroll(rememberScrollState())
                 .padding(LkSpacing.Space4),
             verticalArrangement = Arrangement.spacedBy(LkSpacing.Space3)

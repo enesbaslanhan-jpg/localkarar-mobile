@@ -1,5 +1,6 @@
 package com.localkarar.app.ui.screens.workspaces
 
+import com.localkarar.app.ui.components.LkHeroPage
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -55,41 +56,29 @@ fun IntegrationsScreen(
 
     LaunchedEffect(workspaceId) { viewModel.yukle(workspaceId) }
 
-    Scaffold(
-        backgroundColor = LkSurfaceCanvas,
-        topBar = {
-            TopAppBar(
-                backgroundColor = LkSurfacePanel,
-                contentColor = LkTextPrimary,
-                elevation = 0.dp,
-                title = {
-                    Column {
-                        Text(
-                            text = "Pazaryeri Entegrasyonları",
-                            style = LkTypography.getSectionTitle()
-                        )
-                        Text(
-                            text = "Bağlantı, eşitleme ve durum",
-                            style = LkTypography.getMicro(),
-                            color = LkTextMuted
-                        )
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Geri")
-                    }
-                }
+    /* §0: ham Scaffold + TopAppBar yerine hero kabugu. */
+    LkHeroPage(
+        title = "Pazaryeri Entegrasyonları",
+        onBack = onNavigateBack,
+        heroExtra = {
+            Text(
+                text = "Bağlantı, eşitleme ve durum",
+                style = LkTypography.getMetadata(),
+                color = LkHero.OnHeroSecondary,
+                modifier = Modifier.padding(
+                    start = LkSpacing.Space5,
+                    top = LkSpacing.Space2
+                )
             )
         }
-    ) { padding ->
+    ) {
         when (val durum = uiState) {
-            is IntegrationsUiState.Loading -> LkLoadingState(modifier = Modifier.padding(padding))
+            is IntegrationsUiState.Loading -> LkLoadingState(modifier = Modifier)
 
             is IntegrationsUiState.Error -> LkErrorState(
                 message = durum.mesaj,
                 onRetry = { viewModel.yukle(workspaceId) },
-                modifier = Modifier.padding(padding),
+                modifier = Modifier,
                 hata = durum.hata
             )
 
@@ -98,13 +87,13 @@ fun IntegrationsScreen(
                     LkEmptyState(
                         title = "Pazaryeri bulunamadı",
                         description = "Sunucu şu an bağlanabilecek bir pazaryeri bildirmiyor.",
-                        modifier = Modifier.padding(padding)
+                        modifier = Modifier
                     )
                 } else {
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(padding)
+                            
                             .verticalScroll(rememberScrollState())
                             .padding(LkSpacing.Space4),
                         verticalArrangement = Arrangement.spacedBy(LkSpacing.Space4)

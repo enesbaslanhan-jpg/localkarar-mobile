@@ -1,5 +1,6 @@
 package com.localkarar.app.ui.screens.workspaces
 
+import com.localkarar.app.ui.components.LkHeroPage
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -68,38 +69,24 @@ fun ProductsScreen(
         viewModel.loadProducts(workspaceId)
     }
 
-    Scaffold(
-        backgroundColor = LkSurfaceCanvas,
-        topBar = {
-            TopAppBar(
-                backgroundColor = LkSurfacePanel,
-                contentColor = LkTextPrimary,
-                elevation = 0.dp,
-                title = {
-                    Column {
-                        Text(
-                            text = "Pazaryeri Ürünleri",
-                            style = LkTypography.getSectionTitle()
-                        )
-                        Text(
-                            text = "Katalog & Satış Performansı",
-                            style = LkTypography.getMicro(),
-                            color = LkTextMuted
-                        )
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Geri")
-                    }
-                }
+    /* §0: ham Scaffold + TopAppBar yerine hero kabugu. */
+    LkHeroPage(
+        title = "Pazaryeri Ürünleri",
+        onBack = onNavigateBack,
+        heroExtra = {
+            Text(
+                text = "Katalog ve satış performansı",
+                style = LkTypography.getMetadata(),
+                color = LkHero.OnHeroSecondary,
+                modifier = Modifier.padding(
+                    start = LkSpacing.Space5,
+                    top = LkSpacing.Space2
+                )
             )
         }
-    ) { padding ->
+    ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
+            modifier = Modifier.fillMaxSize()
         ) {
             // Search Bar (Title, SKU, Barcode)
             Box(

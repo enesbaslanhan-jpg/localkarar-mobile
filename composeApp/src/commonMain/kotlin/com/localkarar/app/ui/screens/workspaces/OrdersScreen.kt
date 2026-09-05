@@ -1,5 +1,6 @@
 package com.localkarar.app.ui.screens.workspaces
 
+import com.localkarar.app.ui.components.LkHeroPage
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -66,57 +67,51 @@ fun OrdersScreen(
         viewModel.loadOrders(workspaceId)
     }
 
-    Scaffold(
-        backgroundColor = LkSurfaceCanvas,
-        topBar = {
-            TopAppBar(
-                backgroundColor = LkSurfacePanel,
-                contentColor = LkTextPrimary,
-                elevation = 0.dp,
-                title = {
-                    Column {
-                        Text(
-                            text = "Pazaryeri Siparişleri",
-                            style = LkTypography.getSectionTitle()
-                        )
-                        if (!lastSyncedAt.isNullOrBlank()) {
-                            Text(
-                                text = "Son eşitleme: ${lastSyncedAt?.take(16)?.replace("T", " ")}",
-                                style = LkTypography.getMicro(),
-                                color = LkTextMuted
-                            )
-                        }
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Geri")
-                    }
-                },
-                actions = {
-                    if (isSyncing) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp).padding(end = 12.dp),
-                            color = LkPrimary,
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        IconButton(onClick = { viewModel.syncNow(workspaceId) }) {
-                            Icon(
-                                Icons.Outlined.Sync,
-                                contentDescription = "Şimdi Eşitle",
-                                tint = LkPrimary
-                            )
-                        }
-                    }
+    /*
+     * §0 IHLALI DUZELTILDI: burada ham `Scaffold` + `TopAppBar` vardi.
+     * Material kendi olcu, renk ve yukseltme sistemini getiriyordu; ekran
+     * uygulamanin geri kalanindan farkli gorunuyordu.
+     *
+     * Son esitleme zamani `heroExtra`da: baslik degil, baslikla ilgili bir
+     * DURUM. Baslik satirina sikistirilinca iki satira kirilip cubugun
+     * yuksekligini degistiriyordu.
+     */
+    LkHeroPage(
+        title = "Pazaryeri Siparişleri",
+        onBack = onNavigateBack,
+        actions = {
+            if (isSyncing) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp).padding(end = 12.dp),
+                    color = LkHero.OnHero,
+                    strokeWidth = 2.dp
+                )
+            } else {
+                IconButton(onClick = { viewModel.syncNow(workspaceId) }) {
+                    Icon(
+                        Icons.Outlined.Sync,
+                        contentDescription = "Şimdi Eşitle",
+                        tint = LkHero.OnHero
+                    )
                 }
-            )
+            }
+        },
+        heroExtra = {
+            if (!lastSyncedAt.isNullOrBlank()) {
+                Text(
+                    text = "Son eşitleme: ${lastSyncedAt?.take(16)?.replace("T", " ")}",
+                    style = LkTypography.getMetadata(),
+                    color = LkHero.OnHeroSecondary,
+                    modifier = Modifier.padding(
+                        start = LkSpacing.Space5,
+                        top = LkSpacing.Space2
+                    )
+                )
+            }
         }
-    ) { padding ->
+    ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
+            modifier = Modifier.fillMaxSize()
         ) {
             // Integration Sync Status Banner
             Row(

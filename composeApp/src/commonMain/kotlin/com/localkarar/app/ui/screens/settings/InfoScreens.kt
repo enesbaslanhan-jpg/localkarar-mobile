@@ -1,5 +1,6 @@
 package com.localkarar.app.ui.screens.settings
 
+import com.localkarar.app.ui.components.LkHeroPage
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -36,12 +37,26 @@ fun GuideScreen(onNavigateBack: () -> Unit, onOpenSupport: () -> Unit) = InfoSca
 
 @Composable
 private fun InfoScaffold(eyebrow: String, title: String, onBack: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
-    Scaffold(backgroundColor = LkSurfaceCanvas, topBar = {
-        TopAppBar(backgroundColor = LkSurfaceCanvas, contentColor = LkTextPrimary, elevation = 0.dp,
-            navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Geri") } },
-            title = { Column { Text(eyebrow, style = LkTypography.getMicro(), color = LkTextMuted); Text(title, style = LkTypography.getPageTitle()) } })
-    }) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(22.dp), content = content)
+    /*
+     * §0: ham Scaffold + TopAppBar yerine hero kabugu.
+     *
+     * Ustteki kucuk etiket (eyebrow) baslik satirinda degil heroExtra'da:
+     * ayni satira sikistirilinca cubugun yuksekligi etiketin uzunluguna
+     * gore degisiyordu.
+     */
+    LkHeroPage(title = title, onBack = onBack, heroExtra = {
+        Text(
+            eyebrow,
+            style = LkTypography.getMetadata(),
+            color = LkHero.OnHeroSecondary,
+            modifier = Modifier.padding(start = LkSpacing.Space5, top = LkSpacing.Space2)
+        )
+    }) {
+        Column(
+            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(22.dp),
+            content = content
+        )
     }
 }
 

@@ -1,5 +1,11 @@
 package com.localkarar.app.ui
 
+import kotlin.math.sin
+import kotlin.math.cos
+import kotlin.math.PI
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.draw.drawBehind
 import com.localkarar.app.ui.components.LkButtonSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.ui.unit.sp
@@ -138,30 +144,77 @@ private fun HosGeldinHero(user: UserDto?) {
         modifier = Modifier
             .fillMaxWidth()
             .height(320.dp)
-            .background(LkSurfaceSignature)
-    ) {
-        // Es merkezli halkalar. Kalinlik ve saydamlik disa dogru azaliyor;
-        // merkez sag ustte, boylece metnin okundugu sol alt bolge temiz kalir.
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val merkez = Offset(size.width * 0.82f, size.height * 0.24f)
-            for (i in 1..6) {
-                drawCircle(
-                    color = LkOnSignature.copy(alpha = 0.16f / i),
-                    radius = size.minDimension * (0.16f * i),
-                    center = merkez,
-                    style = Stroke(width = (7f - i).coerceAtLeast(1f))
+            .drawBehind {
+                /* §24.6 gradyani — duz `LkSurfaceSignature` yerine. */
+                drawRect(
+                    Brush.linearGradient(
+                        colors = LkHero.AuthStops,
+                        start = Offset(0f, 0f),
+                        end = Offset(size.width * 0.40f, size.height)
+                    )
                 )
             }
-            // Halkalarin merkezindeki yumusak isik.
+    ) {
+        /*
+         * PUSULA KADRANI — marka isaretinin buyutulmus hali.
+         *
+         * Onceden es merkezli halkalar vardi ve hicbir sey anlatmiyorlardi.
+         * Logo bir PUSULA (yay + igne); kadran o dili tekrarliyor: 24 taksimat,
+         * ana yonlerde uzun ve kalin, aralarda incelen cizgiler.
+         *
+         * Merkez sag ustte; metnin okundugu sol alt bolge temiz kaliyor.
+         */
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val merkez = Offset(size.width * 0.80f, size.height * 0.30f)
+            val disR = size.minDimension * 0.52f
+
+            /* Yumusak isik halesi. */
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(LkOnSignature.copy(alpha = 0.10f), Color.Transparent),
+                    colors = listOf(Color(0x2694CEED), Color.Transparent),
                     center = merkez,
-                    radius = size.minDimension * 0.42f
+                    radius = disR
                 ),
-                radius = size.minDimension * 0.42f,
+                radius = disR,
                 center = merkez
             )
+
+            /* Iki ince cember: kadranin dis ve ic siniri. */
+            drawCircle(Color(0x14FFFFFF), disR, merkez, style = Stroke(1f))
+            drawCircle(Color(0x1FFFFFFF), disR * 0.58f, merkez, style = Stroke(1f))
+
+            /* 24 taksimat — her 15 derece. */
+            for (i in 0 until 24) {
+                val ana = i % 6 == 0
+                val orta = !ana && i % 2 == 0
+                val ic = disR * if (ana) 0.79f else if (orta) 0.86f else 0.89f
+                val aci = (i * 15f) * (PI.toFloat() / 180f) - PI.toFloat() / 2f
+                val kos = cos(aci)
+                val sin = sin(aci)
+                drawLine(
+                    color = Color.White.copy(alpha = if (ana) 0.85f else if (orta) 0.42f else 0.24f),
+                    start = Offset(merkez.x + kos * ic, merkez.y + sin * ic),
+                    end = Offset(merkez.x + kos * disR * 0.95f, merkez.y + sin * disR * 0.95f),
+                    strokeWidth = if (ana) 2.2f else if (orta) 1.4f else 1f,
+                    cap = StrokeCap.Round
+                )
+            }
+
+            /* Kuzeyi gosteren igne — logonun altin rengiyle ayni. */
+            val igneUc = Offset(merkez.x, merkez.y - disR * 0.50f)
+            val igneSag = Offset(merkez.x + disR * 0.075f, merkez.y + disR * 0.04f)
+            val igneSol = Offset(merkez.x - disR * 0.075f, merkez.y + disR * 0.04f)
+            drawPath(
+                path = Path().apply {
+                    moveTo(igneUc.x, igneUc.y)
+                    lineTo(igneSag.x, igneSag.y)
+                    lineTo(merkez.x, merkez.y - disR * 0.015f)
+                    lineTo(igneSol.x, igneSol.y)
+                    close()
+                },
+                color = Color(0xEBE0A455)
+            )
+            drawCircle(Color(0xFFF4FAFC), disR * 0.028f, merkez)
         }
 
         Column(

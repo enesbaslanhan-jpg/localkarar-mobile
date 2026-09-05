@@ -1,5 +1,11 @@
 package com.localkarar.app.ui
 
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import com.localkarar.app.ui.components.LkBrandMark
+import com.localkarar.app.ui.components.LkHeroBlock
+import com.localkarar.app.ui.components.LkHeroTone
 import com.localkarar.app.core.SecureScreen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -39,37 +45,33 @@ fun RegisterScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.registerError.collectAsState()
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(LkSurfaceCanvas)
-            .padding(LkSpacing.Space6),
-        contentAlignment = Alignment.Center
-    ) {
-        Box(
+    /*
+     * §24.6 — giris oncesi akis: webin --auth-gradient'inin birebir kendisi.
+     * Panelin kenarligi kaldirildi; ayrim cizgiyle degil yuzeyle yapiliyor.
+     */
+    Column(modifier = Modifier.fillMaxSize()) {
+
+        LkHeroBlock(tone = LkHeroTone.Auth) {
+            Box(Modifier.fillMaxWidth().height(LkSpacing.Space12))
+        }
+
+        Column(
             modifier = Modifier
-                .widthIn(max = 420.dp)
+                .weight(1f)
                 .fillMaxWidth()
-                .background(LkSurfacePanel, LkShapes.MD)
-                .border(1.dp, LkLineStrong, LkShapes.MD)
-                .padding(LkSpacing.Space6)
+                .offset(y = (-22).dp)
+                .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
+                .background(LkSurfaceCanvas)
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
+                    .padding(horizontal = LkSpacing.Space6, vertical = LkSpacing.Space8)
             ) {
                 // Brand Header
-                Box(
-                    modifier = Modifier
-                        .size(56.dp)
-                        .background(LkSurfaceSignature, shape = LkShapes.MD)
-                        .border(1.dp, LkLineSoft, LkShapes.MD),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("LK", style = LkTypography.getSectionTitle(), color = LkPrimary, fontWeight = FontWeight.Bold)
-                }
+                LkBrandMark(size = 56.dp)
 
                 Spacer(modifier = Modifier.height(LkSpacing.Space4))
 
