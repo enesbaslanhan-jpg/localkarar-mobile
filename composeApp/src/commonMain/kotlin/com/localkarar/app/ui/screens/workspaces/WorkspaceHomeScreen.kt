@@ -1,5 +1,10 @@
 package com.localkarar.app.ui.screens.workspaces
 
+import com.localkarar.app.ui.screens.home.RECORD_TYPE_LABEL
+import com.localkarar.app.ui.components.LkProgressPill
+import com.localkarar.app.ui.components.LkIconTile
+import com.localkarar.app.ui.components.LkRowGroup
+import com.localkarar.app.ui.components.LkListRow
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
@@ -139,9 +144,56 @@ fun WorkspaceHomeScreen(
                             Modifier.weight(1f).padding(start = LkSpacing.Space4)
                         )
                     }
+
+                    /*
+                     * 🔴 MOCKUP'TAKI "EYLUL HEDEFININ %57'SI" UYDURMAYDI.
+                     *
+                     * Sunucuda hedef/target alani YOK -- ne TrackerSummaryDto'da
+                     * ne baska bir uctan geliyor. Uydurma bir finansal hedefi
+                     * ekrana basmak kullanicinin gercek sandigi bir sey
+                     * gostermek olurdu.
+                     *
+                     * Yerine GERCEKTEN turetilebilen bir oran: onumuzdeki 30
+                     * gunun toplam hareketi icinde tahsilatin payi. Etiket ne
+                     * oldugunu acikca soyluyor; "hedef" demiyor.
+                     */
+                    val alacak = ozet.nextThirtyDays.receivable
+                    val borc = ozet.nextThirtyDays.payable
+                    val toplam = alacak + borc
+                    if (toplam > 0.0) {
+                        Column(
+                            Modifier.fillMaxWidth().padding(
+                                start = LkSpacing.Space5,
+                                end = LkSpacing.Space5,
+                                bottom = LkSpacing.Space2
+                            )
+                        ) {
+                            /*
+                             * Dolgu KOYU, yol ACIK — referans desenin yonu bu.
+                             * Ilk denemede tersi yapilmisti (beyaz dolgu,
+                             * saydam yol) ve hero uzerinde koca bir beyaz blok
+                             * gibi bagirarak ekranin hakim ogesi oluyordu;
+                             * oysa hakim oge ustteki tutarlar olmali.
+                             */
+                            LkProgressPill(
+                                oran = (alacak / toplam).toFloat(),
+                                sagDeger = LkFormatting.formatMoney(toplam, state.workspace.currency),
+                                dolguRengi = LkBrand.B700,
+                                dolguUstuRengi = androidx.compose.ui.graphics.Color.White,
+                                yolRengi = androidx.compose.ui.graphics.Color(0xE8F1F5F7),
+                                yolUstuRengi = LkBrand.B700
+                            )
+                            Spacer(Modifier.height(LkSpacing.Space2))
+                            Text(
+                                text = "30 günlük hareketin bu kadarı tahsilat.",
+                                style = LkTypography.getMetadata(),
+                                color = LkHero.OnHeroSecondary
+                            )
+                        }
+                    }
                 }
             }
-            Spacer(Modifier.height(LkSpacing.Space6))
+            Spacer(Modifier.height(LkSpacing.Space5))
         }
 
         /* `weight(1f)` — Column icinde `fillMaxSize()` KALAN degil TUM
@@ -244,9 +296,20 @@ fun WorkspaceHomeScreen(
                         if (summary.upcoming.isNotEmpty()) {
                             item {
                                 LkSection(title = "Yaklaşan Kayıtlar") {
-                                    summary.upcoming.take(5).forEachIndexed { i, record ->
-                                        UpcomingRecordRow(record, onOpen = { onOpenRecord(record.id) })
-                                        if (i != minOf(4, summary.upcoming.lastIndex)) LkHairline()
+                                    /*
+                                     * §24 — satirlar TEK YUKSELTILMIS YUZEYDE.
+                                     *
+                                     * Sarmalanmadiginda acik temada zeminle ayni
+                                     * renge dusuyorlar ve liste bir nesne gibi
+                                     * degil, zemine yazilmis metin gibi okunuyor.
+                                     * Koyu temada daha az belliydi; emulatorde
+                                     * acik tema karesinde ortaya cikti.
+                                     */
+                                    LkRowGroup {
+                                        summary.upcoming.take(5).forEachIndexed { i, record ->
+                                            UpcomingRecordRow(record, onOpen = { onOpenRecord(record.id) })
+                                            if (i != minOf(4, summary.upcoming.lastIndex)) LkHairline()
+                                        }
                                     }
                                 }
                             }
@@ -358,11 +421,20 @@ private fun SectionNavRow(items: List<SectionNavItem>) {
                 horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space3)
             ) {
                 satir.forEach { item ->
-                    LkTactileAction(
-                        icon = item.icon,
-                        label = item.label,
+                    /* §24 — Ana Sayfa'daki hizli islem izgarasiyla AYNI
+                       bilesen. Ayni sey ayni gorunmeli. */
+                    LkIconTile(
+                        etiket = item.label,
                         onClick = item.onClick,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        ikon = {
+                            Icon(
+                                item.icon,
+                                contentDescription = null,
+                                tint = LkTileInk,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
                     )
                 }
                 // Son satir eksikse hizalama bozulmasin diye bosluk.
@@ -379,42 +451,47 @@ private fun UpcomingRecordRow(
 ) {
     val dueDate = LkDateUtils.parseDate(record.dueAt)
     val overdue = dueDate?.let { LkDateUtils.daysUntil(it) } ?: 0
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onOpen),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = record.title,
-                style = LkTypography.getBodySmall(),
-                color = LkTextPrimary,
-                maxLines = 1
-            )
-            Text(
-                text = record.type.replace('_', ' ').replaceFirstChar { it.uppercase() },
-                style = LkTypography.getMicro(),
-                color = LkTextMuted
+    val gecikti = record.dueAt != null && dueDate != null && overdue < 0
+
+    /*
+     * §24 satir anatomisi. Onceden ikonsuz, ayracsiz iki sutunlu bir satirdi.
+     *
+     * Gecikme durumu SADECE RENKLE degil, "Gecikti" kelimesiyle de
+     * belirtiliyor — alt basligin icinde.
+     */
+    LkListRow(
+        baslik = record.title,
+        altBaslik = listOfNotNull(
+            dueDate?.let { if (gecikti) "Gecikti · " + LkDateUtils.formatShortDate(it) else LkDateUtils.formatShortDate(it) }
+        ).joinToString(" ").ifBlank { null },
+        /*
+         * 🔴 KATEGORI INGILIZCE CIKIYORDU: `record.type` ham sunucu degeri
+         * ("payment", "promissory_note"). `replaceFirstChar { uppercase }`
+         * bunu "Payment" yapiyordu ve ekranda oyle duruyordu.
+         *
+         * `RECORD_TYPE_LABEL` zaten Ana Sayfa'da bu eslemeyi tutuyor; ayni
+         * kaynak kullaniliyor ki iki ekran ayni kayda iki ad vermesin.
+         * Eslemede olmayan bir tur gelirse ham deger degil "Kayıt" yazilir.
+         */
+        kategori = RECORD_TYPE_LABEL[record.type] ?: "Kayıt",
+        tutar = record.amount?.let { LkFormatting.formatMoney(it, record.currency) } ?: "—",
+        tutarRengi = when {
+            gecikti -> LkDanger
+            record.direction == "receivable" -> LkTextPrimary
+            else -> LkTextPrimary
+        },
+        onClick = onOpen,
+        ikon = {
+            Icon(
+                when (record.direction) {
+                    "receivable" -> Icons.Outlined.SouthWest
+                    "payable" -> Icons.Outlined.NorthEast
+                    else -> Icons.Outlined.ReceiptLong
+                },
+                contentDescription = null,
+                tint = if (gecikti) LkDanger else LkTileInk,
+                modifier = Modifier.size(21.dp)
             )
         }
-        Column(horizontalAlignment = Alignment.End) {
-            Text(
-                text = record.amount?.let { LkFormatting.formatMoney(it, record.currency) } ?: "—",
-                style = LkTypography.getBodyStrong(),
-                color = when (record.direction) {
-                    "payable" -> LkDanger
-                    "receivable" -> LkSuccess
-                    else -> LkTextPrimary
-                }
-            )
-            if (record.dueAt != null && dueDate != null) {
-                Text(
-                    text = if (overdue < 0) "Gecikti" else LkDateUtils.formatShortDate(dueDate),
-                    style = LkTypography.getMicro(),
-                    color = if (overdue < 0) LkDanger else LkTextMuted
-                )
-            }
-        }
-    }
+    )
 }
