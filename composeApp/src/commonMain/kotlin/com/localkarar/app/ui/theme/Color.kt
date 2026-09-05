@@ -149,6 +149,56 @@ val LkLightColors = LkColorScheme(
  */
 val LocalLkColors = staticCompositionLocalOf { LkDarkColors }
 
+/**
+ * Yururlukteki temanin koyu olup olmadigi.
+ *
+ * `isSystemInDarkTheme()` YERINE bu okunur. Kullanici Ayarlar'dan acik temayi
+ * secmisse isletim sistemi koyu olsa bile bu deger `false` doner; sistem
+ * cagrisi bunu bilmez ve yanlis kademe secilir.
+ */
+val LocalLkIsDark = staticCompositionLocalOf { true }
+
+// ──────────────────────────────────────────────────────────────────
+// §24.6 HERO GRADYANI
+// ──────────────────────────────────────────────────────────────────
+
+/*
+ * Marka renginde baslik blogu. Duraklar webin `--auth-gradient`'indan
+ * (`frontend/src/styles/tokens.css`) geliyor; 158deg, bes durak.
+ *
+ * En acik durak `#2F6A82` uzerinde beyaz metin 5.9:1 -- §24.6'nin
+ * "%85 beyaz opakligin altina inilmez" kurali bu olcume dayaniyor.
+ */
+object LkHero {
+    /** Calisma ekranlarinin baslik blogu — acik temada biraz acilmis. */
+    val LightStops = listOf(
+        Color(0xFF0E2530), Color(0xFF16394A), Color(0xFF1F4A5D),
+        Color(0xFF27607A), Color(0xFF2F6A82)
+    )
+
+    /** Koyu temada ayni gradyan daha derinden baslar. */
+    val DarkStops = listOf(
+        Color(0xFF060F14), Color(0xFF0E2530), Color(0xFF16394A),
+        Color(0xFF1B4356), Color(0xFF215065)
+    )
+
+    /** Giris oncesi akis — webin gradyaninin BIREBIR kendisi. */
+    val AuthStops = listOf(
+        Color(0xFF060F14), Color(0xFF0E2530), Color(0xFF1B4356),
+        Color(0xFF275C72), Color(0xFF2F6A82)
+    )
+
+    /**
+     * §24.6 — hero icindeki ikincil metin.
+     *
+     * Opaklik %85'in ALTINA inmez: %75'te kontrast 4.01:1'e duser ve
+     * §19 esiginin altinda kalir. Soluk etiket isteniyorsa opaklik
+     * dusurulmez, bu token kullanilir.
+     */
+    val OnHeroSecondary = Color(0xD9FFFFFF)   // %85 beyaz — olculdu 4.65:1
+    val OnHero          = Color(0xFFFFFFFF)   // olculdu 5.72:1
+}
+
 // ──────────────────────────────────────────────────────────────────
 // TOKENLAR
 // ──────────────────────────────────────────────────────────────────

@@ -84,8 +84,17 @@ fun LocalKararTheme(
      */
     val palet = if (darkTheme) LkDarkColors else LkLightColors
 
+    /*
+     * 🔴 `LocalLkIsDark` GEREKLI: `isSystemInDarkTheme()` DENETLEYICIYI ATLIYOR.
+     *
+     * Kullanici Ayarlar'dan "Acik" sectiginde ama isletim sistemi koyu
+     * temadayken, `isSystemInDarkTheme()` yine `true` donuyordu. `Elevation.kt`
+     * golge rengini bu sekilde okuyordu; acik temada koyu tema golgesi
+     * ciziliyordu. Cozulen tek dogru kaynak: temanin KENDI karari.
+     */
     CompositionLocalProvider(
         LocalLkColors provides palet,
+        LocalLkIsDark provides darkTheme,
         LocalThemeController provides themeController
     ) {
     MaterialTheme(

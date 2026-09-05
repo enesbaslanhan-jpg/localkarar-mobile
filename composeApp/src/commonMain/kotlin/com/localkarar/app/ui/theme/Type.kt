@@ -81,6 +81,93 @@ fun getManropeFontFamily(): FontFamily {
  */
 object LkTypography {
 
+    // ──────────────────────────────────────────────────────────────
+    // §24.2 MOBIL OLCEGI — baştan tasarım turu
+    //
+    // §4 olcegi mobilde hiyerarsi uretmiyordu: 18/16/15sp kademeleri
+    // kucuk ekranda birbirinden ayirt edilemiyor, her sey ayni agirlikta
+    // bir gri yikama gibi okunuyordu. §24.2 olcegi SERT: bir ekranda tek
+    // hakim rakam (`getDisplayXL`), gerisi belirgin sekilde kucuk.
+    //
+    // Eski `get*` fonksiyonlari DURUYOR — 77 tuketici dosya var, hepsi
+    // tek seferde tasinmiyor. Yeni ekranlar asagidaki kademeleri kullanir.
+    // ──────────────────────────────────────────────────────────────
+
+    /**
+     * §24.2 `display` — 40sp / 720. Ekranin TEK hakim sayisi.
+     *
+     * Bir ekranda birden fazla kullanilmaz; iki hakim rakam hiyerarsiyi
+     * yok eder. Para gosteriyorsa `getNumeric()` ile birlestirilir.
+     */
+    @Composable
+    fun getDisplayXL() = TextStyle(
+        fontFamily = getManropeFontFamily(),
+        fontWeight = FontWeight.W700,
+        fontSize = 40.sp,
+        lineHeight = 42.sp,
+        letterSpacing = (-1.2).sp,       // -0.03em
+        color = LkTextPrimary
+    )
+
+    /** §24.2 `titleL` — 26sp / 700. Ekran basligi. */
+    @Composable
+    fun getTitleL() = TextStyle(
+        fontFamily = getManropeFontFamily(),
+        fontWeight = FontWeight.W700,
+        fontSize = 26.sp,
+        lineHeight = 31.sp,
+        letterSpacing = (-0.65).sp,      // -0.025em
+        color = LkTextPrimary
+    )
+
+    /** §24.2 `titleS` — 18sp / 650. Bolum basligi. */
+    @Composable
+    fun getTitleS() = TextStyle(
+        fontFamily = getManropeFontFamily(),
+        fontWeight = FontWeight.W600,
+        fontSize = 18.sp,
+        lineHeight = 23.sp,
+        letterSpacing = (-0.36).sp,      // -0.02em
+        color = LkTextPrimary
+    )
+
+    /** §24.2 `body` — 15sp / 500. */
+    @Composable
+    fun getBodyM() = TextStyle(
+        fontFamily = getManropeFontFamily(),
+        fontWeight = FontWeight.W500,
+        fontSize = 15.sp,
+        lineHeight = 23.sp,              // 1.5
+        color = LkTextPrimary
+    )
+
+    /** §24.2 `label` — 13sp / 600. Etiket, satir ustu. */
+    @Composable
+    fun getLabelM() = TextStyle(
+        fontFamily = getManropeFontFamily(),
+        fontWeight = FontWeight.W600,
+        fontSize = 13.sp,
+        lineHeight = 17.sp,
+        color = LkTextSecondary
+    )
+
+    /**
+     * §24.2 — PARA VE ORAN GOSTERIMLERI ICIN ZORUNLU.
+     *
+     * Orantili rakamlarda her basamagin genisligi farkli; canli guncellenen
+     * bir tutar (sayac animasyonu, kaydirici sonucu) her karede saga sola
+     * ziplar. Tabular figurler bunu bitirir.
+     *
+     * Kullanim: `getDisplayXL().numeric()` gibi zincirlenir.
+     */
+    fun TextStyle.numeric(): TextStyle = this.copy(
+        fontFeatureSettings = "tnum"
+    )
+
+    // ──────────────────────────────────────────────────────────────
+    // §4 OLCEGI — mevcut ekranlarin kullandigi kademeler
+    // ──────────────────────────────────────────────────────────────
+
     /** §4 `display` — 32sp / W700. Yalniz auth ve onboarding hero. */
     @Composable
     fun getDisplay() = TextStyle(
