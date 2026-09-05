@@ -21,10 +21,10 @@
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
-        android:icon="@android:drawable/sym_def_app_icon"
+        android:icon="@drawable/local_karar_mark"
         android:label="LocalKarar"
         android:networkSecurityConfig="@xml/network_security_config"
-        android:roundIcon="@android:drawable/sym_def_app_icon"
+        android:roundIcon="@drawable/local_karar_mark"
         android:supportsRtl="true"
         android:theme="@style/Theme.LocalKarar">
         <activity

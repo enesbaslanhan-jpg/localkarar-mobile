@@ -1,7 +1,6 @@
-# Mobil Tasarım — Durum ve Yapılacaklar
+# Mobil Tasarım — Baştan Tasarım Turu
 
-**Dal:** `design` · **Commitler:** `8e8d75d`, `5df1363`, `169f926`
-**⚠️ Push edilmedi** — `origin/design`'ın 3 commit önünde.
+**Dal:** `design` · **Arşiv:** `archive/codex-yarim` (`ae1e320`)
 
 Doğrulama komutu (her değişiklikten sonra):
 
@@ -16,141 +15,162 @@ Doğrulama komutu (her değişiklikten sonra):
 
 ---
 
-## 0. Değişmez kurallar
+## 0. Referans sırası — BU TURDA DEĞİŞTİ
+
+Önceki turlarda model "renk + font + tipografi webden, yalnız düzen farklı"
+idi. **Ürün sahibi kararı (05.09.2026) bunu değiştirdi.** Hedef: dünya
+çapındaki finans uygulamalarıyla yarışacak bir arayüz. Yerleşik düzenin
+hiçbir bağlayıcılığı yok.
+
+| katman | kaynak |
+|---|---|
+| renk | **web** — `DESIGN.md` §1.1 brand ailesi, §1.5 semantic |
+| tipografi, yerleşim, hareket, bileşen davranışı | **mockup** (aşağıda) |
+| bilgi mimarisi, adlandırma, alan isimleri | **web** — görsel dil değil, YAPI |
+
+Mobil kodun mevcut hâli **delil değildir**. Önceki turda tam olarak
+"mobilde böyle yazıyor" denerek üç sapma kaçırılmıştı (§5).
+
+### Mockup
+
+Tasarımın tamamı — bileşen föyü + 54 ekran, açık/koyu tema, dört animasyon
+çalışır hâlde:
+
+**https://claude.ai/code/artifact/0be0e453-b050-44dd-8fc6-a0424f7d0c88**
+
+Bir ekranı yazmadan önce mockup'taki karşılığı açılır. Mockup HTML'dir,
+Kotlin değil — **ölçü, ritim ve desen** alınır, kod değil.
+
+---
+
+## 1. Aşama 0 — TAMAMLANDI
+
+Codex'in yarım tasarım turu (55 dosya) `archive/codex-yarim` dalına alındı;
+`design` dalına yalnızca baştan tasarımın geçersiz kılmadığı parçalar döndü:
+
+| korunan | neden |
+|---|---|
+| `AndroidManifest.xml` (simge bağlantısı) | uygulama simgesi Android varsayılanından gerçek marka işaretine çevrilmişti; geri alınsa boş Android ikonuna dönerdi |
+| `res/drawable/local_karar_mark.png` | manifest'in referansı |
+| `composeResources/drawable/local_karar_mark.png` | `LkBrandMark`'ın kaynağı |
+| `ui/components/LkBrandMark.kt` | henüz kullanılmıyor; giriş akışında kullanılacak |
+| `iosApp/.../app-icon-1024.png` | iOS uygulama simgesi |
+| `PRODUCT.md`, `.impeccable/` | ürün dokümanı ve ekran arşivi, kod değil |
+
+21 ekran düzenlemesi geri alındı — hepsi bu turda yeniden yazılacak.
+
+⚠️ Arşiv dalı **silinmeyecek**. Bir şeye ihtiyaç çıkarsa:
+`git checkout archive/codex-yarim -- <yol>`
+
+---
+
+## 2. Sırada — Aşama 1, 2, 3
+
+### Aşama 1 — Token katmanı (`ui/theme/`)
+
+- **Renk**: brand ailesi webden değişmeden. **Nötr basamak mobilde ayrışıyor**
+  — şu an açık temada `surfaceHighlight` ve `surfaceElevated` ikisi de
+  `#FFFFFF`, yükseltilmiş kart zeminden ayrılmıyor. Yeni basamak:
+
+  | rol | açık | koyu |
+  |---|---|---|
+  | canvas | `#EEF1F4` | `#0F1316` |
+  | surface | `#F7F9FA` | `#171C21` |
+  | raised | `#FFFFFF` | `#1F252B` |
+  | overlay | `#FFFFFF` | `#272E35` |
+
+- **Gölge**: açık temada yumuşak geniş gölge; **koyu temada gölge YOK**,
+  yüzey tonu yükseltmesi + üst kenarda 1dp `rgba(255,255,255,.06)` ışık.
+  Siyah zeminde siyah gölge görünmez. `Elevation.kt` bunu tek yerde çözer;
+  bileşenler kademe adı ister, ham değer değil.
+- **Tipografi**: Manrope kalır. Ölçek sertleşiyor —
+  display 40/720 · titleL 26/700 · titleS 18/650 · body 15/500 ·
+  label 13/600 · caption 11/500. Para ve oranlar **tabular figürlerle**;
+  orantılı rakamlarla canlı güncellenen tutarlar zıplar.
+- **Ölçü**: boşluk 4·8·12·16·20·24·32·40·56. Yarıçap: küçük 10 · kart 20 ·
+  çekmece 28 · hap tam yuvarlak. **Kart iç dolgusu 20dp** (şu an 14-16).
+
+### Aşama 2 — Bileşen katmanı
+
+Yeniden yazılan: `LkCard`, `LkButton`, `LkChip`, `LkTabs`.
+Yeni: `LkHeroHeader`, `LkSheet`, `LkMetric`, `LkIconTile`, `LkListRow`,
+`LkCoverHeader`, `LkCollapsingBar`, `LkSkeleton`, `LkToast`,
+`LkSuccessTick`, `LkConfetti`.
+
+**`LkHeroHeader` uygulamanın karakterini taşıyor**: marka renginde başlık
+bloğu + üstüne binen 32dp yarıçaplı yüzey. Referans kitlerin dördünde de
+bu desen var. Gradyan webin `--auth-gradient`'ından:
+`#060F14 → #0E2530 → #1B4356 → #275C72 → #2F6A82`, 158°.
+
+⚠️ Mockup'ta yakalanan hata: özet kartına negatif üst kenar boşluğu verilip
+kaydırma kabının üstüne taşırılırsa **kabın taşma kırpması kartın üstünü
+keser**. Kart tümüyle yüzeyin içinde durur; derinliği gölge taşır.
+
+**`LkSheet` en riskli parça.** Üç kademe (peek/half/full),
+`AnchoredDraggableState` ile. Material3 `ModalBottomSheet` bunu **veremez**:
+iki kademesi var ve karartmayla kapanır. Mockup'ta jest çakışmasını
+önlemek için sürükleme yalnızca tutamak ve başlıkta başlıyor — aynısı
+uygulanır. Oturmazsa iki kademeli sürüme düşülür, jest yerine düğme konur.
+
+### Aşama 3 — Altı ekran, sonra kalan 48
+
+Önce: Ana Sayfa, İşletme Takibi, Topluluk akışı, Profil, Hesaplamalar, Giriş.
+Bunlar oturunca kalan 48 ekran aynı dille akar; mockup'ta hepsinin
+karşılığı var.
+
+---
+
+## 3. Değişmez kurallar
 
 Bunlar tartışmaya kapalı; ihlal eden değişiklik geri alınır.
 
-1. **Referans sırası: `DESIGN.md` → web → mockup.**
-   Mobil kodun mevcut hâli DELİL DEĞİLDİR. Bu turda üç sapma tam olarak
-   "mobilde böyle yazıyor" denerek kaçırılmıştı (aşağıda §4).
-2. **`DESIGN.md` madde numarası olmayan değer eklenmez.** Eksikse önce
-   dokümana madde eklenir, sonra kod yazılır (§0).
-3. **Reader-app kuralı**: uygulamada satın almaya götüren düğme, bağlantı
-   veya fiyat YOK. Web'in `Ayarlar > Üyelik` bölümü ("ücretinizi görün")
-   bu yüzden mobile taşınmadı.
-4. **Prototipin renkleri ve fontu kullanılmaz.** `balanced_home_preview.html`
-   bir YERLEŞİM taslağıdır; renk/font/tipografi `DESIGN.md`'den gelir.
-5. **Erişilebilirlik pazarlık konusu değil** (§19): kontrast ≥4.5:1,
-   dokunma hedefi ≥44dp, görünür odak.
+1. **Reader-app**: uygulamada satın almaya götüren düğme, bağlantı veya
+   fiyat YOK. Web'in `Ayarlar > Üyelik` bölümü ("ücretinizi görün") bu
+   yüzden taşınmadı. Üyelik satırı **durumu gösterir**, satın almaya götürmez.
+2. **Erişilebilirlik** (§19): kontrast ≥4.5:1, dokunma hedefi ≥44dp,
+   görünür odak. **Ölçülür, tahmin edilmez.**
+   - Ölçülmüş: `#306D88` üzerinde beyaz **5.72:1**. Opaklık düşünce kırılıyor:
+     %85 → 4.65:1 (geçer), **%75 → 4.01:1 (kalır)**, %65 → 3.43:1.
+     **Kural: hero başlık içinde hiçbir metin %85 beyaz opaklığın altına
+     inmez.** Soluk etiket isteniyorsa opaklık değil, ayrı bir açık ton.
+   - Durum **tek başına renge yaslanmaz**: takvimde vade noktası, kritik
+     stokta ayrı etiket, "davet bekliyor" soluk renk değil kendi rozeti.
+3. **`DESIGN.md`'ye §24 "Mobil tasarım dili" eklenecek.** Mobilin ayrıştığı
+   her değer madde numarasıyla oraya yazılır. §0 kuralı: **numarasız değer
+   eklenmez.**
+4. **Hareket kısıtlaması pazarlık konusu değil.** Sayaç, konfeti, skeleton
+   parlaması ve çekmece yayı `ReducedMotion` açıkken tamamen atlanır —
+   son değer doğrudan yazılır.
+5. **Marka işareti temayla dönmez.** Renkleri bilerek sabit; açık ve koyu
+   temada aynı görünür.
 
 ---
 
-## 1. Tamamlananlar
+## 4. Dört zorunlu animasyon
 
-### Token katmanı (`ui/theme/`)
-| dosya | içerik |
-|---|---|
-| `Color.kt` | §1.1 brand ailesi, §1.5 semantic, §2.1 yüzeyler, §2.2 metin, §2.3 çizgiler |
-| `Type.kt` | §4 mobil sütunu; ağırlıklar `FontVariation` ile eksenden |
-| `Shape.kt` | §3.3 |
-| `Elevation.kt` | §3.2 gölge kademeleri (yeni) |
-| `Motion.kt` | §12 süre ve easing (yeni) |
-| `ReducedMotion.kt` + actual'lar | §12 hareket kısıtlama (yeni) |
+Ürün sahibi listesi. Hepsi Compose'da **dış bağımlılık olmadan** yazılır;
+Lottie bu turun kapsamında değil.
 
-### Ortak bileşenler (`ui/components/`)
-`LkSection`, `LkHairline`, `LkSectionCard` (§10 üç seviye), `LkButton`
-(§6 üç boyut/beş varyant), `LkTabs` (§11), `LkProgress` (§11),
-`LkBadge` (§11), `LkTactileAction`, `LkPillChip`, `LkSoftDock`.
+| # | animasyon | teknik ve tuzak |
+|---|---|---|
+| 1 | Sayı sayacı | `Animatable`. **Tabular figürler şart.** Yalnızca değer gerçekten değiştiğinde tetiklenir — her yeniden bileşimde baştan sayarsa ekran her dokunuşta titrer. |
+| 2 | Skeleton | `infiniteTransition` + `Brush.linearGradient` parlama |
+| 3 | Başarı | tik: `PathMeasure` yol çizimi. Konfeti: `Canvas` parçacık, ~150 satır. **Yalnızca gerçek tamamlanma anlarında** (kayıt kapatma, karar oturumu bitişi) — her kaydetmede değil, yoksa ciddi bir finans aracı oyuncak gibi görünür. |
+| 4 | Çekmece yayı | `spring(dampingRatio = .82f)` |
 
-### Ekranlar
-Beş ana sekme yeniden düzenlendi: Ana Sayfa, Hesaplamalar, İşletme Takibi,
-Topluluk, Ayarlar. Karşılama ekranına hero kompozisyonu eklendi.
+Marka işaretinin kendi animasyonu ayrı: pusula iğnesi −28°'den gelip 6°'ye
+taşarak yerine oturur, yay aynı anda çizilir, 700ms. Karşılama ekranında
+aynı hareketin büyütülmüş hâli var: 24 taksimatlı pusula kadranı, yön oku
+−142°'den dönüp kuzeyi buluyor. **Tek seferlik** — sürekli dönen kadran
+dekoratif gürültü olurdu.
 
-### Bu turda düzeltilen gerçek hatalar
-- **Font ağırlığı**: beş font dosyası birebir aynıydı, hepsi tek variable
-  fontun kopyasıydı ve varsayılan ekseni 200 (ExtraLight). Tüm yazı tek
-  ağırlıkta çiziliyordu.
-- **Yerleşim**: `AppShell`'de içerik `Box(fillMaxSize)` içindeydi; Column
-  içinde `fillMaxSize` KALAN değil TÜM yüksekliği ister. 50 kaydırılabilir
-  ekranın son satırı dock altında kalıyordu.
-- **Kontrast**: seçili hap/sekme `LkPrimary` + beyaz kullanıyordu; koyu
-  temada 1.9:1. `primaryFill` ile 4.6:1.
-- **Para kırpma**: `formatTry` `toLong()` ile kırpıyordu (1416,67 → ₺1.416);
-  fiyatlandırma aracında hedef marjın altında fiyat gösteriyordu.
+⚠️ Webde ve mockup'ta iki kez yakalanan tuzak: **aynı animasyon adı yeniden
+tetiklenmez.** CSS'te sınıfı kaldırıp reflow zorlamak gerekiyordu;
+Compose'da karşılığı `key()` ile yeniden başlatmaktır.
 
 ---
 
-## 2. Yapılacaklar
-
-### 2.1 — Kalan ekranlar (öncelik: yüksek)
-
-Beş sekme bitti; şu ekranlar hâlâ eski dilde (kart yığını, `LkSection`
-kullanmıyor):
-
-Akademi (Kurslar), Kurs Detayı, Ders Okuyucu, AI Mentor, Karar Araçları,
-Karar Oturumu, Haberler, Haber Detayı, Bildirimler, Hakkında, Kılavuz,
-Giriş, Kayıt.
-
-**Her biri için yöntem:**
-1. Bölümleri `LkSection` ile aç — çerçeve YOK, satırları `LkHairline` ayırır.
-   Kart yalnızca kendi başına duran, tıklanabilir bir nesne için
-   (`LkSectionCard`).
-2. Elle yazılmış buton/sekme/hap varsa ortak bileşenle değiştir.
-3. `Icons.Default.*` kalmışsa `Icons.Outlined.*` yap (beğeni/yer imi
-   dolu-çizgi çiftleri hariç).
-4. Emülatörde açık ve koyu temada kontrol et.
-
-### 2.2 — Bildirimlerin birleştirilmesi (öncelik: yüksek)
-
-Mobilde ÜÇ bildirim ekranı var, webde bir tane:
-- `ui/screens/settings/AccountNotificationsScreen.kt`
-- `ui/screens/community/NotificationsScreen.kt`
-- `ui/screens/workspaces/NotificationsScreen.kt`
-
-Web deseni (`frontend/src/pages/NotificationsPage.jsx`): hesap + topluluk
-TEK ekranda iki bölüm ("ÜYELİK VE ÖDEME", "TOPLULUK"). İşletme Takibi
-bildirimleri webde de ayrı sekmede, ONA DOKUNULMAZ.
-
-`Destination.AccountNotifications` ve `Destination.CommunityNotifications`
-tek hedefe iner; `NavController.kt` ve `AppShell.kt` çağrı yerleri güncellenir.
-
-⚠️ Hesap ve topluluk satırları AYRI composable olarak yazılmalı. Webde tam
-burada bir ızgara hatası olmuştu: 3 öğeli satır 4 sütunlu ızgaraya düşüyordu.
-
-### 2.3 — Giriş ekranı (öncelik: orta)
-
-- Google/Apple düğmeleri webdeki gibi: görünür ama **devre dışı**,
-  "Yakında" etiketiyle. Web karşılığı `frontend/src/pages/AuthPage.jsx`.
-- Karşılama ekranındaki hero dili giriş/kayıt akışına da uygulanabilir
-  (`WelcomeScreen.kt` içindeki `HosGeldinHero` örnek alınabilir).
-  Bu dil YALNIZ giriş öncesi akışa aittir; çalışma ekranlarına girmez.
-
-### 2.4 — Akademi içeriği (öncelik: orta)
-
-Mockup'ta "Sertifika: Dahil" ve "Video Modül" yazıyor. **KULLANILMAZ** —
-arka uçta sertifika alanı yok ve dersler metin tabanlı (`/courses` yanıtı:
-`sourceType: canonical-v1`). Ders sayısı ve süre gerçek alanlardan gelir
-(`lessonCount`, `estimatedMinutes`).
-
-### 2.5 — Para bileşeni yayılımı (öncelik: düşük)
-
-`formatTry` düzeltildi ama mobil tarafta `LkFormatting.formatMoney` ayrı
-bir yol. İkisinin aynı yuvarlama davranışını verdiği doğrulanmalı; farklıysa
-tek yerde toplanmalı.
-
-### 2.6 — iOS (öncelik: düşük ama BİLİNMEZ)
-
-**iOS hiç çalıştırılmadı.** Derleniyor ama cihazda/simülatörde görsel
-doğrulama YOK. Özellikle iki yeni `actual` doğrulanmalı:
-- `ui/theme/ReducedMotion.ios.kt` — `UIAccessibilityIsReduceMotionEnabled`
-- `Type.kt`'deki `FontVariation` — iOS'ta eksen örneklemesi çalışıyor mu
-
-Bu ikisi çalışmıyorsa iOS'ta tüm yazı yine ExtraLight çıkar.
-
----
-
-## 3. Bilinen eksikler
-
-- §11'in `Skeleton`, `Toast`, `Tooltip` bileşenleri YOK. Gerçek kullanımları
-  olmadığı için yazılmadı; ihtiyaç çıkınca §11'e göre eklenir.
-- Açık temada `surfaceHighlight` ve `surfaceElevated` ikisi de `#FFFFFF`;
-  §2.1 bunları ayırıyor ama mobilde ayrı kullanım yok.
-- `DESIGN.md` §2.1 tablosu mobildeki yeni yüzey değerleriyle GÜNCELLENMELİ
-  (gerekçe ve ölçümler `Color.kt` başında). Yoksa web ve mobil ayrışır.
-
----
-
-## 4. Bu turda yakalanan referans hataları — tekrarlanmasın
+## 5. Önceki turda yakalanan referans hataları — tekrarlanmasın
 
 Üçü de "mobil kodda böyle yazıyor" denerek kaçırılmıştı:
 
@@ -163,5 +183,23 @@ Bu ikisi çalışmıyorsa iOS'ta tüm yazı yine ExtraLight çıkar.
 3. **Topluluk sekmeleri** webdeki sıradan farklıydı ve "Takip ve engelleme"
    bölümüne "Kişiler" denmişti — aynı şeye iki platformda iki ad.
 
-**Kural:** yeni bir ekrana başlamadan önce webdeki karşılığını aç, IA'yı ve
-adlandırmayı oradan al.
+**Kural:** yeni bir ekrana başlamadan önce webdeki karşılığını aç, bilgi
+mimarisini ve adlandırmayı oradan al. Görsel dili mockup'tan al.
+
+---
+
+## 6. Bilinen boşluklar
+
+- **`coverUrl` mobil DTO'sunda var ama `ProfileScreen` çizmiyor.** Kapak
+  fotoğrafı için sunucu tarafında yeni alan gerekmiyor.
+- **iOS hiç çalıştırılmadı.** Derleniyor ama cihazda görsel doğrulama YOK.
+  İki `actual` doğrulanmalı: `ui/theme/ReducedMotion.ios.kt`
+  (`UIAccessibilityIsReduceMotionEnabled`) ve `Type.kt`'deki
+  `FontVariation` eksen örneklemesi. Çalışmıyorsa iOS'ta tüm yazı
+  ExtraLight çıkar.
+- §11'in `Skeleton`, `Toast`, `Tooltip` bileşenleri hâlâ yok.
+- Altı ekran yeni dile geçtiğinde kalan 48 ekran geçici olarak eski dilde
+  kalır; ara durumda uygulama iki dilli görünür. Kabul edilen maliyet.
+- **Akademi**: mockup'ta "Sertifika" ve "Video Modül" YOK — arka uçta
+  sertifika alanı yok ve dersler metin tabanlı (`sourceType: canonical-v1`).
+  Referans kitlerde vardı, bilerek alınmadı.
