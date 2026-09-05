@@ -1,5 +1,13 @@
 package com.localkarar.app.ui.screens.workspaces
 
+import androidx.compose.material.icons.outlined.ReceiptLong
+import androidx.compose.material.icons.outlined.NorthEast
+import androidx.compose.material.icons.outlined.SouthWest
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.Icon
+import com.localkarar.app.ui.components.LkHairline
+import com.localkarar.app.ui.components.LkRowGroup
+import com.localkarar.app.ui.components.LkListRow
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -104,13 +112,21 @@ fun RecordsScreen(
                                 description = "Bu filtreye uygun kayıt yok."
                             )
                         } else {
+                            /* Satirlar TEK yukseltilmis yuzeyde; kart yigini degil. */
                             LazyColumn(
                                 modifier = Modifier.fillMaxSize(),
-                                contentPadding = PaddingValues(LkSpacing.Space4),
-                                verticalArrangement = Arrangement.spacedBy(LkSpacing.Space3)
+                                contentPadding = PaddingValues(LkSpacing.Space4)
                             ) {
-                                items(state.records, key = { it.id }) { record ->
-                                    RecordCard(record = record, onClick = { onOpenRecord(record.id) })
+                                item {
+                                    LkRowGroup {
+                                        state.records.forEachIndexed { i, record ->
+                                            RecordCard(
+                                                record = record,
+                                                onClick = { onOpenRecord(record.id) }
+                                            )
+                                            if (i != state.records.lastIndex) LkHairline()
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -138,53 +154,44 @@ fun RecordCard(
     val overdue = dueDate?.let { LkDateUtils.daysUntil(it) } ?: 0
     val isActive = record.status == "open" || record.status == "in_progress"
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(LkSurfacePanel, LkShapes.MD)
-            .border(1.dp, LkLineStrong, LkShapes.MD)
-            .clickable(onClick = onClick)
-            .padding(LkSpacing.PadPanel)
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = record.title,
-                style = LkTypography.getBodyStrong(),
-                color = LkTextPrimary,
-                modifier = Modifier.weight(1f),
-                maxLines = 1
-            )
-            Spacer(modifier = Modifier.width(LkSpacing.Space3))
-            record.amount?.let {
-                Text(
-                    text = LkFormatting.formatMoney(it, record.currency),
-                    style = LkTypography.getBodyStrong(),
-                    color = when (record.direction) {
-                        "payable" -> LkDanger
-                        "receivable" -> LkSuccess
-                        else -> LkTextPrimary
-                    }
-                )
-            }
+    /*
+     * §24 satir anatomisi — ikon kutucugu | baslik + durum/vade | tur | tutar.
+     *
+     * 🔴 ONCEDEN KART YIGINIYDI: her kayit kendi kenarlikli kutusundaydi ve
+     * icinde iki hap vardi. On kayitlik bir liste on ayri cerceve demekti;
+     * goz nereye bakacagini bilmiyordu. Artik tek yuzey, satirlar dikey
+     * ayracla ayriliyor.
+     *
+     * Gecikme SADECE RENKLE degil "Gecikti" kelimesiyle de belirtiliyor.
+     */
+    val gecikti = record.dueAt != null && isActive && overdue < 0
+    val altSatir = listOfNotNull(
+        recordStatusLabel(record.status).takeIf { it.isNotBlank() },
+        when {
+            gecikti -> "Gecikti"
+            record.dueAt != null && isActive && dueDate != null -> LkDateUtils.formatShortDate(dueDate)
+            else -> null
         }
-        Spacer(modifier = Modifier.height(LkSpacing.Space2))
-        Row(horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2), verticalAlignment = Alignment.CenterVertically) {
-            LkChip(text = recordTypeLabel(record.type))
-            LkChip(
-                text = recordStatusLabel(record.status),
-                background = LkSurfaceRaised,
-                contentColor = if (record.status == "completed") LkSuccess
-                else if (record.status == "cancelled") LkTextMuted
-                else if (record.status == "deferred") LkWarning
-                else LkTextSecondary
+    ).joinToString(" · ").ifBlank { null }
+
+    LkListRow(
+        baslik = record.title,
+        altBaslik = altSatir,
+        kategori = recordTypeLabel(record.type),
+        tutar = record.amount?.let { LkFormatting.formatMoney(it, record.currency) },
+        tutarRengi = if (gecikti) LkDanger else LkTextPrimary,
+        onClick = onClick,
+        ikon = {
+            Icon(
+                when (record.direction) {
+                    "receivable" -> Icons.Outlined.SouthWest
+                    "payable" -> Icons.Outlined.NorthEast
+                    else -> Icons.Outlined.ReceiptLong
+                },
+                contentDescription = null,
+                tint = if (gecikti) LkDanger else LkTileInk,
+                modifier = Modifier.size(21.dp)
             )
-            if (record.dueAt != null && isActive) {
-                Text(
-                    text = if (overdue < 0) "Gecikti" else LkDateUtils.formatShortDate(dueDate!!),
-                    style = LkTypography.getMicro(),
-                    color = if (overdue < 0) LkDanger else LkTextMuted
-                )
-            }
         }
-    }
+    )
 }

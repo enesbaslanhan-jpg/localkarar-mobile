@@ -99,11 +99,20 @@ fun LkSheet(
         val h = constraints.maxHeight.toFloat()
         val d = LocalDensity.current
 
-        /* Kademe konumlari — cekmecenin UST kenarinin y'si. */
+        /*
+         * Kademe konumlari — cekmecenin UST kenarinin y'si.
+         *
+         * ⚠️ `h` EKRAN YUKSEKLIGI DEGIL, kabin yuksekligi. Kap alt dock'un
+         * ustunde bitiyor; bu yuzden 150dp'lik bir tepe kademesi ekranda
+         * beklenenden YUKARIDA duruyordu ve arkadaki bolumleri ortuyordu.
+         *
+         * 108dp: tutamak + baslik satiri gorunur, altindaki icerik degil.
+         * Cekmecenin orada oldugu anlasilir ama sayfayi yemez.
+         */
         val anchors = remember(h) {
             DraggableAnchors {
-                LkSheetDetent.Peek at h - with(d) { 150.dp.toPx() }
-                LkSheetDetent.Half at h * 0.44f
+                LkSheetDetent.Peek at h - with(d) { 108.dp.toPx() }
+                LkSheetDetent.Half at h * 0.46f
                 LkSheetDetent.Full at with(d) { 78.dp.toPx() }
             }
         }

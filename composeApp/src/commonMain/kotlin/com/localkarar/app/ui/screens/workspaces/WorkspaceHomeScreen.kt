@@ -1,5 +1,7 @@
 package com.localkarar.app.ui.screens.workspaces
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
 import com.localkarar.app.ui.components.rememberLkSheetState
 import com.localkarar.app.ui.components.LkSheet
 import com.localkarar.app.ui.screens.home.RECORD_TYPE_LABEL
@@ -82,6 +84,7 @@ fun WorkspaceHomeScreen(
 
     val state = uiState
     val sheetState = rememberLkSheetState()
+    var seciliDurum by remember { mutableStateOf<String?>(null) }
 
     /*
      * §24.6 — hero baslik blogu + binen yuzey.
@@ -233,41 +236,30 @@ fun WorkspaceHomeScreen(
                     ),
                     verticalArrangement = Arrangement.spacedBy(LkSpacing.Space4)
                 ) {
-                    item {
-                        LkSectionHeader(
-                            title = state.workspace.name,
-                            subtitle = listOfNotNull(
-                                state.workspace.sector,
-                                state.workspace.city
-                            ).joinToString(" • ").ifBlank { null }
-                        )
-                    }
+                    /*
+                     * Isletme adi ve "Ozet" sayaclari kaldirildi.
+                     *
+                     * Ad zaten ustteki "Genel Bakış" hapinin actigi secicide
+                     * ve gezinti baglaminda var; ekranin ilk okunan sey
+                     * isletmenin adi degil PARASI olmali (hero'daki tutarlar).
+                     * Acik/geciken sayilari da hareket listesinden okunuyor.
+                     */
 
                     state.summary?.let { summary ->
                         item {
                             // Prototipteki `metrics-row`: kutu YOK, bolum acik.
                             // Onceden dort ayri `LkMetricCard` vardi ve sayfa
                             // kart yigini gibi duruyordu.
-                            LkSection(title = "Özet") {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space3)
-                                ) {
-                                    OzetMetrik("Açık Kayıt", summary.counts.open.toString(), LkTextPrimary, Modifier.weight(1f))
-                                    OzetMetrik(
-                                        "Geciken",
-                                        summary.counts.overdue.toString(),
-                                        if (summary.counts.overdue > 0) LkDanger else LkTextPrimary,
-                                        Modifier.weight(1f)
-                                    )
-                                }
-                                /*
-                                 * 30 gunluk alacak ve borc BURADAN KALKTI —
-                                 * hero'ya tasindilar. Ayni rakami iki yerde
-                                 * gostermek hiyerarsiyi bozar ve kullaniciya
-                                 * iki farkli sey sanilma riski verir.
-                                 */
-
+                            /*
+                             * "Ozet" bolumu kaldirildi (mockup'ta yok):
+                             * 30 gunluk alacak/borc hero'da, acik ve geciken
+                             * sayilari da hareket listesinden okunuyor.
+                             *
+                             * Yalniz "yonu belirsiz" uyarisi KALDI — o
+                             * kayitlar hicbir toplama girmiyor ve bu satir
+                             * olmadan ekranin HICBIR yerinde gorunmuyorlar.
+                             */
+                            Column {
                                 // Yonu belirsiz kayitlar hicbir toplama girmiyor;
                                 // kendi satiri olmadan ekranda hic gorunmuyorlar.
                                 val bekleyen = summary.awaitingDirection
@@ -326,39 +318,20 @@ fun WorkspaceHomeScreen(
                         }
                     }
 
-                    item {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            LkSectionHeader(title = "İşletme Bölümleri")
-                            Text(
-                                text = "Tümünü Seç",
-                                style = LkTypography.getMicro(),
-                                color = LkPrimary,
-                                modifier = Modifier.clickable(onClick = onOpenSectionSelector)
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(LkSpacing.Space3))
-                        SectionNavRow(
-                            items = listOf(
-                                SectionNavItem("Kayıtlar", Icons.Outlined.ReceiptLong, onOpenRecords),
-                                SectionNavItem("Siparişler", Icons.Outlined.ShoppingCart, onOpenOrders),
-                                SectionNavItem("Ürünler", Icons.Outlined.Inventory2, onOpenProducts),
-                                SectionNavItem("Belgeler", Icons.Outlined.AttachFile, onOpenDocuments),
-                                // Sira webdeki WORKSPACE_NAV_TABS ile AYNI olmali:
-                                // bildirimler takvimden ONCE. Web tarafinda bu sirayi
-                                // koruyan bir regresyon testi var (navigation.js notu).
-                                SectionNavItem("Bildirimler", Icons.Outlined.Notifications, onOpenNotifications),
-                                SectionNavItem("Takvim", Icons.Outlined.CalendarMonth, onOpenCalendar),
-                                SectionNavItem("Ekip", Icons.Outlined.Group, onOpenTeam),
-                                SectionNavItem("Kişiler", Icons.Outlined.Contacts, onOpenContacts),
-                                SectionNavItem("Aktiviteler", Icons.Outlined.Construction, onOpenActivity),
-                                SectionNavItem("Ayarlar", Icons.Outlined.Settings, onOpenSettings)
-                            )
-                        )
-                    }
+                    /*
+                     * 🔴 "ISLETME BOLUMLERI" IZGARASI KALDIRILDI.
+                     *
+                     * Mockup'ta bu ekranda boyle bir izgara YOK: hero, donem,
+                     * son hareketler ve cekmece var. Izgara ekranin yarisini
+                     * kapliyor ve cekmecenin altinda kaliyordu.
+                     *
+                     * ⚠️ ERISIM KAYBI YOK — kontrol edildi: ustteki
+                     * "Genel Bakış" hapi `WorkspaceSectionSheet`i aciyor ve
+                     * o sayfada ONBIR bolumun hepsi var (Kayıtlar, Siparişler,
+                     * Ürünler, Belgeler, Bildirimler, Takvim, Ekip, Kişiler,
+                     * Aktiviteler, Entegrasyonlar, Ayarlar). Izgara ikinci
+                     * bir yoldu, tek yol degil.
+                     */
 
                     item {
                         LkButton(
@@ -411,14 +384,55 @@ fun WorkspaceHomeScreen(
                 }
             },
             body = {
+                /*
+                 * Durum haplari GERCEK filtre — sunucuya gitmiyor, zaten
+                 * yuklu listeyi suzuyor. Donem haplarindan farki bu: burada
+                 * suzulecek veri elimizde, orada yoktu.
+                 *
+                 * Yalnizca listede GERCEKTEN bulunan durumlar gosteriliyor;
+                 * hicbir siparisin olmadigi bir duruma hap koymak bos sonuc
+                 * veren bir dugme olurdu.
+                 */
+                val mevcutDurumlar = orders.map { it.status }.distinct()
+                val haplar = listOf<String?>(null) + SIPARIS_DURUM_ETIKET.keys
+                    .filter { it in mevcutDurumlar }
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .padding(
+                            start = LkSpacing.Space4,
+                            end = LkSpacing.Space4,
+                            top = LkSpacing.Space2,
+                            bottom = LkSpacing.Space3
+                        ),
+                    horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2)
+                ) {
+                    haplar.forEach { durum ->
+                        val secili = seciliDurum == durum
+                        Text(
+                            text = durum?.let { SIPARIS_DURUM_ETIKET[it] ?: it } ?: "Tümü",
+                            style = LkTypography.getMetadata(),
+                            color = if (secili) LkOnPrimary else LkTextSecondary,
+                            modifier = Modifier
+                                .clip(LkShapes.FULL)
+                                .background(if (secili) LkPrimaryFill else LkSurfaceTile)
+                                .clickable { seciliDurum = durum }
+                                .padding(horizontal = LkSpacing.Space4, vertical = LkSpacing.Space2)
+                        )
+                    }
+                }
+
+                val gosterilen = orders.filter { seciliDurum == null || it.status == seciliDurum }
+
                 LkRowGroup(
                     modifier = Modifier.padding(
                         start = LkSpacing.Space4,
-                        end = LkSpacing.Space4,
-                        top = LkSpacing.Space2
+                        end = LkSpacing.Space4
                     )
                 ) {
-                    orders.take(12).forEachIndexed { i, order ->
+                    gosterilen.take(12).forEachIndexed { i, order ->
                         LkListRow(
                             /*
                              * OrderDto'da `productTitle` ve `totalAmount` YOK —
@@ -446,7 +460,7 @@ fun WorkspaceHomeScreen(
                                 )
                             }
                         )
-                        if (i != minOf(11, orders.lastIndex)) LkHairline()
+                        if (i != minOf(11, gosterilen.lastIndex)) LkHairline()
                     }
                 }
             }

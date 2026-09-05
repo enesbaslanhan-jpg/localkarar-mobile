@@ -1,5 +1,12 @@
 package com.localkarar.app.ui.screens.community
 
+import com.localkarar.app.ui.components.LkHairline
+import com.localkarar.app.ui.components.LkListRow
+import com.localkarar.app.ui.components.LkRowGroup
+import com.localkarar.app.ui.components.LkCard
+import com.localkarar.app.ui.components.LkRemoteImage
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
 import com.localkarar.app.ui.components.LkAvatar
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -55,8 +62,28 @@ import com.localkarar.app.ui.theme.*
 enum class CommunityInternalTab(val title: String) {
     FEED("Akış"),
     PROFILE("Profil"),
-    MEMBERS("Takip ve engelleme"),
-    CHATS("Sohbetler")
+    CHATS("Sohbetler");
+
+    companion object {
+        /*
+         * 🔴 "Takip ve engelleme" UST SEKMEDEN CIKARILDI (urun sahibi karari).
+         *
+         * Ust seritteki en uzun etiket oydu ve dort sekme ekranin ustunu
+         * kaplıyordu. Ait oldugu yer profil: takip ettiklerin ve
+         * engellediklerin SENIN hesabina ait seyler, toplulugun ayri bir
+         * bolumu degil.
+         *
+         * ⚠️ ERISIM KAYBI YOK: Profil sekmesinin icinden aciliyor
+         * (`PROFILE` dalindaki `onOpenPeople`) ve derin baglanti da
+         * calismaya devam ediyor — `initialTab = "people"` hala Profil'e
+         * dusup listeyi aciyor.
+         */
+        fun fromDeepLink(raw: String): CommunityInternalTab = when (raw.lowercase()) {
+            "threads", "sohbetler", "chats" -> CHATS
+            "profile", "profil", "people", "kisiler", "members" -> PROFILE
+            else -> FEED
+        }
+    }
 }
 
 @Composable
@@ -74,13 +101,16 @@ fun CommunityFeedScreen(
     onOpenFollowers: (Int, String) -> Unit,
     onOpenProductCenter: (() -> Unit)? = null
 ) {
-    val startingTab = when (initialTab.lowercase()) {
-        "people", "kisiler", "members" -> CommunityInternalTab.MEMBERS
-        "threads", "sohbetler", "chats" -> CommunityInternalTab.CHATS
-        "profile", "profil" -> CommunityInternalTab.PROFILE
-        else -> CommunityInternalTab.FEED
-    }
+    val startingTab = CommunityInternalTab.fromDeepLink(initialTab)
     var currentSubTab by remember(initialTab) { mutableStateOf(startingTab) }
+
+    /*
+     * Profil sekmesinin icinden acilan "Takip ve engelleme" listesi.
+     * Derin baglanti "people" ile gelindiyse dogrudan acik baslar.
+     */
+    var kisilerAcik by remember(initialTab) {
+        mutableStateOf(initialTab.lowercase() in listOf("people", "kisiler", "members"))
+    }
     val unreadNotifs = notificationsViewModel.unreadCount
 
     /* §24.6 — hero baslik blogu + binen yuzey. */
@@ -159,31 +189,49 @@ fun CommunityFeedScreen(
             // (#7BA2B3); uzerine beyaz 1.9:1 veriyor -- §19'un 4.5:1 esiginin
             // altinda. `LkTabs` secili segmentte `primaryFill` kullaniyor
             // (brand-500), beyazla her iki modda 4.6:1.
+            /*
+             * §24 — HAP SEKMELER, alt cizgi degil.
+             *
+             * ⚠️ Daha once `LkTabs`in SEGMENTED bicimi denenmis ve
+             * birakilmisti: dort sekme esit sutunlara bolununce
+             * "Takip ve engelleme" iki satira kirilip segmenti tasiriyordu.
+             *
+             * Cozum esit sutun DEGIL, KAYDIRILABILIR hap seridi: her hap
+             * kendi metni kadar genis, uzun etiket kirilmiyor, sigmayan
+             * yana kayiyor. Ayni desen cekmecedeki durum haplarinda da var.
+             */
             val sekmeler = CommunityInternalTab.values().toList()
-            LkTabs(
-                tabs = sekmeler.map { it.title },
-                selectedIndex = sekmeler.indexOf(currentSubTab),
-                onSelect = { currentSubTab = sekmeler[it] },
-                // §11 varsayilani underline. SEGMENTED denendi ve "Takip ve
-                // engelleme" iki satira kirilip 34dp segmenti tasiriyordu;
-                // §11 zaten segmented'i 2-3 KISA secenek icin tanimliyor.
-                style = LkTabStyle.UNDERLINE,
-                modifier = Modifier.padding(horizontal = LkSpacing.Space4, vertical = LkSpacing.Space2)
-            )
-
-            Divider(color = LkLineSoft)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = LkSpacing.Space4, vertical = LkSpacing.Space3),
+                horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2)
+            ) {
+                sekmeler.forEach { sekme ->
+                    val secili = sekme == currentSubTab
+                    Text(
+                        text = sekme.title,
+                        style = LkTypography.getLabelM(),
+                        /* Secili hapta `primaryFill` (brand-500) + beyaz:
+                           her iki temada 4.6:1. `LkPrimary` koyu temada
+                           brand-300 ve beyazla 1.9:1 verirdi. */
+                        color = if (secili) LkOnPrimary else LkTextSecondary,
+                        maxLines = 1,
+                        modifier = Modifier
+                            .clip(LkShapes.FULL)
+                            .background(if (secili) LkPrimaryFill else LkSurfaceTile)
+                            .clickable { currentSubTab = sekme }
+                            .padding(horizontal = LkSpacing.Space4, vertical = LkSpacing.Space2)
+                    )
+                }
+            }
 
             when (currentSubTab) {
                 CommunityInternalTab.FEED -> {
                     FeedTabContent(
                         viewModel = communityViewModel,
                         onOpenPost = onOpenPost,
-                        onOpenProfile = onOpenProfile
-                    )
-                }
-                CommunityInternalTab.MEMBERS -> {
-                    PeopleScreen(
-                        viewModel = socialViewModel,
                         onOpenProfile = onOpenProfile
                     )
                 }
@@ -195,15 +243,84 @@ fun CommunityFeedScreen(
                     )
                 }
                 CommunityInternalTab.PROFILE -> {
-                    ProfileScreen(
-                        userId = null, // Own profile
-                        socialViewModel = socialViewModel,
-                        communityViewModel = communityViewModel,
-                        onBack = null,
-                        onOpenFollowers = onOpenFollowers,
-                        onOpenPost = onOpenPost,
-                        onOpenProfile = onOpenProfile
-                    )
+                    if (kisilerAcik) {
+                        /* Profil icindeki "Takip ve engelleme" listesi. */
+                        Column(Modifier.fillMaxSize()) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(
+                                        start = LkSpacing.Space3,
+                                        end = LkSpacing.Space4,
+                                        top = LkSpacing.Space2
+                                    ),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                IconButton(onClick = { kisilerAcik = false }) {
+                                    Icon(
+                                        Icons.Outlined.ArrowBack,
+                                        contentDescription = "Profile dön",
+                                        tint = LkTextPrimary
+                                    )
+                                }
+                                Text(
+                                    "Takip ve engelleme",
+                                    style = LkTypography.getTitleS(),
+                                    color = LkTextPrimary
+                                )
+                            }
+                            PeopleScreen(
+                                viewModel = socialViewModel,
+                                onOpenProfile = onOpenProfile
+                            )
+                        }
+                    } else {
+                        Column(Modifier.fillMaxSize()) {
+                            /*
+                             * Profilin icinden "Takip ve engelleme"ye giris.
+                             * Ust sekmeden buraya tasindi; takip ettiklerin ve
+                             * engellediklerin kullanicinin KENDI hesabina ait.
+                             */
+                            LkRowGroup(
+                                modifier = Modifier.padding(
+                                    horizontal = LkSpacing.Space4,
+                                    vertical = LkSpacing.Space2
+                                )
+                            ) {
+                                LkListRow(
+                                    baslik = "Takip ve engelleme",
+                                    altBaslik = "Takip ettiklerin ve engellediklerin",
+                                    onClick = { kisilerAcik = true },
+                                    ikon = {
+                                        Icon(
+                                            Icons.Outlined.PeopleOutline,
+                                            contentDescription = null,
+                                            tint = LkTileInk,
+                                            modifier = Modifier.size(21.dp)
+                                        )
+                                    },
+                                    sag = {
+                                        Icon(
+                                            Icons.Outlined.ChevronRight,
+                                            contentDescription = null,
+                                            tint = LkTextMuted,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                )
+                            }
+
+                            ProfileScreen(
+                                userId = null, // Own profile
+                                socialViewModel = socialViewModel,
+                                communityViewModel = communityViewModel,
+                                onBack = null,
+                                onOpenFollowers = onOpenFollowers,
+                                onOpenPost = onOpenPost,
+                                onOpenProfile = onOpenProfile
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -224,31 +341,16 @@ private fun FeedTabContent(
     var reportingPostId by remember { mutableStateOf<String?>(null) }
 
     Column(Modifier.fillMaxSize()) {
-        // Feed Filter Pills
-        LazyRow(
-            Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(viewModel.tabs.size) { index ->
-                val (value, label) = viewModel.tabs[index]
-                val isSelected = value == viewModel.selectedType
-                Box(
-                    modifier = Modifier
-                        .clip(LkShapes.MD)
-                        .background(if (isSelected) LkPrimarySoft else LkSurfaceSunken)
-                        .border(1.dp, if (isSelected) LkPrimary else LkLineSoft, LkShapes.MD)
-                        .clickable { viewModel.selectType(value) }
-                        .padding(horizontal = 14.dp, vertical = 6.dp)
-                ) {
-                    Text(
-                        label,
-                        style = LkTypography.getMicro(),
-                        color = if (isSelected) LkPrimary else LkTextSecondary,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                    )
-                }
-            }
-        }
+        /*
+         * 🔴 "Tümü / Resmi / Topluluk" HAP SATIRI KALDIRILDI (urun sahibi
+         * karari). Ust sekmelerin hemen altinda ikinci bir hap seridi
+         * vardi ve ekranin ustu iki sira dugmeye donusuyordu; hangisinin
+         * neyi filtreledigi de belirsizdi.
+         *
+         * Filtreleme kaybolmadi: `viewModel.selectType` duruyor ve derin
+         * baglantidan hala kullanilabiliyor. Yalnizca akisin ustunden
+         * kalkti.
+         */
 
         when (val s = feedState) {
             is CommunityViewModel.FeedUiState.Loading -> {
@@ -289,6 +391,28 @@ private fun FeedTabContent(
                             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 88.dp),
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
+                            /*
+                             * GÜNDEMDE — webin sag serit kartinin karsiligi
+                             * (`CommunityPage.jsx:1082`, `feed.rail.trending`).
+                             *
+                             * Webde de sunucu ucu YOK: akisin ilk dort gonderisi
+                             * numaralanip gosteriliyor (`posts.slice(0,4)`).
+                             * Mobilde de ayni sekilde turetiliyor — uydurma bir
+                             * "populerlik" siralamasi hesaplanmiyor.
+                             *
+                             * Dort gonderiden az varsa hic gosterilmiyor: iki
+                             * gonderilik bir "gundem" listesi, altindaki akisin
+                             * kopyasindan baska bir sey olmazdi.
+                             */
+                            if (s.posts.size >= 4) {
+                                item {
+                                    GundemdeKarti(
+                                        posts = s.posts.take(4),
+                                        onOpenPost = onOpenPost
+                                    )
+                                }
+                            }
+
                             items(s.posts, key = { it.id }) { post ->
                                 PostFeedCard(
                                     post = post,
@@ -433,31 +557,67 @@ fun PostFeedCard(
                 overflow = TextOverflow.Ellipsis
             )
 
-            // Attached Media preview
+            /*
+             * EKLI MEDYA.
+             *
+             * 🔴 GORSEL HIC CIZILMIYORDU: `CommunityMediaDto.url` sunucudan
+             * geliyor ama ekranda yalnizca dosya ADI gosteriliyordu, cunku
+             * projede goruntu yukleme kutuphanesi yoktu. Coil 3 eklendikten
+             * sonra (bkz. LkRemoteImage) gorsel gercekten cizilebiliyor.
+             *
+             * Gorsel olmayan ek (PDF vb.) icin dosya seridi KALIYOR — onu
+             * cizecek bir sey yok, adi tek anlamli bilgi.
+             */
             post.media?.let { media ->
-                Spacer(Modifier.height(8.dp))
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(LkShapes.MD)
-                        .background(LkSurfaceSunken)
-                        .padding(8.dp)
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = if (media.kind == "image") Icons.Outlined.Image else Icons.Outlined.InsertDriveFile,
-                            contentDescription = null,
-                            tint = LkPrimary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            media.originalName ?: "Ekli dosya",
-                            style = LkTypography.getMicro(),
-                            color = LkTextPrimary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                Spacer(Modifier.height(10.dp))
+                if (media.kind == "image" && !media.url.isNullOrBlank()) {
+                    LkRemoteImage(
+                        url = media.url,
+                        contentDescription = media.originalName,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(16f / 10f)
+                            .clip(LkShapes.Card)
+                    ) {
+                        /* Yuklenirken / gelmezse: bos kutu degil, desenli zemin. */
+                        Box(
+                            Modifier
+                                .fillMaxSize()
+                                .background(LkSurfaceTile),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Outlined.Image,
+                                contentDescription = null,
+                                tint = LkTileInk,
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+                    }
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(LkShapes.MD)
+                            .background(LkSurfaceTile)
+                            .padding(10.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Outlined.InsertDriveFile,
+                                contentDescription = null,
+                                tint = LkTileInk,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                media.originalName ?: "Ekli dosya",
+                                style = LkTypography.getMetadata(),
+                                color = LkTextPrimary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
                     }
                 }
             }
@@ -552,6 +712,60 @@ fun PostFeedCard(
                     )
                 }
             }
+        }
+    }
+}
+/**
+ * Gundemde karti — webin sag seridindeki `trending` kartinin karsiligi.
+ *
+ * Sira numarasi gonderinin ONEMINI degil, listedeki YERINI gosteriyor;
+ * webde de oyle. Bir "populerlik puani" hesaplanmiyor cunku sunucu boyle
+ * bir sey vermiyor ve uydurmak kullaniciya yanlis bir sinyal olurdu.
+ */
+@Composable
+private fun GundemdeKarti(
+    posts: List<CommunityPostDto>,
+    onOpenPost: (String) -> Unit
+) {
+    LkCard(padding = LkSpacing.Space4) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                Icons.Outlined.TrendingUp,
+                contentDescription = null,
+                tint = LkTileInk,
+                modifier = Modifier.size(19.dp)
+            )
+            Spacer(Modifier.width(LkSpacing.Space2))
+            Text("Gündemde", style = LkTypography.getTitleS(), color = LkTextPrimary)
+        }
+        Spacer(Modifier.height(LkSpacing.Space3))
+
+        posts.forEachIndexed { i, post ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onOpenPost(post.id) }
+                    .padding(vertical = LkSpacing.Space2),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = post.title?.takeIf { it.isNotBlank() }
+                        ?: post.summary.takeIf { it.isNotBlank() }
+                        ?: "Paylaşım",
+                    style = LkTypography.getBodySmall(),
+                    color = LkTextPrimary,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+                Spacer(Modifier.width(LkSpacing.Space3))
+                Text(
+                    text = "${i + 1}",
+                    style = LkTypography.getTitleS(),
+                    color = LkTextMuted
+                )
+            }
+            if (i != posts.lastIndex) LkHairline()
         }
     }
 }

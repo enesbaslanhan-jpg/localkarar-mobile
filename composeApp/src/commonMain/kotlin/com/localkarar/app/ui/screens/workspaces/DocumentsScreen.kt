@@ -1,5 +1,8 @@
 package com.localkarar.app.ui.screens.workspaces
 
+import com.localkarar.app.ui.components.LkHairline
+import com.localkarar.app.ui.components.LkRowGroup
+import com.localkarar.app.ui.components.LkListRow
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -94,11 +97,17 @@ fun DocumentsScreen(
                                     modifier = Modifier.fillMaxWidth()
                                 )
                             }
-                            items(state.documents, key = { it.id }) { document ->
-                                DocumentCard(
-                                    document = document,
-                                    onDelete = { deleteConfirmId = document.id }
-                                )
+                            /* Tek yukseltilmis yuzey; kart yigini degil. */
+                            item {
+                                LkRowGroup {
+                                    state.documents.forEachIndexed { i, document ->
+                                        DocumentCard(
+                                            document = document,
+                                            onDelete = { deleteConfirmId = document.id }
+                                        )
+                                        if (i != state.documents.lastIndex) LkHairline()
+                                    }
+                                }
                             }
                         }
                     }
@@ -162,28 +171,37 @@ private fun DocumentCard(
     document: WorkspaceDocumentDto,
     onDelete: () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(LkSurfacePanel, LkShapes.MD)
-            .border(1.dp, LkLineStrong, LkShapes.MD)
-            .padding(LkSpacing.PadPanel)
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+    /*
+     * §24 satir anatomisi. Onceden her belge kenarlikli bir karttaydi ve
+     * icinde iki hap daha vardi — liste uc kat yer kapliyordu.
+     *
+     * Analiz durumu alt satirda KELIMEYLE yaziliyor; hap renginden
+     * okunmasi gerekmiyor.
+     */
+    val analiz = document.analysisStatus?.let {
+        when (it) {
+            "completed" -> "Analiz edildi"
+            "processing" -> "Analiz ediliyor"
+            "failed" -> "Analiz başarısız"
+            else -> it
+        }
+    }
+    LkListRow(
+        baslik = document.originalName,
+        altBaslik = listOfNotNull(
+            analiz,
+            document.documentDate?.let { LkDateUtils.formatDate(it) }
+        ).joinToString(" · ").ifBlank { null },
+        kategori = document.category?.let { documentCategoryLabel(it) },
+        ikon = {
             Icon(
                 imageVector = Icons.Outlined.AttachFile,
                 contentDescription = null,
-                tint = LkPrimary,
-                modifier = Modifier.size(18.dp)
+                tint = if (document.analysisStatus == "failed") LkWarning else LkTileInk,
+                modifier = Modifier.size(21.dp)
             )
-            Spacer(modifier = Modifier.width(LkSpacing.Space2))
-            Text(
-                text = document.originalName,
-                style = LkTypography.getBodyStrong(),
-                color = LkTextPrimary,
-                modifier = Modifier.weight(1f),
-                maxLines = 1
-            )
+        },
+        sag = {
             IconButton(onClick = onDelete) {
                 Icon(
                     imageVector = Icons.Outlined.Delete,
@@ -193,30 +211,7 @@ private fun DocumentCard(
                 )
             }
         }
-        Spacer(modifier = Modifier.height(LkSpacing.Space2))
-        Row(horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
-            document.category?.let { LkChip(text = documentCategoryLabel(it)) }
-            document.analysisStatus?.let {
-                LkChip(
-                    text = when (it) {
-                        "completed" -> "Analiz edildi"
-                        "processing" -> "Analiz ediliyor"
-                        "failed" -> "Analiz başarısız"
-                        else -> it
-                    },
-                    contentColor = if (it == "completed") LkSuccess else LkWarning
-                )
-            }
-        }
-        document.documentDate?.let {
-            Spacer(modifier = Modifier.height(LkSpacing.Space2))
-            Text(
-                text = "Belge Tarihi: ${LkDateUtils.formatDate(it)}",
-                style = LkTypography.getMetadata(),
-                color = LkTextMuted
-            )
-        }
-    }
+    )
 }
 
 fun documentCategoryLabel(category: String): String {

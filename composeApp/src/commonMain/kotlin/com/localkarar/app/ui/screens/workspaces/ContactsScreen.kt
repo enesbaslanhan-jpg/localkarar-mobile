@@ -1,5 +1,9 @@
 package com.localkarar.app.ui.screens.workspaces
 
+import com.localkarar.app.ui.components.LkAvatar
+import com.localkarar.app.ui.components.LkHairline
+import com.localkarar.app.ui.components.LkRowGroup
+import com.localkarar.app.ui.components.LkListRow
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
@@ -88,15 +92,21 @@ fun ContactsScreen(
                                         modifier = Modifier.fillMaxWidth()
                                     )
                                 }
-                                items(state.contacts, key = { it.id }) { contact ->
-                                    ContactCard(
-                                        contact = contact,
-                                        onEdit = { editing = contact },
-                                        onDelete = {
-                                            actionError = null
-                                            viewModel.delete(contact.id) { actionError = it }
+                                /* Tek yukseltilmis yuzey; kart yigini degil. */
+                                item {
+                                    LkRowGroup {
+                                        state.contacts.forEachIndexed { i, contact ->
+                                            ContactCard(
+                                                contact = contact,
+                                                onEdit = { editing = contact },
+                                                onDelete = {
+                                                    actionError = null
+                                                    viewModel.delete(contact.id) { actionError = it }
+                                                }
+                                            )
+                                            if (i != state.contacts.lastIndex) LkHairline()
                                         }
-                                    )
+                                    }
                                 }
                             }
                         }
@@ -131,55 +141,35 @@ private fun ContactCard(
     onDelete: () -> Unit
 ) {
     var showDeleteConfirm by remember { mutableStateOf(false) }
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(LkSurfacePanel, LkShapes.MD)
-            .border(1.dp, LkLineStrong, LkShapes.MD)
-            .padding(LkSpacing.PadPanel)
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = contact.name,
-                    style = LkTypography.getBodyStrong(),
-                    color = LkTextPrimary
-                )
-                if (!contact.contactPerson.isNullOrBlank()) {
-                    Text(
-                        text = contact.contactPerson,
-                        style = LkTypography.getMetadata(),
-                        color = LkTextSecondary
+
+    /*
+     * §24 satir anatomisi. Onceden her kisi kendi kenarlikli kartindaydi;
+     * on kisilik liste on ayri cerceve oluyordu.
+     *
+     * Avatar bas harften; kisilerin fotografi yok, uydurma gorsel konmuyor.
+     * Rol (Musteri / Tedarikci) dikey ayracli kategori sutununda.
+     */
+    Column(Modifier.fillMaxWidth()) {
+        LkListRow(
+            baslik = contact.name,
+            altBaslik = listOfNotNull(
+                contact.contactPerson?.takeIf { it.isNotBlank() },
+                listOfNotNull(contact.phone, contact.email).joinToString(" · ").ifBlank { null }
+            ).joinToString(" · ").ifBlank { null },
+            kategori = contactTypeLabel(contact.type),
+            onClick = onEdit,
+            ikon = { LkAvatar(ad = contact.name, boyut = 44.dp) },
+            sag = {
+                IconButton(onClick = { showDeleteConfirm = true }) {
+                    Icon(
+                        imageVector = Icons.Outlined.Delete,
+                        contentDescription = "Sil",
+                        tint = LkTextMuted,
+                        modifier = Modifier.size(18.dp)
                     )
                 }
             }
-            IconButton(onClick = onEdit) {
-                Icon(
-                    imageVector = Icons.Outlined.Edit,
-                    contentDescription = "Düzenle",
-                    tint = LkTextSecondary,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-            IconButton(onClick = { showDeleteConfirm = true }) {
-                Icon(
-                    imageVector = Icons.Outlined.Delete,
-                    contentDescription = "Sil",
-                    tint = LkTextMuted,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-        }
-        Spacer(modifier = Modifier.height(LkSpacing.Space2))
-        LkChip(text = contactTypeLabel(contact.type))
-        if (!contact.phone.isNullOrBlank() || !contact.email.isNullOrBlank()) {
-            Spacer(modifier = Modifier.height(LkSpacing.Space2))
-            Text(
-                text = listOfNotNull(contact.phone, contact.email).joinToString(" • "),
-                style = LkTypography.getMetadata(),
-                color = LkTextMuted
-            )
-        }
+        )
     }
     if (showDeleteConfirm) {
         androidx.compose.material.AlertDialog(
