@@ -1,5 +1,6 @@
 package com.localkarar.app.ui.screens.community
 
+import com.localkarar.app.ui.components.LkAvatar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -110,20 +111,7 @@ private fun FollowerRow(
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(LkPrimarySoft),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    (person.name.take(1)).uppercase(),
-                    style = LkTypography.getBodyStrong(),
-                    color = LkPrimary,
-                    fontWeight = FontWeight.Bold
-                )
-            }
+            LkAvatar(ad = person.name, avatarUrl = person.avatarUrl, boyut = 40.dp)
 
             Spacer(Modifier.width(12.dp))
 

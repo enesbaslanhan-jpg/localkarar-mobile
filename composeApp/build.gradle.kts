@@ -56,6 +56,14 @@ kotlin {
             implementation(libs.kotlinx.datetime)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.multiplatform.markdown.renderer)
+
+            /*
+             * Coil 3 — uzak gorsel yukleme (avatar ve kapak fotografi).
+             * Ag katmani ktor3 surumu: proje zaten Ktor 3.0.0 kullaniyor,
+             * ayri bir HTTP istemcisi eklemeye gerek yok.
+             */
+            implementation(libs.coil.compose)
+            implementation(libs.coil.network.ktor3)
         }
         commonTest.dependencies {
             implementation(kotlin("test"))

@@ -1,5 +1,6 @@
 package com.localkarar.app.ui.components
 
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -28,18 +29,18 @@ import com.localkarar.app.ui.theme.lkIsDark
 /*
  * KAPAK BASLIGI — sosyal profil deseni.
  *
- * 🔴 UZAK FOTOGRAF HENUZ CIZILEMIYOR.
+ * UZAK FOTOGRAF ARTIK CIZILIYOR (Coil 3).
  *
- * Sunucu ve mobil DTO `coverUrl` ile `avatarUrl` tasiyor (CommunityDtos.kt:143-144),
- * ama projede HICBIR goruntu yukleme kutuphanesi yok — ne Coil, ne Kamel.
- * `AsyncImage` benzeri tek bir cagri bile yok. Yani alan geliyor, cizilemiyor.
+ * coverUrl ve avatarUrl sunucudan GORELI yol olarak geliyor
+ * (src/services/auth.ts:174 -> "/auth/avatar/<dosya>"); LkRemoteImage
+ * taban adresi basa ekliyor, yoksa istek hicbir yere gitmez.
  *
- * Bu bilesen su an KODLA CIZILEN bir kapak ve bas harf avatari veriyor:
- * yerlesim, olcu ve binme dogru; fotograf gelince yalniz iki `Box`un icerigi
- * degisecek. Uydurma bir yer tutucu gorsel konmadi.
+ * Fotograf yoksa, yuklenirken ya da dosya silinmisse kodla cizilen kapak
+ * ve bas harf avatari gosteriliyor — hicbir durumda bos kutu kalmiyor.
  *
- * ⚠️ Fotograflarin gercekten cizilmesi icin Coil 3 (multiplatform) gibi bir
- * bagimlilik eklenmeli. Bu ayri bir karar; §24 kapsaminda degil.
+ * ⚠️ Kapaklar sunucuda HIC SERVIS EDILMIYORDU: GET /auth/avatar/:storedName
+ * yalniz avatarStoredName ile sorguluyordu ve her kapak istegi 404
+ * donuyordu. Web deposunda duzeltildi (a36dff1) ve regresyon testi eklendi.
  */
 @Composable
 fun LkCoverHeader(
@@ -53,34 +54,44 @@ fun LkCoverHeader(
 ) {
     val koyu = lkIsDark()
     Box(modifier.fillMaxWidth()) {
-        /* Kapak bandi. `kapakUrl` bos olmasa da su an cizilemiyor. */
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .height(kapakYuksekligi)
-                .background(
-                    Brush.linearGradient(
-                        if (koyu) listOf(LkBrand.B700, LkBrand.B600)
-                        else listOf(LkBrand.B600, LkBrand.B400)
-                    )
-                )
+        /*
+         * Kapak bandi. Fotograf varsa o cizilir; yoksa (ya da yuklenirken,
+         * ya da dosya silinmisse) kodla cizilen desen. Bos bir kutu hicbir
+         * durumda gorunmez.
+         */
+        LkRemoteImage(
+            url = kapakUrl,
+            contentDescription = null,
+            modifier = Modifier.fillMaxWidth().height(kapakYuksekligi)
         ) {
-            Canvas(Modifier.fillMaxWidth().height(kapakYuksekligi)) {
-                drawCircle(
-                    Color(0x1AFFFFFF),
-                    radius = size.height * 0.58f,
-                    center = Offset(size.width * 0.80f, size.height * 0.15f)
-                )
-                drawCircle(
-                    Color(0x14FFFFFF),
-                    radius = size.height * 0.33f,
-                    center = Offset(size.width * 0.94f, size.height * 0.79f)
-                )
-                drawCircle(
-                    Color(0x0FFFFFFF),
-                    radius = size.height * 0.41f,
-                    center = Offset(size.width * 0.18f, size.height * 0.91f)
-                )
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(kapakYuksekligi)
+                    .background(
+                        Brush.linearGradient(
+                            if (koyu) listOf(LkBrand.B700, LkBrand.B600)
+                            else listOf(LkBrand.B600, LkBrand.B400)
+                        )
+                    )
+            ) {
+                Canvas(Modifier.fillMaxWidth().height(kapakYuksekligi)) {
+                    drawCircle(
+                        Color(0x1AFFFFFF),
+                        radius = size.height * 0.58f,
+                        center = Offset(size.width * 0.80f, size.height * 0.15f)
+                    )
+                    drawCircle(
+                        Color(0x14FFFFFF),
+                        radius = size.height * 0.33f,
+                        center = Offset(size.width * 0.94f, size.height * 0.79f)
+                    )
+                    drawCircle(
+                        Color(0x0FFFFFFF),
+                        radius = size.height * 0.41f,
+                        center = Offset(size.width * 0.18f, size.height * 0.91f)
+                    )
+                }
             }
         }
 
@@ -103,12 +114,21 @@ fun LkCoverHeader(
                 ),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = ad.trim().take(1).uppercase().ifBlank { "?" },
-                style = LkTypography.getTitleL(),
-                color = Color.White,
-                fontWeight = FontWeight.Bold
-            )
+            /* Avatar fotografi; yoksa bas harf. */
+            LkRemoteImage(
+                url = avatarUrl,
+                contentDescription = ad,
+                modifier = Modifier.fillMaxSize().clip(CircleShape)
+            ) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(
+                        text = ad.trim().take(1).uppercase().ifBlank { "?" },
+                        style = LkTypography.getTitleL(),
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
         }
 
         /* Govde: avatarin altta kalan yarisi kadar bosluk birakiyor. */

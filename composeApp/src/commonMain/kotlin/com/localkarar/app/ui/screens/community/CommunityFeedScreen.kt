@@ -1,5 +1,6 @@
 package com.localkarar.app.ui.screens.community
 
+import com.localkarar.app.ui.components.LkAvatar
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.shape.RoundedCornerShape
 import com.localkarar.app.ui.components.LkHeroBlock
@@ -376,21 +377,20 @@ fun PostFeedCard(
         Column(Modifier.padding(14.dp)) {
             // Author Row
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(if (post.postType == "official") LkPrimary else LkPrimarySoft)
-                        .clickable(onClick = onAuthorClick),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        if (post.postType == "official") "LK" else (post.author?.name?.take(1) ?: "U").uppercase(),
-                        style = LkTypography.getMicro(),
-                        color = if (post.postType == "official") LkOnPrimary else LkPrimary,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+                /*
+                 * Resmi gonderilerde marka isareti "LK" kaliyor ve fotograf
+                 * cizilmiyor: o gonderiler bir kisiye degil urune ait.
+                 */
+                val resmi = post.postType == "official"
+                LkAvatar(
+                    ad = post.author?.name,
+                    avatarUrl = if (resmi) null else post.author?.avatarUrl,
+                    boyut = 36.dp,
+                    zemin = if (resmi) LkPrimary else LkPrimarySoft,
+                    harfRengi = if (resmi) LkOnPrimary else LkPrimary,
+                    harfOverride = if (resmi) "LK" else null,
+                    modifier = Modifier.clickable(onClick = onAuthorClick)
+                )
 
                 Spacer(Modifier.width(10.dp))
 

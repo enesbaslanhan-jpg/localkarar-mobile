@@ -1,5 +1,6 @@
 package com.localkarar.app.ui.screens.community
 
+import com.localkarar.app.ui.components.LkAvatar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -154,21 +155,18 @@ fun PersonRowItem(
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Avatar
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(CircleShape)
-                    .background(if (isBlocked) LkSurfaceSunken else LkPrimarySoft),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    (person.name.take(1)).uppercase(),
-                    style = LkTypography.getBodyStrong(),
-                    color = if (isBlocked) LkTextMuted else LkPrimary,
-                    fontWeight = FontWeight.Bold
-                )
-            }
+            /*
+             * Engellenen kisinin FOTOGRAFI GOSTERILMIYOR — sonuncu argüman
+             * bilerek null. Engelleme bir goruntu kararidir; kisinin
+             * fotografini gostermeye devam etmek engellemenin amacina aykiri.
+             */
+            LkAvatar(
+                ad = person.name,
+                avatarUrl = if (isBlocked) null else person.avatarUrl,
+                boyut = 44.dp,
+                zemin = if (isBlocked) LkSurfaceSunken else LkPrimarySoft,
+                harfRengi = if (isBlocked) LkTextMuted else LkPrimary
+            )
 
             Spacer(Modifier.width(12.dp))
 
