@@ -1,5 +1,6 @@
 package com.localkarar.app.workspaces
 
+import com.localkarar.app.network.dto.OrderDto
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.localkarar.app.network.dto.TrackerSummaryDto
@@ -27,6 +28,23 @@ class WorkspaceHomeViewModel(
     private val _uiState = MutableStateFlow<WorkspaceHomeUiState>(WorkspaceHomeUiState.Loading)
     val uiState: StateFlow<WorkspaceHomeUiState> = _uiState.asStateFlow()
 
+    /*
+     * PAZARYERI SIPARISLERI — alt cekmeceyi besliyor.
+     *
+     * `uiState`in ICINDE DEGIL, ayri bir akista: siparis istegi ozet ve
+     * isletme istegiden BAGIMSIZ basarisiz olabilir. Ayni duruma konsaydi
+     * entegrasyon kapaliyken TUM ekran hata durumuna duserdi; oysa
+     * isletme ozeti gayet calisiyor.
+     *
+     * "Bos liste" ile "yuklenemedi" ayri seyler; `ordersLoaded` bunu
+     * ayiriyor ki cekmece bos durumda dogru metni gosterebilsin.
+     */
+    private val _orders = MutableStateFlow<List<OrderDto>>(emptyList())
+    val orders: StateFlow<List<OrderDto>> = _orders.asStateFlow()
+
+    private val _ordersLoaded = MutableStateFlow(false)
+    val ordersLoaded: StateFlow<Boolean> = _ordersLoaded.asStateFlow()
+
     init {
         load()
     }
@@ -48,6 +66,20 @@ class WorkspaceHomeViewModel(
                 summary = summaryResult.getOrNull(),
                 summaryFailed = summaryResult.isFailure
             )
+        }
+
+        /* Siparisler AYRI coroutine: ozetin gelmesini bekletmesin. */
+        viewModelScope.launch {
+            repository.getOrders(workspaceId = workspaceId, provider = null)
+                .onSuccess {
+                    _orders.value = it.orders
+                    _ordersLoaded.value = true
+                }
+                .onFailure {
+                    /* Sessiz: entegrasyon yoksa bu BEKLENEN bir durum ve
+                       ekranin geri kalanini bozmamali. */
+                    _ordersLoaded.value = false
+                }
         }
     }
 }

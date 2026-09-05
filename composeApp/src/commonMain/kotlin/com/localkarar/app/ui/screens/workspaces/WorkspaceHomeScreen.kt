@@ -1,5 +1,7 @@
 package com.localkarar.app.ui.screens.workspaces
 
+import com.localkarar.app.ui.components.rememberLkSheetState
+import com.localkarar.app.ui.components.LkSheet
 import com.localkarar.app.ui.screens.home.RECORD_TYPE_LABEL
 import com.localkarar.app.ui.components.LkProgressPill
 import com.localkarar.app.ui.components.LkIconTile
@@ -75,8 +77,11 @@ fun WorkspaceHomeScreen(
     onBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val orders by viewModel.orders.collectAsState()
+    val ordersLoaded by viewModel.ordersLoaded.collectAsState()
 
     val state = uiState
+    val sheetState = rememberLkSheetState()
 
     /*
      * §24.6 — hero baslik blogu + binen yuzey.
@@ -86,7 +91,12 @@ fun WorkspaceHomeScreen(
      * ekran acildiginda ilk okunan sey isletmenin adiydi, parasi degil.
      *
      * `LkPageLayout` kullanilmiyor: baslik cubugu marka blogunun ICINDE.
+     *
+     * En distaki `Box`: cekmece sayfanin UZERINDE duruyor, akisin icinde
+     * degil. Sayfa normal kayiyor; cekmece uc kademe arasinda ayri
+     * surukleniyor.
      */
+    Box(Modifier.fillMaxSize()) {
     Column(Modifier.fillMaxSize()) {
 
         LkHeroBlock {
@@ -362,7 +372,105 @@ fun WorkspaceHomeScreen(
         }
         }   // binen yuzey
     }       // hero + yuzey
+
+    /*
+     * PAZARYERI SIPARISLERI CEKMECESI — §24, uc kademe.
+     *
+     * Tepeden bakis kademesinde baslik ve ilk satir gorunur; yukari
+     * cekilince tam ekrana yaklasir ve ustte baglam icin bir serit kalir.
+     * Arkadaki sayfa kaybolmaz — Apple Maps davranisi.
+     *
+     * Yalnizca siparis GERCEKTEN yuklendiyse ciziliyor. Entegrasyon
+     * kapaliyken bos bir cekmece ekranin altini kaplamasin.
+     */
+    if (ordersLoaded && orders.isNotEmpty()) {
+        LkSheet(
+            state = sheetState,
+            handle = {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = LkSpacing.Space5, vertical = LkSpacing.Space2),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "Pazaryeri siparişleri",
+                        style = LkTypography.getTitleS(),
+                        color = LkTextPrimary,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(
+                        "${orders.size} sipariş",
+                        style = LkTypography.getMetadata(),
+                        color = LkTileInk,
+                        modifier = Modifier
+                            .clip(LkShapes.FULL)
+                            .background(LkSurfaceTile)
+                            .padding(horizontal = LkSpacing.Space3, vertical = 4.dp)
+                    )
+                }
+            },
+            body = {
+                LkRowGroup(
+                    modifier = Modifier.padding(
+                        start = LkSpacing.Space4,
+                        end = LkSpacing.Space4,
+                        top = LkSpacing.Space2
+                    )
+                ) {
+                    orders.take(12).forEachIndexed { i, order ->
+                        LkListRow(
+                            /*
+                             * OrderDto'da `productTitle` ve `totalAmount` YOK —
+                             * once oyle varsayilmisti. Gercek alanlar:
+                             * customerName / orderNumber / provider / grossAmount.
+                             */
+                            baslik = order.customerName
+                                ?: order.orderNumber?.let { "Sipariş $it" }
+                                ?: "Sipariş",
+                            altBaslik = listOfNotNull(
+                                order.provider,
+                                order.orderNumber?.let { "#$it" }
+                            ).joinToString(" · ").ifBlank { null },
+                            kategori = SIPARIS_DURUM_ETIKET[order.status] ?: order.status,
+                            tutar = order.grossAmount?.let {
+                                LkFormatting.formatMoney(it, order.currency)
+                            },
+                            onClick = onOpenOrders,
+                            ikon = {
+                                Icon(
+                                    Icons.Outlined.ShoppingCart,
+                                    contentDescription = null,
+                                    tint = LkTileInk,
+                                    modifier = Modifier.size(21.dp)
+                                )
+                            }
+                        )
+                        if (i != minOf(11, orders.lastIndex)) LkHairline()
+                    }
+                }
+            }
+        )
+    }
+    }   // cekmeceyi tasiyan Box
 }
+
+/*
+ * Siparis durumlarinin Turkce karsiliklari.
+ *
+ * Ham sunucu degeri ("CREATED", "SHIPPED") ekrana YAZILMAZ; Siparisler
+ * ekranindaki `STATUS_OPTIONS` ile ayni adlandirma kullaniliyor ki iki
+ * ekran ayni duruma iki ad vermesin.
+ */
+private val SIPARIS_DURUM_ETIKET = mapOf(
+    "CREATED" to "Yeni",
+    "PROCESSING" to "İşleniyor",
+    "SHIPPED" to "Kargoda",
+    "DELIVERED" to "Teslim",
+    "CANCELLED" to "İptal",
+    "RETURNED" to "İade",
+    "PARTIALLY_RETURNED" to "Kısmi iade"
+)
 
 /** Hero icindeki tutar. Etiket §24.6 geregi %85 beyaz opaklikta. */
 @Composable
