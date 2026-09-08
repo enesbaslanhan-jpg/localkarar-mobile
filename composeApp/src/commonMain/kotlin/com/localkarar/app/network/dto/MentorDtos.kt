@@ -29,6 +29,15 @@ data class ConversationListResponseDto(
 )
 
 @Serializable
+/**
+ * Sohbetin kendisi.
+ *
+ * 🔴 SUNUCU BU NESNEYI HER ZAMAN `{ "conversation": {...} }` ZARFINDA
+ * DONDURUYOR (`conversation.ts`: POST /, PATCH /:id, GET /:id). Mobil
+ * `POST` ve `PATCH` yanitlarini ZARFSIZ cozmeye calisiyordu; "Yeni sohbet
+ * başlat" dugmesi bu yuzden ekrana ham bir seri hale hatasi basiyordu:
+ * "Fields [id, title] are required ... but they were missing at path: $".
+ */
 data class ConversationDetailDto(
     val id: Int,
     val title: String,
@@ -148,3 +157,8 @@ sealed interface MentorStreamEvent {
     data class Cancelled(val assistantMessage: MessageDto?) : MentorStreamEvent
     data class StreamError(val code: String?, val message: String?) : MentorStreamEvent
 }
+/** `POST /conversations` ve `PATCH /conversations/:id` zarfi. */
+@Serializable
+data class ConversationEnvelopeDto(
+    val conversation: ConversationDetailDto
+)

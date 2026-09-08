@@ -13,6 +13,7 @@ import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -25,23 +26,46 @@ import com.localkarar.app.courses.CourseDetailViewModel
 import com.localkarar.app.network.dto.CourseDetailDto
 import com.localkarar.app.network.dto.LessonSummaryDto
 import com.localkarar.app.ui.components.LkErrorState
+import com.localkarar.app.ui.components.LkLoadingDesen
 import com.localkarar.app.ui.components.LkLoadingState
 import com.localkarar.app.ui.components.LkHeroPage
+import com.localkarar.app.ui.components.LkCourseProgress
 
 import com.localkarar.app.ui.theme.*
 
+/**
+ * Kurs detayi — artik cogunlukla GORUNMEYEN bir ara durak.
+ *
+ * 🔴 KURSA DOKUNAN KULLANICI DERSE DEGIL LISTEYE DUSUYORDU. Yayimdaki
+ * derslerin hepsi tek dersli; ekranda "Dersler" basligi ve tek satir
+ * duruyor, icerige ulasmak icin ikinci bir dokunus gerekiyordu. Web
+ * (`/app/courses/:id/learn`) dogrudan derse — kaldigi yere — aciyor.
+ *
+ * Ders kimligi ancak detay yaniti geldikten sonra bilindigi icin ekran
+ * yukleniyor, hedef ders cozulunce `replaceTop` ile yerini ders
+ * okuyucusuna birakiyor: geri tusu kurs listesine doner, bu ekrana degil.
+ * Cozulemedigi tek durumda (butun dersler kilitli) liste gorunur kalir.
+ */
 @Composable
 fun CourseDetailScreen(
     viewModel: CourseDetailViewModel,
     onNavigateToLesson: (Int, Int) -> Unit,
+    onOpenLessonDirect: ((Int, Int) -> Unit)? = null,
     onBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    LkHeroPage(title = "Eğitim Detayı", onBack = onBack) {
+    val icerik = uiState as? CourseDetailUiState.Content
+    LaunchedEffect(icerik?.course?.id) {
+        val kurs = icerik?.course ?: return@LaunchedEffect
+        val hedef = hedefDers(kurs) ?: return@LaunchedEffect
+        onOpenLessonDirect?.invoke(kurs.id, hedef.id)
+    }
+
+    LkHeroPage(title = "Kurs", onBack = onBack) {
         Box(modifier = Modifier.fillMaxSize()) {
             when (val state = uiState) {
-                is CourseDetailUiState.Loading -> LkLoadingState()
+                is CourseDetailUiState.Loading -> LkLoadingState(desen = LkLoadingDesen.DETAY)
                 is CourseDetailUiState.Error -> LkErrorState(
                     message = state.message,
                     onRetry = { viewModel.loadCourseDetail() }
@@ -82,7 +106,12 @@ private fun CourseDetailContent(
                             .padding(horizontal = LkSpacing.Space2, vertical = 2.dp)
                     ) {
                         Text(
-                            text = course.level,
+                            text = when (course.level) {
+                                "beginner" -> "Başlangıç"
+                                "intermediate" -> "Orta"
+                                "advanced" -> "İleri"
+                                else -> course.level
+                            },
                             style = LkTypography.getMetadata(),
                             color = LkPrimary
                         )
@@ -117,23 +146,7 @@ private fun CourseDetailContent(
             val doneLessons = course.lessons.count { it.progress?.status == "completed" }
             val coursePercent = if (totalLessons > 0) ((doneLessons.toFloat() / totalLessons) * 100).toInt() else 0
 
-            Text(text = "İlerleme: %$coursePercent", style = LkTypography.getBodyStrong(), color = LkTextPrimary)
-            Spacer(modifier = Modifier.height(LkSpacing.Space2))
-            
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(8.dp)
-                    .clip(CircleShape)
-                    .background(LkSurfacePanel)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(coursePercent / 100f)
-                        .height(8.dp)
-                        .background(LkPrimary)
-                )
-            }
+            LkCourseProgress(coursePercent / 100f, "$doneLessons/$totalLessons ders")
             Spacer(modifier = Modifier.height(LkSpacing.Space1))
             Text(
                 text = "$doneLessons / $totalLessons ders tamamlandı",
@@ -164,8 +177,7 @@ fun LessonListItem(lesson: LessonSummaryDto, onClick: () -> Unit) {
             .fillMaxWidth()
             .background(LkSurfacePanel, LkShapes.SM)
             .clickable(enabled = !lesson.isLocked, onClick = onClick)
-            .padding(LkSpacing.Space4)
-            .alpha(if (lesson.isLocked) 0.5f else 1f),
+            .padding(LkSpacing.Space4),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
@@ -196,6 +208,8 @@ fun LessonListItem(lesson: LessonSummaryDto, onClick: () -> Unit) {
         Spacer(modifier = Modifier.width(LkSpacing.Space4))
         
         if (lesson.isLocked) {
+            Text("Kilitli", style = LkTypography.getMetadata(), color = LkTextSecondary)
+            Spacer(Modifier.width(LkSpacing.Space2))
             Icon(
                 imageVector = Icons.Outlined.Lock,
                 contentDescription = "Kilitli",
@@ -213,3 +227,20 @@ fun LessonListItem(lesson: LessonSummaryDto, onClick: () -> Unit) {
     }
 }
 
+/**
+ * Dogrudan acilacak ders.
+ *
+ * Sira webin `CoursePlayerPage` mantigiyla ayni: once KALDIGI YER
+ * (`lastViewedAt` en yeni olan), sonra ilk tamamlanmamis ders, sonra ilk
+ * ders. Kilitli dersler hicbir asamada secilmiyor; kilitliyse zaten
+ * sunucu icerigi vermez.
+ */
+private fun hedefDers(course: CourseDetailDto): LessonSummaryDto? {
+    val acik = course.lessons.filterNot { it.isLocked }
+    if (acik.isEmpty()) return null
+    val kaldigiYer = acik
+        .filter { !it.progress?.lastViewedAt.isNullOrBlank() }
+        .maxByOrNull { it.progress?.lastViewedAt.orEmpty() }
+    if (kaldigiYer != null) return kaldigiYer
+    return acik.firstOrNull { it.progress?.status != "completed" } ?: acik.first()
+}

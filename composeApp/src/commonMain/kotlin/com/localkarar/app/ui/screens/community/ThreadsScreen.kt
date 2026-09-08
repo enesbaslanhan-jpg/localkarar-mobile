@@ -19,6 +19,8 @@ import androidx.compose.ui.unit.dp
 import com.localkarar.app.community.ThreadsViewModel
 import com.localkarar.app.core.LkDateUtils
 import com.localkarar.app.network.dto.CommunityThreadDto
+import com.localkarar.app.ui.components.LkLoadingDesen
+import com.localkarar.app.ui.components.LkLoadingState
 import com.localkarar.app.ui.components.LkAvatar
 import com.localkarar.app.ui.components.LkButton
 import com.localkarar.app.ui.components.LkCard
@@ -43,9 +45,7 @@ fun ThreadsScreen(
     Box(Modifier.fillMaxSize()) {
         when (val s = threadsState) {
             is ThreadsViewModel.ThreadsUiState.Loading -> {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = LkPrimary)
-                }
+                LkLoadingState(desen = LkLoadingDesen.LISTE)
             }
             is ThreadsViewModel.ThreadsUiState.Error -> {
                 Column(
@@ -66,7 +66,7 @@ fun ThreadsScreen(
                             Spacer(Modifier.height(12.dp))
                             Text("Henüz sohbetiniz bulunmuyor", style = LkTypography.getBodyStrong(), color = LkTextPrimary)
                             Spacer(Modifier.height(6.dp))
-                            Text("Topluluk üyeleriyle sohbet başlatmak için aşağıdaki düğmeyi kullanın.", style = LkTypography.getBodySmall(), color = LkTextSecondary)
+                            Text("Topluluk üyeleriyle ilk sohbetini başlat.", style = LkTypography.getBodySmall(), color = LkTextSecondary)
                             Spacer(Modifier.height(16.dp))
                             LkButton(text = "Sohbet Başlat", onClick = { viewModel.openCreateThreadSheet() })
                         }
@@ -116,15 +116,24 @@ fun ThreadsScreen(
             }
         }
 
-        // FAB to create thread
-        FloatingActionButton(
-            onClick = { viewModel.openCreateThreadSheet() },
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(20.dp),
-            backgroundColor = LkPrimary
-        ) {
-            Icon(Icons.Outlined.AddComment, contentDescription = "Yeni Sohbet", tint = LkOnPrimary)
+        /*
+         * 🔴 AYNI ISI YAPAN IKI DUGME VARDI: bos durumda hem ortadaki
+         * "Sohbet Başlat" hem de sagdaki yuvarlak dugme ayni cekmeceyi
+         * aciyordu. Bos ekranda yalniz ortadaki kaliyor (ne yapilacagini
+         * da o anlatiyor); yuvarlak dugme liste DOLUYKEN gorunuyor.
+         */
+        val listeDolu = (threadsState as? ThreadsViewModel.ThreadsUiState.Content)
+            ?.let { it.threads.isNotEmpty() || it.invitations.isNotEmpty() } == true
+        if (listeDolu) {
+            FloatingActionButton(
+                onClick = { viewModel.openCreateThreadSheet() },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(20.dp),
+                backgroundColor = LkPrimary
+            ) {
+                Icon(Icons.Outlined.AddComment, contentDescription = "Yeni Sohbet", tint = LkOnPrimary)
+            }
         }
     }
 

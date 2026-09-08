@@ -44,7 +44,7 @@ fun LkPasswordTextField(
         trailingContent = {
             Icon(
                 imageVector = if (passwordVisible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
-                contentDescription = if (passwordVisible) "Şifreyi Gizle" else "Şifreyi Göster",
+                contentDescription = if (passwordVisible) "Parolayı gizle" else "Parolayı göster",
                 tint = LkTextMuted,
                 modifier = Modifier
                     .size(20.dp)

@@ -15,6 +15,7 @@ import com.localkarar.app.ui.components.LkButton
 import com.localkarar.app.ui.components.LkChip
 import com.localkarar.app.ui.components.LkDateField
 import com.localkarar.app.ui.components.LkErrorState
+import com.localkarar.app.ui.components.LkLoadingDesen
 import com.localkarar.app.ui.components.LkLoadingState
 import com.localkarar.app.ui.components.LkNumericField
 import com.localkarar.app.ui.components.LkHeroPage
@@ -45,7 +46,7 @@ fun RecordEditScreen(
 
     LkHeroPage(title = if (isEdit) "Kaydı Düzenle" else "Yeni Kayıt", onBack = onBack) {
         when (val state = uiState) {
-            is RecordEditUiState.Loading -> LkLoadingState()
+            is RecordEditUiState.Loading -> LkLoadingState(desen = LkLoadingDesen.FORM)
             is RecordEditUiState.Error -> LkErrorState(
                 message = state.message,
                 onRetry = { viewModel.load() }

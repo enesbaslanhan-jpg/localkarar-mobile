@@ -1,6 +1,8 @@
 package com.localkarar.app.ui.screens.settings
 
 import androidx.compose.ui.unit.sp
+import com.localkarar.app.ui.components.LkNotice
+import com.localkarar.app.ui.components.LkSegment
 import com.localkarar.app.ui.components.LkHairline
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -41,7 +43,19 @@ fun SettingsScreen(
     activeWorkspaceId: String? = null,
     viewModel: SettingsViewModel? = null,
     onOpenProfile: () -> Unit,
+    /**
+     * Takip ve engelleme.
+     *
+     * 🔴 TOPLULUK PROFILININ ICINDE AYRI BIR KART OLARAK DURUYORDU:
+     * kimlik blogunun altina sikismis, profile ait olmayan bir ayar
+     * satiriydi. Ait oldugu yer Ayarlar — takip ettiklerin ve
+     * engellediklerin HESABINA ait.
+     */
+    onOpenFollowBlock: (() -> Unit)? = null,
     onOpenWorkspaces: () -> Unit,
+    /** Kurulum ve degerlendirme — `null` ise satir cizilmiyor. */
+    onOpenOnboarding: (() -> Unit)? = null,
+    onOpenAssessment: (() -> Unit)? = null,
     onOpenWorkspaceSettings: ((String) -> Unit)? = null,
     onOpenPassword: () -> Unit,
     onOpenEmail: () -> Unit,
@@ -141,28 +155,50 @@ fun SettingsScreen(
                 }
               }
             }
-
             viewModel?.notice?.let {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    backgroundColor = if (viewModel.noticeIsError) LkDanger.copy(alpha = 0.15f) else LkSuccess.copy(alpha = 0.15f),
-                    elevation = 0.dp
-                ) {
-                    Row(
-                        Modifier.fillMaxWidth().padding(12.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = it,
-                            style = LkTypography.getBodySmall(),
-                            color = if (viewModel.noticeIsError) LkDanger else LkSuccess,
-                            modifier = Modifier.weight(1f)
-                        )
-                        TextButton(onClick = { viewModel.clearNotice() }) {
-                            Text("Tamam", color = LkTextPrimary)
-                        }
-                    }
+                LkNotice(
+                    metin = it,
+                    hataMi = viewModel.noticeIsError,
+                    onKapat = { viewModel.clearNotice() }
+                )
+            }
+            /*
+             * GORUNUM EN USTTE — mockup "Ayar 1"de profil satirinin hemen
+             * altinda. Onceden oturum ve gizlilik bolumlerinin ARKASINDA,
+             * ekranin ortasinda kaliyordu; en cok dokunulan ayar en zor
+             * bulunan yerdeydi.
+             */
+            /*
+             * GORUNUM.
+             *
+             * Webde tema secimi ust cubuktaki dugmede; mobilde kalici bir ust
+             * cubuk olmadigi icin Ayarlar'a kondu. Uc secenek de webdeki
+             * `ThemeContext` ile ayni: secim yapilmazsa SISTEM tercihi.
+             *
+             * Secim cikista SILINMEZ (`AppPreferences`), webde de oturumdan
+             * bagimsiz.
+             */
+            val themeController = LocalThemeController.current
+            if (themeController != null) {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    SectionHeader("GÖRÜNÜM")
+                    /*
+                     * Mockup'ta bu bir SEGMENT: uc secenek tek yolun
+                     * icinde. Ayri ayri duran haplar coklu secim gibi
+                     * okunuyordu; tema secimi tek secimdir.
+                     */
+                    LkSegment(
+                        secenekler = listOf(ThemeMode.LIGHT, ThemeMode.DARK, ThemeMode.SYSTEM),
+                        secili = themeController.mode,
+                        etiket = { mod ->
+                            when (mod) {
+                                ThemeMode.LIGHT -> "Açık"
+                                ThemeMode.DARK -> "Koyu"
+                                ThemeMode.SYSTEM -> "Sistem"
+                            }
+                        },
+                        onSelect = { themeController.select(it) }
+                    )
                 }
             }
 
@@ -171,11 +207,19 @@ fun SettingsScreen(
                 SectionHeader("HESAP")
                 LkRowGroup {
                 SettingItem(
-                    label = "Profil Bilgileri",
+                    label = "Profili düzenle",
                     description = "Görünen ad ve profil fotoğrafı",
                     icon = Icons.Outlined.Person,
                     onClick = onOpenProfile
                 )
+                if (onOpenFollowBlock != null) {
+                    SettingItem(
+                        label = "Takip ve engelleme",
+                        description = "Takip ettiklerin ve engellediklerin",
+                        icon = Icons.Outlined.PeopleOutline,
+                        onClick = onOpenFollowBlock
+                    )
+                }
                 SettingItem(
                     label = "E-posta Değiştir",
                     description = "Hesabınıza bağlı e-posta adresini güncelleyin",
@@ -183,8 +227,8 @@ fun SettingsScreen(
                     onClick = onOpenEmail
                 )
                 SettingItem(
-                    label = "Şifre Değiştir",
-                    description = "Giriş şifrenizi güncelleyin (en az 10 karakter)",
+                    label = "Parola değiştir",
+                    description = "Giriş parolanızı güncelleyin (en az 10 karakter)",
                     icon = Icons.Outlined.Lock,
                     onClick = onOpenPassword,
                     ayrac = false
@@ -196,6 +240,29 @@ fun SettingsScreen(
             Column(verticalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
                 SectionHeader("İŞLETME")
                 LkRowGroup {
+                /*
+                 * KURULUM ve DEGERLENDIRME — mobilde ilk kez.
+                 *
+                 * ⚠️ Ayarlara konuldu, ilk acilista ZORLA gosterilmiyor.
+                 * Web de zorunlu tutmuyor; kurulum bir kolaylik, kapi
+                 * degil. Kullanici hazir oldugunda buradan aciyor.
+                 */
+                onOpenOnboarding?.let { ac ->
+                    SettingItem(
+                        label = "İşletme kurulumu",
+                        description = "Sektör, kanallar ve hedeflerini gir",
+                        icon = Icons.Outlined.Tune,
+                        onClick = ac
+                    )
+                }
+                onOpenAssessment?.let { ac ->
+                    SettingItem(
+                        label = "İşletme değerlendirmesi",
+                        description = "Güçlü ve zayıf alanlarını ölç",
+                        icon = Icons.Outlined.Assessment,
+                        onClick = ac
+                    )
+                }
                 SettingItem(
                     label = "İşletmelerim",
                     description = "Bağlı işletmeleri görüntüle veya değiştir",
@@ -220,7 +287,7 @@ fun SettingsScreen(
                 SectionHeader("GİZLİLİK VE YASAL")
                 LkRowGroup {
                 SettingItem(
-                    label = "Yasal Bilgiler ve Onaylar",
+                    label = "Yasal izinler",
                     description = "Kullanım koşulları, KVKK ve onay durumu",
                     icon = Icons.Outlined.Description,
                     onClick = onOpenConsents,
@@ -243,39 +310,6 @@ fun SettingsScreen(
                 }
             }
 
-            /*
-             * GORUNUM.
-             *
-             * Webde tema secimi ust cubuktaki dugmede; mobilde kalici bir ust
-             * cubuk olmadigi icin Ayarlar'a kondu. Uc secenek de webdeki
-             * `ThemeContext` ile ayni: secim yapilmazsa SISTEM tercihi.
-             *
-             * Secim cikista SILINMEZ (`AppPreferences`), webde de oturumdan
-             * bagimsiz.
-             */
-            val themeController = LocalThemeController.current
-            if (themeController != null) {
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    SectionHeader("GÖRÜNÜM")
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2)
-                    ) {
-                        listOf(
-                            ThemeMode.SYSTEM to "Sistem",
-                            ThemeMode.LIGHT to "Açık",
-                            ThemeMode.DARK to "Koyu"
-                        ).forEach { (mod, etiket) ->
-                            LkPillChip(
-                                label = etiket,
-                                selected = themeController.mode == mod,
-                                onClick = { themeController.select(mod) },
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-                    }
-                }
-            }
 
             // Section: Yardım
             //
@@ -319,7 +353,7 @@ fun SettingsScreen(
                 SectionHeader("HESAP İŞLEMLERİ")
                 LkRowGroup {
                 SettingItem(
-                    label = "Hesabımı Sil",
+                    label = "Hesabı sil",
                     description = "Tüm verileriniz kalıcı olarak silinir",
                     icon = Icons.Outlined.DeleteOutline,
                     onClick = onOpenDeleteAccount,

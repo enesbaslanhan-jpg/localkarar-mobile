@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  UYARLANABILIR SIMGE ZEMINI.
+
+  🔴 GRADYANDI VE LAUNCHER'DA "ACIK MAVI SERIT" GIBI GORUNUYORDU:
+  gradyanin acik ucu simgenin kenarinda kalinca ortadaki koyu alanin
+  etrafinda bir halka izlenimi doguyordu. Zemin artik TEK RENK — marka
+  koyu mavisi — ve isaret zeminin uzerinde tek basina duruyor.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:pathData="M0,0h108v108h-108z"
+        android:fillColor="#FF1B3D4C" />
+</vector>

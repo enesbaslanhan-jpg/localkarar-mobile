@@ -50,6 +50,10 @@ private fun parseErrorCode(rawBody: String): String? {
     }
 }
 
+/** SCREAMING_SNAKE_CASE mi? Oyleyse makine kodudur, kullaniciya gosterilmez. */
+private fun kodGibi(metin: String): Boolean =
+    metin.isNotBlank() && metin.none { it.isLowerCase() } && metin.none { it == ' ' }
+
 private fun parseUserFacingErrorMessage(rawBody: String): String {
     if (rawBody.isBlank()) return "İşlem gerçekleştirilemedi. Lütfen tekrar deneyin."
     return try {
@@ -58,16 +62,38 @@ private fun parseUserFacingErrorMessage(rawBody: String): String {
             val element = hataGovdesiJson.parseToJsonElement(trimmed) as? JsonObject
             val errorVal = element?.get("error")?.let { (it as? JsonPrimitive)?.content }
             val msgVal = element?.get("message")?.let { (it as? JsonPrimitive)?.content }
-            val resolved = errorVal ?: msgVal ?: ""
+
+            /*
+             * 🔴 MAKINE KODU KULLANICIYA GOSTERILIYORDU.
+             *
+             * Eskiden `errorVal ?: msgVal` idi: sunucu HEM makine kodu
+             * (`error`) HEM insan mesaji (`message`) gonderdiginde kod
+             * kazaniyordu. Karar aracinda ekrana kirmizi kirmizi
+             * "PROFITABILITY_INPUTS_INCOMPLETE" yaziyordu; sunucu ise ayni
+             * yanitta "Hesaplama için tüm alanları geçerli değerlerle
+             * doldurun." diyordu.
+             *
+             * Artik once insan mesaji. Kod yalnizca asagidaki ozel
+             * eslesmelerde kullaniliyor ve eslesme olmazsa hicbir zaman
+             * ekrana dusmuyor (bkz. `kodGibi`).
+             */
+            val kodEslesme = errorVal ?: msgVal ?: ""
+            val resolved = msgVal?.takeIf { it.isNotBlank() } ?: kodEslesme
             when {
-                resolved.contains("Email already in use", ignoreCase = true) -> "Bu e-posta adresi zaten kullanımda."
-                resolved.contains("Invalid credentials", ignoreCase = true) -> "E-posta adresi veya şifre hatalı."
-                resolved.contains("User not found", ignoreCase = true) -> "Kullanıcı bulunamadı."
-                resolved.contains("Registration is closed", ignoreCase = true) -> "Kayıtlar şu an kapalıdır."
-                resolved.contains("VALIDATION_ERROR", ignoreCase = true) -> "Girdiğiniz bilgileri kontrol edip tekrar deneyin."
-                resolved.contains("INVALID_RESET_TOKEN", ignoreCase = true) -> "Sıfırlama kodu geçersiz ya da süresi dolmuş."
-                resolved.contains("PASSWORD_UNCHANGED", ignoreCase = true) -> "Yeni şifre mevcut şifreyle aynı olamaz."
-                resolved.isNotBlank() && !resolved.startsWith("{") -> resolved
+                kodEslesme.contains("PROFITABILITY_INPUTS_INCOMPLETE", ignoreCase = true) ->
+                    "Hesaplama için tüm alanları doldurun; bu araçta \"bilmiyorum\" seçeneği sonucu üretmiyor."
+                kodEslesme.contains("Email already in use", ignoreCase = true) -> "Bu e-posta adresi zaten kullanımda."
+                kodEslesme.contains("Invalid credentials", ignoreCase = true) -> "E-posta adresi veya şifre hatalı."
+                kodEslesme.contains("User not found", ignoreCase = true) -> "Kullanıcı bulunamadı."
+                kodEslesme.contains("Registration is closed", ignoreCase = true) -> "Kayıtlar şu an kapalıdır."
+                kodEslesme.contains("VALIDATION_ERROR", ignoreCase = true) -> "Girdiğiniz bilgileri kontrol edip tekrar deneyin."
+                kodEslesme.contains("INVALID_RESET_TOKEN", ignoreCase = true) -> "Sıfırlama kodu geçersiz ya da süresi dolmuş."
+                kodEslesme.contains("PASSWORD_UNCHANGED", ignoreCase = true) -> "Yeni şifre mevcut şifreyle aynı olamaz."
+                /*
+                 * SCREAMING_SNAKE_CASE bir metin makine kodudur, mesaj
+                 * degil. Ekrana dusmesi kullaniciya hicbir sey anlatmaz.
+                 */
+                resolved.isNotBlank() && !resolved.startsWith("{") && !kodGibi(resolved) -> resolved
                 else -> "Girdiğiniz bilgileri kontrol edin."
             }
         } else {
@@ -87,6 +113,20 @@ fun createHttpClient(
         prettyPrint = true
         isLenient = true
         ignoreUnknownKeys = true
+        /*
+         * 🔴 SUNUCU `null` GONDERDIGINDE EKRAN COKUYORDU.
+         *
+         * Urunler ekrani "İşletme yüklenemedi" diyordu; sebebi
+         * `products[0].tags` alaninin `null` gelmesiydi. DTO onu
+         * `List<String> = emptyList()` diye tanimliyor — varsayilan VAR
+         * ama acikca gonderilen `null` varsayilani kullanmiyor,
+         * istisna firlatiyordu.
+         *
+         * `coerceInputValues` tam bunu cozer: null gelen ama varsayilani
+         * olan alan varsayilanina duser. Tek bir ekranin degil, bu
+         * siniftaki BUTUN alanlarin sorunu.
+         */
+        coerceInputValues = true
     }
 
     return HttpClient {
@@ -191,7 +231,27 @@ fun createHttpClient(
                 val contentType = response.contentType()
                 val isSupportedResponse = contentType == null ||
                     contentType.match(ContentType.Application.Json) ||
-                    contentType.match(ContentType.Text.EventStream)
+                    contentType.match(ContentType.Text.EventStream) ||
+                    /*
+                     * 🔴 BILEREK INDIRILEN DOSYALAR DA GECIYOR.
+                     *
+                     * Olculdu (07.09.2026, emulator): kayitlari PDF olarak
+                     * disa aktarma "Beklenmeyen yanıt formatı" ile
+                     * dusuyordu. Sunucu dogru calisiyordu; onu bu
+                     * dogrulayici kesiyordu.
+                     *
+                     * ⚠️ KAPI KALDIRILMIYOR, DARALTILIYOR. Dogrulayicinin
+                     * amaci JSON yerine HTML bir giris sayfasi ya da vekil
+                     * hata sayfasi donduren durumlari yakalamak; bu deger
+                     * kalmali. O yuzden "her sey serbest" degil, yalniz
+                     * uygulamanin GERCEKTEN indirdigi uc bicim.
+                     *
+                     * Disa aktarma bicimleri `workspace-exports.ts`
+                     * tarafindan uretiliyor: csv, xlsx, pdf.
+                     */
+                    contentType.match(ContentType.Application.Pdf) ||
+                    contentType.match(ContentType.Text.CSV) ||
+                    contentType.match(IKILI_CIZELGE)
                 if (!isSupportedResponse) {
                     AppLog.e("Api", "Expected JSON but got ${contentType.contentType}/${contentType.contentSubtype} for ${response.request.url}")
                     throw ApiError.ServerError("Beklenmeyen yanıt formatı alındı. (Sunucu Hatası)")
@@ -248,3 +308,14 @@ fun createHttpClient(
         }
     }
 }
+
+/**
+ * Excel (xlsx) icerik turu — Ktor'un hazir sabitleri arasinda yok.
+ *
+ * `HttpResponseValidator` disa aktarma indirmelerini gecirirken
+ * kullaniyor; bkz. oradaki gerekce.
+ */
+private val IKILI_CIZELGE = ContentType(
+    "application",
+    "vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+)

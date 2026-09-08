@@ -132,7 +132,14 @@ fun LkButton(
             .then(
                 if (variant == LkButtonVariant.GHOST) Modifier
                 else Modifier.lkShadow(
-                    LkElevation.SM,
+                    /*
+                     * 🔴 GOLGE BASILIYKEN DE AYNIYDI: buton basildiginda
+                     * yalnizca dalga (ripple) parliyordu, urun sahibinin
+                     * dedigi gibi "sadece isik". Basili durumda golge
+                     * kalkiyor ve olcek kuculuyor — buton yuzeye GOMULUYOR.
+                     * Birakinca geri yukseliyor.
+                     */
+                    if (basili && enabled) 0.dp else LkElevation.SM,
                     if (size == LkButtonSize.LG) LkShapes.MD else LkShapes.SM
                 )
             )

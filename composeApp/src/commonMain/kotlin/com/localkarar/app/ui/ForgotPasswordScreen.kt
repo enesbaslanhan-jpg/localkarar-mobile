@@ -89,7 +89,7 @@ fun ForgotPasswordScreen(
                 Spacer(modifier = Modifier.height(LkSpacing.Space4))
 
                 Text(
-                    text = if (resetSuccess) "E-postanızı Kontrol Edin" else "Şifrenizi Sıfırlayın",
+                    text = if (resetSuccess) "E-postanızı Kontrol Edin" else "Parolanızı Sıfırlayın",
                     style = LkTypography.getSectionTitle(),
                     color = LkTextPrimary,
                     textAlign = TextAlign.Center
@@ -99,7 +99,7 @@ fun ForgotPasswordScreen(
 
                 Text(
                     text = if (resetSuccess) {
-                        "$email adresi sistemde kayıtlıysa şifre sıfırlama bağlantısı gönderildi. Bağlantı 1 saat geçerlidir."
+                        "$email adresi sistemde kayıtlıysa parola sıfırlama bağlantısı gönderildi. Bağlantı 1 saat geçerlidir."
                     } else {
                         "Hesabınızın e-posta adresini girin; sıfırlama bağlantısını iletelim."
                     },

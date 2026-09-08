@@ -8,6 +8,9 @@ import com.localkarar.app.network.dto.FinancialModelRunDetailDto
 import com.localkarar.app.network.dto.FinancialModelRunListItemDto
 import com.localkarar.app.network.dto.FinancialModelRunListResponseDto
 import com.localkarar.app.network.dto.FinancialModelRunResponseDto
+import com.localkarar.app.network.dto.HesaplamaIpucuDto
+import com.localkarar.app.network.dto.KararGunluguDto
+import com.localkarar.app.network.dto.KararGunluguIstegiDto
 import com.localkarar.app.network.dto.FormulaCalculateRequestDto
 import com.localkarar.app.network.dto.FormulaCalculateResponseDto
 import com.localkarar.app.network.dto.FormulaCalculationDto
@@ -36,6 +39,31 @@ class CalculationsRepository(private val api: SafeApiClient) {
 
     suspend fun getModel(code: String): Result<FinancialModelDto> {
         return api.get("$base/financial-models/$code")
+    }
+
+    /*
+     * PAZARYERI HESAPLAMA IPUCU.
+     *
+     * 🔴 Mobilde HIC YOKTU. Webde model ekraninin ustunde "son 90 gunde
+     * N siparis kaleminde ortalama fiyat X" diyen bir kutu ve "Bu
+     * degerlerle doldur" dugmesi var (`FinancialModelWorkspace.jsx`).
+     * Kullanicinin kendi satis verisini hesaba tasimanin en kisa yolu bu.
+     */
+    suspend fun getCalculationHints(workspaceId: String): Result<HesaplamaIpucuDto> {
+        return api.get("$base/marketplace/calculation-hints?workspaceId=$workspaceId")
+    }
+
+    /*
+     * KARAR GUNLUGU — model calismasindan karar kaydi.
+     *
+     * 🔴 Mobilde HIC YOKTU. Model calisiyor, sonuc goruluyor, ama "bu
+     * sonuca dayanarak ne karar verdim" hicbir yere yazilamiyordu.
+     */
+    suspend fun kararKaydet(
+        workspaceId: String,
+        istek: KararGunluguIstegiDto
+    ): Result<KararGunluguDto> {
+        return api.post("$base/workspaces/$workspaceId/decision-journal", istek)
     }
 
     suspend fun runModel(workspaceId: String, code: String, request: ModelRunRequestDto): Result<FinancialModelRunResponseDto> {

@@ -50,10 +50,39 @@ object LkDateUtils {
         }
     }
 
+    /**
+     * Tarih cozumleme — hem tam zaman damgasi hem DUZ TARIH.
+     *
+     * 🔴 DUZ TARIH DESTEGI YOKTU ve alanlar EKRANDA BOS KALIYORDU.
+     *
+     * Olculdu (07.09.2026, emulator): kayit detayindaki "Düzenleme" ve
+     * "Vade" satirlari etiketli ama degersiz cikiyordu. Sebep: bu islev
+     * yalniz `Instant.parse` deniyordu, e-Fatura alanlari ise sunucuda
+     * `YYYY-MM-DD` (`e-fatura.ts` -> "ISO tarih (YYYY-MM-DD)").
+     * `Instant.parse("2009-01-15")` istisna atiyor, islev `null`
+     * donuyor, `formatDate` bos dize yaziyordu.
+     *
+     * ⚠️ Duz tarih ZAMAN DILIMINE CEVRILMIYOR. Fatura tarihi bir ana
+     * degil bir GUNE isaret ediyor; UTC gece yarisi varsayip yerel
+     * saate cevirmek, kullanicinin dilimine gore tarihi bir gun
+     * KAYDIRIRDI (Türkiye'de +3, yani 15 Ocak 15 Ocak kalir ama bati
+     * dilimlerinde 14 Ocak olurdu).
+     */
     fun parseDate(value: String?): LocalDate? {
-        val instant = parseInstant(value) ?: return null
+        if (value.isNullOrBlank()) return null
+
+        /* Once tam zaman damgasi — kayitlarin `dueAt`i bu bicimde. */
+        parseInstant(value)?.let { instant ->
+            return try {
+                instant.toLocalDateTime(TimeZone.currentSystemDefault()).date
+            } catch (e: Exception) {
+                null
+            }
+        }
+
+        /* Duz tarih: oldugu gibi okunuyor. */
         return try {
-            instant.toLocalDateTime(TimeZone.currentSystemDefault()).date
+            LocalDate.parse(value.trim())
         } catch (e: Exception) {
             null
         }

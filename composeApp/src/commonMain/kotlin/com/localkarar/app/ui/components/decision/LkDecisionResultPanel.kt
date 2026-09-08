@@ -7,12 +7,17 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.localkarar.app.ui.components.LkButton
+import com.localkarar.app.ui.components.LkConfetti
 import com.localkarar.app.ui.theme.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
@@ -57,26 +62,37 @@ fun LkDecisionResultPanel(
         else -> Triple(LkPrimary.copy(alpha = 0.1f), LkPrimary, Icons.Outlined.Info)
     }
 
-    Column(modifier = modifier.fillMaxWidth()) {
+    /*
+     * KONFETI — §24 animasyon 3, tek mesru yeri burasi.
+     *
+     * Karar oturumu bitti ve sonuc OLUMLU. Olumsuz sonuca konfeti atmak
+     * ("bu fiyatla urun zarar ediyor" + konfeti) araci ciddiyetsiz gosterir,
+     * bu yuzden ton kosulu var. Tek seferlik: bittiginde bilesen kalkiyor,
+     * ekranda dolasan surekli bir animasyon kalmiyor.
+     */
+    var konfetiBitti by remember { mutableStateOf(false) }
+
+    Box(modifier = modifier.fillMaxWidth()) {
+    Column(modifier = Modifier.fillMaxWidth()) {
         // Hero result block
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
+                .clip(RoundedCornerShape(24.dp))
                 .background(bgColor)
                 .padding(20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.Start
         ) {
             Icon(
                 imageVector = icon,
-                contentDescription = decisionTone,
+                contentDescription = null,
                 tint = contentColor,
                 modifier = Modifier.size(40.dp)
             )
             Spacer(modifier = Modifier.height(12.dp))
             Text(
                 text = decisionLabel,
-                style = LkTypography.getDisplay(),
+                style = LkTypography.getPageTitle(),
                 color = contentColor
             )
             if (summary.isNotBlank()) {
@@ -85,7 +101,7 @@ fun LkDecisionResultPanel(
                     text = summary,
                     style = LkTypography.getBody(),
                     color = LkTextPrimary,
-                    modifier = Modifier.padding(horizontal = 16.dp)
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
             if (toolCode == "DC-PROFIT-001") {
@@ -114,7 +130,7 @@ fun LkDecisionResultPanel(
         
         if (hasMetrics || toolCode == "DC-PROFIT-001") {
             Text(
-                text = "Ana Göstergeler",
+                text = "Nasıl hesaplandı",
                 style = LkTypography.getSectionTitle(),
                 color = LkTextPrimary
             )
@@ -379,6 +395,14 @@ fun LkDecisionResultPanel(
             )
         }
     }
+
+        if (decisionTone == "good" && !konfetiBitti) {
+            LkConfetti(
+                modifier = Modifier.matchParentSize(),
+                onBitti = { konfetiBitti = true }
+            )
+        }
+    }
 }
 
 @Composable
@@ -394,7 +418,8 @@ private fun MetricRow(label: String, formattedValue: String, showDivider: Boolea
             Text(
                 text = label,
                 style = LkTypography.getBody(),
-                color = LkTextSecondary
+                color = LkTextSecondary,
+                modifier = Modifier.weight(1f).padding(end = 12.dp)
             )
             Text(
                 text = formattedValue,

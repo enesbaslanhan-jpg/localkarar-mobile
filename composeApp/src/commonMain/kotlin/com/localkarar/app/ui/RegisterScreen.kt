@@ -24,6 +24,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.localkarar.app.auth.AuthViewModel
 import com.localkarar.app.ui.components.LkButton
+import com.localkarar.app.ui.components.LkButtonVariant
 import com.localkarar.app.ui.components.LkPasswordTextField
 import com.localkarar.app.ui.components.LkTextField
 import com.localkarar.app.ui.theme.*
@@ -71,7 +72,7 @@ fun RegisterScreen(
                     .padding(horizontal = LkSpacing.Space6, vertical = LkSpacing.Space8)
             ) {
                 // Brand Header
-                LkBrandMark(size = 56.dp)
+                LkBrandMark(size = 56.dp, hareketli = true)
 
                 Spacer(modifier = Modifier.height(LkSpacing.Space4))
 
@@ -133,7 +134,7 @@ fun RegisterScreen(
                 LkPasswordTextField(
                     value = password,
                     onValueChange = { password = it },
-                    label = "Şifre (En az 10 karakter)",
+                    label = "Parola (En az 10 karakter)",
                     placeholder = "••••••••"
                 )
 
@@ -172,6 +173,13 @@ fun RegisterScreen(
                     enabled = name.isNotBlank() && email.isNotBlank() && password.length >= 10 && legalAccepted && !isLoading,
                     modifier = Modifier.fillMaxWidth()
                 )
+
+                Spacer(modifier = Modifier.height(LkSpacing.Space4))
+                LkButton(text = "Google · YAKINDA", onClick = {}, enabled = false,
+                    variant = LkButtonVariant.SECONDARY, modifier = Modifier.fillMaxWidth())
+                Spacer(modifier = Modifier.height(LkSpacing.Space2))
+                LkButton(text = "Apple · YAKINDA", onClick = {}, enabled = false,
+                    variant = LkButtonVariant.SECONDARY, modifier = Modifier.fillMaxWidth())
 
                 Spacer(modifier = Modifier.height(LkSpacing.Space6))
 

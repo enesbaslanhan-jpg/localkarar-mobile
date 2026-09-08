@@ -166,4 +166,111 @@ class DeepLinkParserTest {
             assertIs<DeepLinkResult.Unsupported>(result, "Unsupported bekleniyordu: '$url'")
         }
     }
+
+    /*
+     * EKIP DAVETI — `/app/` disindaki tek yol.
+     *
+     * 🔴 Mobilde HIC calismiyordu: davet e-postasi
+     * `https://localkarar.com/davet?token=...` gonderiyor, ayristirici
+     * yalniz `/app/` taniyordu ve baglanti tarayiciya dusuyordu.
+     */
+    @Test
+    fun davetBaglantisiJetonuCikariyor() {
+        val jeton = "a1b2c3d4e5f60718293a4b5c6d7e8f90"
+        val result = DeepLinkParser.parse("https://localkarar.com/davet?token=$jeton")
+        val target = assertIs<DeepLinkResult.Success>(result).target
+        val davet = assertIs<DeepLinkTarget.Invitation>(target)
+        assertEquals(jeton, davet.token)
+    }
+
+    /*
+     * 🦷 SORGU DIZESI HALA GUVENSIZ SAYILIYOR.
+     *
+     * Ayristirici sorguyu genel olarak BILEREK atiyor; davet tek
+     * istisna ve orada da bicim kati. Bu test istisnanin genislemesini
+     * engelliyor: gecersiz ya da eksik jeton `Success` DONMEMELI --
+     * aksi halde ekrana ve oradan istege dogrulanmamis bir dize girerdi.
+     */
+    @Test
+    fun bozukDavetJetonuKabulEdilmiyor() {
+        for (url in listOf(
+            "https://localkarar.com/davet",
+            "https://localkarar.com/davet?token=",
+            "https://localkarar.com/davet?baska=deger",
+            /* Cok kisa */
+            "https://localkarar.com/davet?token=abc",
+            /* Yasak karakterler — yol/sorgu enjeksiyonu denemesi */
+            "https://localkarar.com/davet?token=abcdefghij123456/../../admin",
+            "https://localkarar.com/davet?token=abcdefghij123456%20ekstra"
+        )) {
+            val result = DeepLinkParser.parse(url)
+            assertIs<DeepLinkResult.Malformed>(result, "Malformed bekleniyordu: '$url'")
+        }
+    }
+
+    /*
+     * Davet YALNIZ `/davet` yolunda. Onek olarak eslesseydi ileride
+     * acilabilecek `/davetiye-kampanyasi` gibi her sayfa da uygulamaya
+     * cekilirdi.
+     */
+    @Test
+    fun benzerYollarDavetSayilmiyor() {
+        for (url in listOf(
+            "https://localkarar.com/davetiye",
+            "https://localkarar.com/davet/ekip"
+        )) {
+            val result = DeepLinkParser.parse(url)
+            assertIs<DeepLinkResult.Unsupported>(result, "Unsupported bekleniyordu: '$url'")
+        }
+    }
+    /*
+     * ENTEGRASYONLAR — webin adresi `?bolum=integrations`.
+     *
+     * Web dort yerden bu adrese gonderiyor; mobil bagi tanimadigi icin
+     * kullanici duz Ayarlar'a dusuyordu.
+     */
+    @Test
+    fun entegrasyonBolumuAyriEkranaGidiyor() {
+        for (url in listOf(
+            "https://localkarar.com/app/settings?bolum=integrations",
+            "https://localkarar.com/app/settings#integrations",
+            "https://localkarar.com/app/settings?utm=x&bolum=integrations"
+        )) {
+            val result = DeepLinkParser.parse(url)
+            assertIs<DeepLinkResult.Success>(result, "Success bekleniyordu: '$url'")
+            assertEquals(DeepLinkTarget.IntegrationsRoot, result.target, url)
+            assertEquals(
+                Destination.WorkspaceIntegrations("ws_alpha"),
+                result.target.toDestination("ws_alpha"),
+                url
+            )
+        }
+    }
+
+    /*
+     * Etkin calisma alani yoksa UYDURULMUYOR: Ayarlar aciliyor.
+     */
+    @Test
+    fun calismaAlaniYokkenEntegrasyonAyarlaraDusuyor() {
+        val result = DeepLinkParser.parse("https://localkarar.com/app/settings?bolum=integrations")
+        assertIs<DeepLinkResult.Success>(result)
+        assertEquals(Destination.Settings, result.target.toDestination(null))
+    }
+
+    /*
+     * Diger bolumler bugunku davranisi koruyor: Ayarlar koku.
+     * Mobilde bu bolumlerin ayri ekrani yok, hepsi ayni listede.
+     */
+    @Test
+    fun tanimayanBolumAyarlarKokune() {
+        for (url in listOf(
+            "https://localkarar.com/app/settings?bolum=uyelik",
+            "https://localkarar.com/app/settings#uyelik",
+            "https://localkarar.com/app/settings?bolum=../integrations"
+        )) {
+            val result = DeepLinkParser.parse(url)
+            assertIs<DeepLinkResult.Success>(result, url)
+            assertEquals(DeepLinkTarget.SettingsRoot, result.target, url)
+        }
+    }
 }

@@ -25,7 +25,11 @@ import com.localkarar.app.community.CommunityViewModel
 import com.localkarar.app.core.LkDateUtils
 import com.localkarar.app.network.dto.CommunityPostDto
 import com.localkarar.app.network.dto.QuotedPostDto
+import com.localkarar.app.ui.components.LkLoadingDesen
+import com.localkarar.app.ui.components.LkLoadingState
+import com.localkarar.app.ui.components.LkCard
 import com.localkarar.app.ui.components.LkButton
+import com.localkarar.app.ui.components.LkTextField
 import com.localkarar.app.ui.components.LkButtonVariant
 import com.localkarar.app.ui.components.LkHeroPage
 import com.localkarar.app.ui.theme.*
@@ -53,9 +57,7 @@ fun CommunityPostDetailScreen(
     ) {
         when (val s = detailState) {
             is CommunityViewModel.DetailUiState.Loading, CommunityViewModel.DetailUiState.Idle -> {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = LkPrimary)
-                }
+                LkLoadingState(desen = LkLoadingDesen.DETAY)
             }
             is CommunityViewModel.DetailUiState.Error -> {
                 Column(
@@ -236,12 +238,8 @@ private fun MainPostCard(
     onDelete: () -> Unit,
     onQuotedPostClick: (String) -> Unit
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        backgroundColor = LkSurfacePanel,
-        elevation = 0.dp,
-        shape = LkShapes.MD
-    ) {
+    /* §24: kenarlikli Material Card degil yukseltilmis LkCard. */
+    LkCard(padding = 0.dp) {
         Column(Modifier.padding(16.dp)) {
             // Author Row
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -290,7 +288,7 @@ private fun MainPostCard(
 
             // Post Text
             Text(
-                post.summary,
+                bahsetmeliMetin(post.summary, LkPrimary),
                 style = LkTypography.getBody(),
                 color = LkTextPrimary
             )
@@ -451,7 +449,7 @@ private fun ParentPostCard(
             }
             Spacer(Modifier.height(4.dp))
             Text(
-                post.summary,
+                bahsetmeliMetin(post.summary, LkPrimary),
                 style = LkTypography.getBodySmall(),
                 color = LkTextSecondary,
                 maxLines = 3
@@ -554,7 +552,7 @@ private fun ReplyItemView(
                 }
 
                 Spacer(Modifier.height(6.dp))
-                Text(reply.summary, style = LkTypography.getBodySmall(), color = LkTextPrimary)
+                Text(bahsetmeliMetin(reply.summary, LkPrimary), style = LkTypography.getBodySmall(), color = LkTextPrimary)
 
                 Spacer(Modifier.height(6.dp))
                 Row(
@@ -653,18 +651,12 @@ fun PostReportDialog(
 
                 if (reason == "other") {
                     Spacer(Modifier.height(6.dp))
-                    OutlinedTextField(
+                    LkTextField(
                         value = details,
                         onValueChange = { details = it },
-                        placeholder = { Text("Açıklama belirtiniz...", style = LkTypography.getBodySmall(), color = LkTextMuted) },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = TextFieldDefaults.outlinedTextFieldColors(
-                            backgroundColor = LkSurfaceSunken,
-                            textColor = LkTextPrimary,
-                            cursorColor = LkPrimary,
-                            focusedBorderColor = LkPrimary,
-                            unfocusedBorderColor = LkLineSoft
-                        )
+                        placeholder = "Açıklama belirtiniz...",
+                        singleLine = false,
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
             }

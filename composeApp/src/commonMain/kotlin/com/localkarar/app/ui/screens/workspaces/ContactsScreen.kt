@@ -52,7 +52,25 @@ fun ContactsScreen(
     var showCreate by remember { mutableStateOf(false) }
     var actionError by remember { mutableStateOf<String?>(null) }
 
-    LkHeroPage(title = "Kişiler", onBack = onBack) {
+    LkHeroPage(
+        title = "Kişiler",
+        onBack = onBack,
+        actions = {
+            IconButton(onClick = { showCreate = true }) {
+                Icon(Icons.Outlined.Add, contentDescription = "Kişi ekle", tint = LkHero.OnHero)
+            }
+        },
+        heroExtra = {
+            val contacts = (uiState as? ContactsUiState.Content)?.contacts.orEmpty()
+            if (contacts.isNotEmpty()) {
+                Text(
+                    text = "${contacts.size} kişi · ${contacts.count { it.type == "customer" }} müşteri · ${contacts.count { it.type == "supplier" }} tedarikçi",
+                    style = LkTypography.getMetadata(), color = LkHero.OnHeroSecondary,
+                    modifier = Modifier.padding(start = LkSpacing.Space5, top = LkSpacing.Space2)
+                )
+            }
+        }
+    ) {
         Column(modifier = Modifier.fillMaxSize()) {
             if (actionError != null) {
                 Text(
@@ -85,13 +103,6 @@ fun ContactsScreen(
                                 contentPadding = PaddingValues(LkSpacing.Space4),
                                 verticalArrangement = Arrangement.spacedBy(LkSpacing.Space4)
                             ) {
-                                item {
-                                    LkButton(
-                                        text = "Yeni Kişi",
-                                        onClick = { showCreate = true },
-                                        modifier = Modifier.fillMaxWidth()
-                                    )
-                                }
                                 /* Tek yukseltilmis yuzey; kart yigini degil. */
                                 item {
                                     LkRowGroup {

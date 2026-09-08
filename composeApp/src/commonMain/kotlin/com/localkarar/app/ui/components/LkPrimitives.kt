@@ -152,17 +152,7 @@ fun LkMetric(
     etiket: String? = null,
     renk: Color = LkTextPrimary
 ) {
-    val kisitli = isReducedMotionEnabled()
-    val anim = remember { Animatable(if (kisitli) hedef.toFloat() else 0f) }
-
-    LaunchedEffect(hedef, kisitli) {
-        if (kisitli) {
-            anim.snapTo(hedef.toFloat())
-        } else {
-            anim.snapTo(0f)
-            anim.animateTo(hedef.toFloat(), tween(480))
-        }
-    }
+    val deger = rememberLkSayac(hedef)
 
     Column(modifier) {
         if (etiket != null) {
@@ -174,7 +164,7 @@ fun LkMetric(
             Box(Modifier.height(LkSpacing.Space2))
         }
         Text(
-            text = bicimle(anim.value.toDouble()),
+            text = bicimle(deger),
             style = LkTypography.getDisplayXL().numeric(),
             color = renk,
             maxLines = 1
@@ -415,4 +405,36 @@ fun LkSkeletonRows(satir: Int = 3, modifier: Modifier = Modifier) {
             }
         }
     }
+}
+
+// ──────────────────────────────────────────────────────────────────
+// SAYAC — §24 dort zorunlu animasyondan birincisi, yerlesimden bagimsiz
+// ──────────────────────────────────────────────────────────────────
+
+/**
+ * Hedefe sayarak yukselen deger.
+ *
+ * `LkMetric` sayaci KENDI yerlesimiyle birlikte getiriyordu (etiket ustte,
+ * display olceginde tek rakam). Hero icindeki iki sutunlu tutar ya da
+ * hesaplama sonucu o yerlesime girmiyor; sayac bu yuzden tek basina
+ * cagrilabilir hale getirildi. `LkMetric` de artik bunu kullaniyor —
+ * animasyon mantigi TEK yerde.
+ *
+ * ⚠️ Anahtar `hedef`: yalniz deger gercekten degistiginde yeniden sayar.
+ * `Unit` olsaydi her yeniden bilesimde bastan sayar, ekran titrerdi.
+ */
+@Composable
+fun rememberLkSayac(hedef: Double, sure: Int = 480): Double {
+    val kisitli = isReducedMotionEnabled()
+    val anim = remember { Animatable(if (kisitli) hedef.toFloat() else 0f) }
+
+    LaunchedEffect(hedef, kisitli) {
+        if (kisitli) {
+            anim.snapTo(hedef.toFloat())
+        } else {
+            anim.snapTo(0f)
+            anim.animateTo(hedef.toFloat(), tween(sure))
+        }
+    }
+    return anim.value.toDouble()
 }

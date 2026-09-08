@@ -126,7 +126,17 @@ data class ModelAssumptionDto(
 data class ModelRunRequestDto(
     val inputs: Map<String, JsonElement>,
     val assumptions: List<ModelAssumptionDto> = emptyList(),
-    val scenarioName: String = "base"
+    val scenarioName: String = "base",
+    /*
+     * Model bir BELGEDEN acildiysa o belgenin kimligi.
+     *
+     * ⚠️ Gonderildiginde sunucu EK BIR KAPI aciyor: belgeden gelen en
+     * az bir alanin `userVerified` olmasi sart, yoksa 422 ("OCR belge
+     * verileri modelde kullanilmadan once kullanici tarafindan
+     * dogrulanmalidir"). Bu yuzden bos birakilamaz degil -- yalnizca
+     * gercekten belgeden acildiysa gonderiliyor.
+     */
+    val sourceDocumentId: String? = null
 )
 
 @Serializable
@@ -217,4 +227,54 @@ data class FinancialModelRunDetailDto(
     val warnings: List<String> = emptyList(),
     val confidence: ModelConfidenceDto? = null,
     val calculationTrace: List<CalculationStepDto> = emptyList()
+)
+/**
+ * Pazaryeri hesaplama ipucu — `/marketplace/calculation-hints`.
+ *
+ * Son 90 gunun gercek siparis kalemlerinden ortalama satis fiyati ve
+ * komisyon orani. `available=false` ise baglanti yok ya da ornek yok;
+ * o zaman arayuz hicbir sey cizmiyor.
+ */
+@Serializable
+data class HesaplamaIpucuDto(
+    val available: Boolean = false,
+    /** Saglayici adi — TRENDYOL, HEPSIBURADA... */
+    val source: String? = null,
+    val currency: String = "TRY",
+    /** Kac siparis kaleminden hesaplandi. */
+    val sampleSize: Int = 0,
+    val avgUnitPrice: Double? = null,
+    /*
+     * Komisyon orani her baglantida gelmiyor. `null` ise o alan ELLE
+     * birakiliyor -- sifir yazmak, komisyonu yok saymak olurdu.
+     */
+    val avgCommissionPercent: Double? = null,
+    val note: String? = null
+)
+
+/**
+ * Karar gunlugu girdisi — `POST /workspaces/{ws}/decision-journal`.
+ *
+ * 🔴 Mobilde HIC YOKTU. Webde model calistiktan sonra "Kararı kaydet"
+ * var (`FinancialModelWorkspace.jsx`): hangi model calismasina dayanarak
+ * ne karar verildi ve ne bekleniyor. Sonradan gercek sonuc yazilarak
+ * kapatiliyor.
+ *
+ * ⚠️ `modelRunId` ZORUNLU: karar gunlugu bir model CALISMASINA bagli.
+ * Calistirilmamis bir modelden karar kaydedilemiyor -- ve dogrusu bu:
+ * dayanaksiz bir "karar" kaydi izlenebilir olmazdi.
+ */
+@Serializable
+data class KararGunluguIstegiDto(
+    val modelRunId: String,
+    val decision: String,
+    val expectedOutcome: String
+)
+
+@Serializable
+data class KararGunluguDto(
+    val id: String? = null,
+    val decision: String? = null,
+    val expectedOutcome: String? = null,
+    val createdAt: String? = null
 )

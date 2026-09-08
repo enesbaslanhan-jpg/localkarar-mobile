@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,13 +44,21 @@ import com.localkarar.app.settings.AccountNotificationsRepository
 import com.localkarar.app.ui.ForgotPasswordScreen
 import com.localkarar.app.ui.LoginScreen
 import com.localkarar.app.ui.RegisterScreen
+import com.localkarar.app.ui.AuthWelcomeScreen
+import com.localkarar.app.ui.EmailVerificationScreen
 import com.localkarar.app.ui.WelcomeScreen
 import com.localkarar.app.ui.ResetPasswordScreen
+import com.localkarar.app.ui.components.LkAcilisEkrani
 import com.localkarar.app.ui.shell.AppShell
 import com.localkarar.app.ui.theme.LocalKararTheme
 import com.localkarar.app.ui.theme.LkSurfaceCanvas
 
 private enum class AuthRoute {
+    /**
+     * Mockup "Giriş 1". Uygulama artik dogrudan forma degil karsilama
+     * ekranina aciliyor.
+     */
+    WELCOME,
     LOGIN,
     REGISTER,
     FORGOT_PASSWORD,
@@ -92,10 +101,15 @@ fun App(secureStorage: SecureStorage, appPreferences: AppPreferences) {
     val newsRepository = remember { NewsRepository(httpClient) }
     val communityRepository = remember { CommunityRepository(httpClient) }
     val settingsRepository = remember { SettingsRepository(httpClient) }
+    /* Kurulum ve degerlendirme — mobilde ilk kez (maddeler 1 ve 2). */
+    val onboardingRepository = remember {
+        com.localkarar.app.onboarding.OnboardingRepository(SafeApiClient(httpClient, "Kurulum"))
+    }
     val documentUploadRepository = remember { DocumentUploadRepository(httpClient) }
     val accountNotificationsRepository = remember { AccountNotificationsRepository(SafeApiClient(httpClient, "Bildirimler")) }
+    val aramaApi = remember { SafeApiClient(httpClient, "Arama") }
 
-    var authRoute by rememberSaveable { mutableStateOf(AuthRoute.LOGIN) }
+    var authRoute by rememberSaveable { mutableStateOf(AuthRoute.WELCOME) }
 
     /*
      * KAYIT SONRASI KARSILAMA.
@@ -125,20 +139,51 @@ fun App(secureStorage: SecureStorage, appPreferences: AppPreferences) {
     LocalKararTheme(darkTheme = koyuMu, themeController = themeController) {
         val sessionState by authViewModel.sessionState.collectAsState()
 
+        /*
+         * ACILIS KARESI EN AZ 1,3 SANIYE DURUYOR.
+         *
+         * 🔴 OTURUM KONTROLU COGU ZAMAN 200ms'DEN KISA SURUYOR: acilis
+         * animasyonu (pusula ignesinin kuzeyi bulmasi) baslamadan
+         * kayboluyordu — yani hic gorunmuyordu. Sure, igne hareketinin
+         * (1100ms) tamamlanmasina yetecek kadar.
+         *
+         * ⚠️ Bekleme YAPAY BIR GECIKME DEGIL: kontrol daha uzun surerse
+         * ekran zaten kontrol bitene kadar duruyor. Kisa surdugunde
+         * animasyonun yarida kesilmemesini sagliyor.
+         */
+        var acilisSuresiDoldu by remember { mutableStateOf(false) }
+        LaunchedEffect(Unit) {
+            kotlinx.coroutines.delay(1300)
+            acilisSuresiDoldu = true
+        }
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(LkSurfaceCanvas)
                 .windowInsetsPadding(WindowInsets.safeDrawing)
         ) {
+            if (!acilisSuresiDoldu) {
+                LkAcilisEkrani()
+                return@Box
+            }
             when (val state = sessionState) {
                 is SessionState.CheckingSession -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
-                    }
+                    /* Marka acilis karesi — bkz. LkSplash.kt */
+                    LkAcilisEkrani()
                 }
                 is SessionState.Unauthenticated -> {
                     when (authRoute) {
+                        AuthRoute.WELCOME -> AuthWelcomeScreen(
+                            onCreateAccount = {
+                                authViewModel.clearErrors()
+                                authRoute = AuthRoute.REGISTER
+                            },
+                            onLogin = {
+                                authViewModel.clearErrors()
+                                authRoute = AuthRoute.LOGIN
+                            }
+                        )
                         AuthRoute.LOGIN -> LoginScreen(
                             viewModel = authViewModel,
                             onNavigateToRegister = {
@@ -179,7 +224,31 @@ fun App(secureStorage: SecureStorage, appPreferences: AppPreferences) {
                     }
                 }
                 is SessionState.Authenticated -> {
-                    if (yeniKayit) {
+                    /*
+                     * E-POSTA DOGRULAMA — mockup "Giriş 5".
+                     *
+                     * Yalniz KAYIT SONRASI ve adres henuz dogrulanmamissa.
+                     * Var olan oturumlara kapi kurulmuyor: sunucu da web de
+                     * dogrulanmamis hesabi engellemiyor, mobil kendi basina
+                     * bir kural icat etmez.
+                     */
+                    var dogrulamaAtlandi by remember { mutableStateOf(false) }
+                    val dogrulamaGerekli =
+                        yeniKayit && !state.user.emailVerified && !dogrulamaAtlandi
+
+                    if (dogrulamaGerekli) {
+                        EmailVerificationScreen(
+                            email = state.user.email,
+                            viewModel = authViewModel,
+                            onVerified = { dogrulamaAtlandi = true },
+                            onSkip = { dogrulamaAtlandi = true },
+                            onUseAnotherAddress = {
+                                authViewModel.logout()
+                                yeniKayit = false
+                                authRoute = AuthRoute.REGISTER
+                            }
+                        )
+                    } else if (yeniKayit) {
                         WelcomeScreen(
                             user = state.user,
                             onStart = { yeniKayit = false }
@@ -198,8 +267,10 @@ fun App(secureStorage: SecureStorage, appPreferences: AppPreferences) {
                         newsRepository = newsRepository,
                         communityRepository = communityRepository,
                         settingsRepository = settingsRepository,
+                        onboardingRepository = onboardingRepository,
                         documentUploadRepository = documentUploadRepository,
                         accountNotificationsRepository = accountNotificationsRepository,
+                        aramaApi = aramaApi,
                         onNewSession = { token, user ->
                             authRepository.applyNewSession(token, user)
                         },

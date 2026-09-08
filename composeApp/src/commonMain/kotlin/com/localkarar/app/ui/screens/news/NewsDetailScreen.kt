@@ -3,6 +3,8 @@ package com.localkarar.app.ui.screens.news
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -12,6 +14,7 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.material.icons.outlined.Launch
 import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -22,10 +25,13 @@ import androidx.compose.ui.unit.dp
 import com.localkarar.app.core.LkDateUtils
 import com.localkarar.app.core.openExternalUrl
 import com.localkarar.app.news.NewsViewModel
+import com.localkarar.app.ui.components.LkChip
 import com.localkarar.app.ui.components.LkButton
 import com.localkarar.app.ui.components.LkInfoPanel
+import com.localkarar.app.ui.components.LkLoadingDesen
 import com.localkarar.app.ui.components.LkLoadingState
-import com.localkarar.app.ui.components.LkHeroPage
+import com.localkarar.app.ui.components.LkPageLayout
+import androidx.compose.ui.unit.sp
 import com.localkarar.app.ui.theme.*
 
 @Composable
@@ -36,11 +42,16 @@ fun NewsDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val article = viewModel.articleById(articleId)
+    val scrollState = rememberScrollState()
 
-    LkHeroPage(title = "Haber Detayı", onBack = onBack) {
+    LaunchedEffect(articleId) {
+        scrollState.scrollTo(0)
+    }
+
+    LkPageLayout(title = "Haber", onBack = onBack) {
         if (article == null && uiState is NewsViewModel.UiState.Loading) {
-            LkLoadingState()
-            return@LkHeroPage
+            LkLoadingState(desen = LkLoadingDesen.DETAY)
+            return@LkPageLayout
         }
 
         if (article == null) {
@@ -59,14 +70,14 @@ fun NewsDetailScreen(
                 Spacer(Modifier.height(8.dp))
                 LkButton(text = "Haberlere Dön", onClick = onBack)
             }
-            return@LkHeroPage
+            return@LkPageLayout
         }
 
         Column(
             Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
+                .verticalScroll(scrollState)
+                .padding(LkSpacing.Space5),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Category & Importance Header
@@ -118,32 +129,26 @@ fun NewsDetailScreen(
                 fontWeight = FontWeight.Bold
             )
 
-            // Metadata: Source & Published Date
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(LkShapes.MD)
-                    .border(1.dp, LkLineSoft, LkShapes.MD),
-                backgroundColor = LkSurfacePanel,
-                elevation = 0.dp
+            /*
+             * Kaynak ve tarih: mockup'ta bu satir KUTU DEGIL, basligin
+             * altindaki ince ust bilgi satiri. Kenarlikli kart, okuma
+             * ekranina gereksiz bir cerceve koyuyordu.
+             */
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    Modifier.fillMaxWidth().padding(12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Kaynak: ${article.sourceName}",
-                        style = LkTypography.getMicro(),
-                        color = LkTextSecondary,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Text(
-                        text = LkDateUtils.formatDateTime(article.sourcePublishedAt),
-                        style = LkTypography.getMicro(),
-                        color = LkTextSecondary
-                    )
-                }
+                Text(
+                    text = "Kaynak: ${article.sourceName}",
+                    style = LkTypography.getMetadata(),
+                    color = LkTextSecondary
+                )
+                Text(
+                    text = LkDateUtils.formatDateTime(article.sourcePublishedAt),
+                    style = LkTypography.getMetadata(),
+                    color = LkTextMuted
+                )
             }
 
             // Summary
@@ -151,7 +156,7 @@ fun NewsDetailScreen(
                 if (summary.isNotBlank()) {
                     Text(
                         text = summary,
-                        style = LkTypography.getBody(),
+                        style = LkTypography.getBody().copy(fontSize = 15.sp, lineHeight = 25.5.sp),
                         color = LkTextPrimary,
                         fontWeight = FontWeight.Normal
                     )
@@ -161,7 +166,7 @@ fun NewsDetailScreen(
             // Why It Matters Panel
             article.whyItMatters?.let { why ->
                 if (why.isNotBlank()) {
-                    LkInfoPanel(title = "Neden Önemli?") {
+                    LkInfoPanel(title = "SENİ NASIL ETKİLER") {
                         Text(
                             text = why,
                             style = LkTypography.getBodySmall(),
@@ -176,24 +181,14 @@ fun NewsDetailScreen(
                 Column {
                     Text("İlgili Etiketler", style = LkTypography.getMicro(), color = LkTextSecondary)
                     Spacer(Modifier.height(6.dp))
-                    Row(
+                    LazyRow(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = PaddingValues(end = 8.dp)
                     ) {
-                        article.tags.take(6).forEach { tag ->
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(4.dp))
-                                    .background(LkSurfacePanel)
-                                    .border(1.dp, LkLineSoft, RoundedCornerShape(4.dp))
-                                    .padding(horizontal = 8.dp, vertical = 4.dp)
-                            ) {
-                                Text(
-                                    text = "#$tag",
-                                    style = LkTypography.getMicro(),
-                                    color = LkPrimary
-                                )
-                            }
+                        items(article.tags.take(6)) { tag ->
+                            /* Sistem hapi; kenarlikli 4dp kutu degil. */
+                            LkChip(text = "#" + tag)
                         }
                     }
                 }

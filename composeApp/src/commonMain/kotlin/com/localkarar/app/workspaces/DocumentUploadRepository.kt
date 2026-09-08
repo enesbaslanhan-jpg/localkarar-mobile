@@ -37,7 +37,7 @@ import kotlinx.serialization.json.jsonPrimitive
  */
 class DocumentUploadRepository(private val client: HttpClient) {
 
-    private val json = Json { ignoreUnknownKeys = true }
+    private val json = Json { ignoreUnknownKeys = true; coerceInputValues = true }
 
     companion object {
         /** Sunucudaki `MAX_FILE_SIZE` ile AYNI olmali. */

@@ -37,7 +37,25 @@ fun NotificationsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    LkHeroPage(title = "Bildirimler", onBack = onBack) {
+    LkHeroPage(
+        title = "Bildirimler",
+        onBack = onBack,
+        actions = {
+            val unread = (uiState as? NotificationsUiState.Content)?.unreadCount ?: 0
+            if (unread > 0) {
+                androidx.compose.material.TextButton(onClick = { viewModel.markAllRead() }) {
+                    Text("Tümünü oku", color = LkHero.OnHero, style = LkTypography.getBodySmall())
+                }
+            }
+        },
+        heroExtra = {
+            val unread = (uiState as? NotificationsUiState.Content)?.unreadCount
+            unread?.let {
+                Text("$it okunmamış", style = LkTypography.getMetadata(), color = LkHero.OnHeroSecondary,
+                    modifier = Modifier.padding(start = LkSpacing.Space5, top = LkSpacing.Space2))
+            }
+        }
+    ) {
         when (val state = uiState) {
             is NotificationsUiState.Loading -> LkLoadingState()
             is NotificationsUiState.Error -> LkErrorState(
@@ -57,16 +75,6 @@ fun NotificationsScreen(
                         contentPadding = PaddingValues(LkSpacing.Space4),
                         verticalArrangement = Arrangement.spacedBy(LkSpacing.Space3)
                     ) {
-                        item {
-                            if (state.unreadCount > 0) {
-                                LkButton(
-                                    text = "Tümünü Okundu İşaretle",
-                                    variant = LkButtonVariant.QUIET,
-                                    onClick = { viewModel.markAllRead() },
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-                            }
-                        }
                         /* Tek yukseltilmis yuzey; her bildirim kendi cercevesinde degil. */
                         item {
                             LkRowGroup {

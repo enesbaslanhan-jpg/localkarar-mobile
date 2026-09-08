@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ACILIS PUSULASI.
+
+  🔴 ILK DENEMEDE EKRANDA PUSULA GORUNMUYORDU: halkalar %20 beyazdi,
+  taksimatlar kisaydi ve igne durgun haldeyken simetrik bir baklavaya
+  benziyordu — yani markanin kendi elmasindan ayirt edilemiyordu.
+  Kadran artik BASKIN: halkalar okunur, on iki taksimat var ve igne
+  asimetrik (uzun altin kuzey ucu, kisa beyaz kuyruk).
+
+  ⚠️ Sistem bu cizimi daire icine kirpiyor; her sey 108'lik alanin
+  ortasindaki 40 yaricapli daireye sigiyor.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <path
+        android:pathData="M54,14 A40,40 0 1,1 53.99,14"
+        android:strokeColor="#B3FFFFFF"
+        android:strokeWidth="2" />
+    <path
+        android:pathData="M54,27 A27,27 0 1,1 53.99,27"
+        android:strokeColor="#4DFFFFFF"
+        android:strokeWidth="1.5" />
+
+    <path android:pathData="M54,8 L54,21" android:strokeColor="#FFFFFFFF" android:strokeWidth="3" android:strokeLineCap="round" />
+    <path android:pathData="M100,54 L87,54" android:strokeColor="#E6FFFFFF" android:strokeWidth="3" android:strokeLineCap="round" />
+    <path android:pathData="M54,100 L54,87" android:strokeColor="#E6FFFFFF" android:strokeWidth="3" android:strokeLineCap="round" />
+    <path android:pathData="M8,54 L21,54" android:strokeColor="#E6FFFFFF" android:strokeWidth="3" android:strokeLineCap="round" />
+
+    <path android:pathData="M77,17.7 L73.5,23.8" android:strokeColor="#80FFFFFF" android:strokeWidth="2" android:strokeLineCap="round" />
+    <path android:pathData="M90.3,31 L84.2,34.5" android:strokeColor="#80FFFFFF" android:strokeWidth="2" android:strokeLineCap="round" />
+    <path android:pathData="M90.3,77 L84.2,73.5" android:strokeColor="#80FFFFFF" android:strokeWidth="2" android:strokeLineCap="round" />
+    <path android:pathData="M77,90.3 L73.5,84.2" android:strokeColor="#80FFFFFF" android:strokeWidth="2" android:strokeLineCap="round" />
+    <path android:pathData="M31,90.3 L34.5,84.2" android:strokeColor="#80FFFFFF" android:strokeWidth="2" android:strokeLineCap="round" />
+    <path android:pathData="M17.7,77 L23.8,73.5" android:strokeColor="#80FFFFFF" android:strokeWidth="2" android:strokeLineCap="round" />
+    <path android:pathData="M17.7,31 L23.8,34.5" android:strokeColor="#80FFFFFF" android:strokeWidth="2" android:strokeLineCap="round" />
+    <path android:pathData="M31,17.7 L34.5,23.8" android:strokeColor="#80FFFFFF" android:strokeWidth="2" android:strokeLineCap="round" />
+
+    <!--
+      IGNE. Kuzey ucu uzun ve altin, kuyruk kisa ve beyaz: durgun halde
+      bile "igne" olarak okunuyor, simetrik bir elmas gibi degil.
+    -->
+    <group
+        android:name="pusulaIgnesi"
+        android:pivotX="54"
+        android:pivotY="54">
+        <path
+            android:pathData="M54,20 L59.5,54 L48.5,54 Z"
+            android:fillColor="#FFE3A857" />
+        <path
+            android:pathData="M54,70 L59.5,54 L48.5,54 Z"
+            android:fillColor="#66FFFFFF" />
+    </group>
+
+    <!-- Merkez: marka isaretinin noktasi. -->
+    <path
+        android:pathData="M54,49 A5,5 0 1 1 53.99,49 Z"
+        android:fillColor="#FFFFFFFF" />
+</vector>

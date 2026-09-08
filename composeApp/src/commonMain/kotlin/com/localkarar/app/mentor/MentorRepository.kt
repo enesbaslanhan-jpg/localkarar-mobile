@@ -2,6 +2,7 @@ package com.localkarar.app.mentor
 
 import com.localkarar.app.network.ApiConfig
 import com.localkarar.app.network.dto.ConversationDetailDto
+import com.localkarar.app.network.dto.ConversationEnvelopeDto
 import com.localkarar.app.network.dto.ConversationDetailResponseDto
 import com.localkarar.app.network.dto.ConversationListItemDto
 import com.localkarar.app.network.dto.ConversationListResponseDto
@@ -42,7 +43,7 @@ class MentorRepository(
     private val client: HttpClient,
     private val baseUrl: String = ApiConfig.baseUrl
 ) {
-    private val json = Json { ignoreUnknownKeys = true }
+    private val json = Json { ignoreUnknownKeys = true; coerceInputValues = true }
     private val base = "$baseUrl/mentor"
 
     private suspend fun errorDetails(response: HttpResponse): Pair<String?, String> {
@@ -85,7 +86,7 @@ class MentorRepository(
                 setBody(CreateConversationRequestDto(title = title, contextSnapshot = contextSnapshot))
             }
             if (response.status.isSuccess()) {
-                Result.success(response.body<ConversationDetailDto>())
+                Result.success(response.body<ConversationEnvelopeDto>().conversation)
             } else {
                 Result.failure(Exception(errorMessage(response)))
             }
@@ -114,7 +115,7 @@ class MentorRepository(
                 setBody(RenameConversationRequestDto(title))
             }
             if (response.status.isSuccess()) {
-                Result.success(response.body<ConversationDetailDto>())
+                Result.success(response.body<ConversationEnvelopeDto>().conversation)
             } else {
                 Result.failure(Exception(errorMessage(response)))
             }

@@ -1,5 +1,6 @@
 package com.localkarar.app.ui.screens.mentor
 
+import com.localkarar.app.ui.components.LkLoadingSpinner
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -24,6 +25,7 @@ import com.localkarar.app.mentor.MentorTab
 import com.localkarar.app.mentor.MentorViewModel
 import com.localkarar.app.network.dto.ConversationListItemDto
 import com.localkarar.app.network.dto.MemoryDto
+import com.localkarar.app.ui.components.LkTextField
 import com.localkarar.app.ui.components.LkButton
 import com.localkarar.app.ui.components.LkButtonVariant
 import com.localkarar.app.ui.components.LkHeroPage
@@ -62,18 +64,35 @@ fun AiMentorScreen(
         onBack = onBack,
         actions = {
             IconButton(onClick = { showMemorySheet = true }) {
-                Icon(Icons.Outlined.Psychology, contentDescription = "Hatıralar", tint = LkPrimary)
+                Icon(Icons.Outlined.Psychology, contentDescription = "Hatıralar", tint = LkHero.OnHero)
             }
         }
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             Column(Modifier.fillMaxSize()) {
+                if (viewModel.selectedTab == MentorTab.ACTIVE) {
+                    Column(
+                        Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text("Birlikte değerlendirelim.", style = LkTypography.getPageTitle(), color = LkTextPrimary)
+                        Text("İşletmeniz, kararlarınız veya hedefleriniz hakkında bir soru sorun.",
+                            style = LkTypography.getBody(), color = LkTextSecondary)
+                        LkButton(
+                            text = "Yeni sohbet başlat",
+                            onClick = { viewModel.onCreateNew(onCreated = onOpenConversation) },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
                 // Segmented Tabs: Aktif vs Arşiv
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(LkSurfaceCanvas)
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                        .padding(horizontal = 20.dp, vertical = 8.dp)
+                        .clip(RoundedCornerShape(50))
+                        .background(LkSurfaceRaised)
+                        .padding(4.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     TabPill(
@@ -93,7 +112,7 @@ fun AiMentorScreen(
                 when (val s = state) {
                     is MentorViewModel.UiState.Loading -> {
                         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(color = LkPrimary)
+                            LkLoadingSpinner(size = 26.dp)
                         }
                     }
                     is MentorViewModel.UiState.Error -> {
@@ -126,7 +145,7 @@ fun AiMentorScreen(
                                 "Arşivlenmiş sohbet bulunmuyor."
                             }
                             Column(
-                                Modifier.fillMaxSize().padding(48.dp),
+                                Modifier.fillMaxSize().padding(24.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.Center
                             ) {
@@ -159,7 +178,7 @@ fun AiMentorScreen(
                         } else {
                             LazyColumn(
                                 Modifier.fillMaxSize(),
-                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp)
                             ) {
                                 items(s.conversations, key = { it.id }) { conversation ->
                                     ConversationCard(
@@ -186,16 +205,7 @@ fun AiMentorScreen(
                 }
             }
 
-            // Floating Action Button for New Chat (only on Active tab)
-            if (viewModel.selectedTab == MentorTab.ACTIVE) {
-                FloatingActionButton(
-                    onClick = { viewModel.onCreateNew(onCreated = onOpenConversation) },
-                    modifier = Modifier.align(Alignment.BottomEnd).padding(20.dp),
-                    backgroundColor = LkPrimary
-                ) {
-                    Icon(Icons.Outlined.Add, contentDescription = "Yeni Sohbet", tint = LkOnPrimary)
-                }
-            }
+
         }
     }
 
@@ -205,11 +215,10 @@ fun AiMentorScreen(
             onDismissRequest = { conversationToRename = null },
             title = { Text("Sohbeti Yeniden Adlandır", style = LkTypography.getSectionTitle()) },
             text = {
-                OutlinedTextField(
+                LkTextField(
                     value = renameText,
                     onValueChange = { renameText = it },
-                    label = { Text("Sohbet Başlığı") },
-                    singleLine = true,
+                    label = "Sohbet başlığı",
                     modifier = Modifier.fillMaxWidth()
                 )
             },
@@ -282,8 +291,9 @@ private fun TabPill(
 ) {
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(if (selected) LkPrimary else LkSurfacePanel)
+            .clip(RoundedCornerShape(50))
+            .background(if (selected) LkPrimaryFill else LkSurfaceRaised)
+            .heightIn(min = 44.dp)
             .clickable(onClick = onClick)
             .padding(vertical = 10.dp),
         contentAlignment = Alignment.Center
@@ -459,12 +469,11 @@ private fun MemorySheet(
                     Column {
                         Text("Yeni Hatıra Ekle", style = LkTypography.getBodyStrong(), color = LkTextPrimary)
                         Spacer(Modifier.height(6.dp))
-                        OutlinedTextField(
+                        LkTextField(
                             value = viewModel.input,
                             onValueChange = { viewModel.onInputChange(it) },
-                            placeholder = { Text("Örn: E-ticaret sitemde kargo süresi 2 gündür") },
-                            modifier = Modifier.fillMaxWidth(),
-                            textStyle = LkTypography.getBodySmall()
+                            placeholder = "Örn: E-ticaret sitemde kargo süresi 2 gündür",
+                            modifier = Modifier.fillMaxWidth()
                         )
                         Spacer(Modifier.height(8.dp))
                         Row(
@@ -507,7 +516,7 @@ private fun MemorySheet(
                 when (val s = state) {
                     is MemoryViewModel.UiState.Loading -> {
                         Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(color = LkPrimary)
+                            LkLoadingSpinner(size = 26.dp)
                         }
                     }
                     is MemoryViewModel.UiState.Error -> {

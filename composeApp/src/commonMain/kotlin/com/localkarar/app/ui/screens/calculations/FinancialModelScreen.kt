@@ -6,6 +6,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Icon
@@ -15,6 +16,7 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -63,11 +65,11 @@ fun FinancialModelScreen(
     var selectedTab by remember { mutableStateOf(0) }
     var scenarioName by remember { mutableStateOf("base") }
     val scenarioRuns = remember { mutableStateMapOf<String, FinancialModelRunResponseDto>() }
-    val scrollState = rememberScrollState()
+    val listeDurumu = androidx.compose.foundation.lazy.rememberLazyListState()
 
-    LkHeroPage(title = "Detaylı Analiz", onBack = onBack) {
+    LkHeroPage(title = "Finansal model", onBack = onBack) {
         when (val state = uiState) {
-            is FinancialModelUiState.Loading -> com.localkarar.app.ui.components.LkLoadingState()
+            is FinancialModelUiState.Loading -> com.localkarar.app.ui.components.LkLoadingState(desen = com.localkarar.app.ui.components.LkLoadingDesen.DETAY)
             is FinancialModelUiState.Error -> LkErrorState(
                 message = state.message,
                 onRetry = { viewModel.load() }
@@ -82,14 +84,38 @@ fun FinancialModelScreen(
                 val inputValues = remember(model.code) { mutableStateMapOf<String, String>() }
                 val inputErrors = remember(model.code) { mutableStateMapOf<String, String>() }
 
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(scrollState)
-                        .padding(LkSpacing.Space4),
+                /*
+                 * 🔴 BU EKRAN KAYDIRMIYORDU — `Column(verticalScroll)`
+                 * ICERIGI KESIYORDU.
+                 *
+                 * Olculdu (08.09.2026, emulator): `scrollState.maxValue`
+                 * yalnizca 732 piksel donuyordu; oysa bes girdi, ipucu
+                 * kutusu ve aciklamalarla icerik uc bin pikseli asiyor.
+                 * Sonuc: son iki girdi ve "Modeli Çalıştır" dugmesi
+                 * ULASILAMIYORDU -- yani ekran fiilen calismiyordu.
+                 *
+                 * ⚠️ Once sekme satirindaki `fillMaxWidth()` kaldirildi
+                 * (yatay kaydirmada sonsuz genislik isteniyordu); o
+                 * duzeltme kaydirmayi baslatti ama kesilmeyi bitirmedi.
+                 *
+                 * Cozum: uygulamanin ZATEN CALISAN deseni. Kayitlar,
+                 * Belgeler ve Kayit Detayi ekranlari `LkHeroPage` icinde
+                 * `LazyColumn` kullaniyor ve uzun icerikte sorunsuz
+                 * kaydiriyor. `LazyColumn` her ogeyi sonsuz yukseklik
+                 * kisitiyla olcuyor, dolayisiyla icerik kesilmiyor.
+                 *
+                 * ⚠️ Ogeler bilerek IRI: sekme icerikleri kendi icinde
+                 * bir butun ve `ColumnScope` bekliyor. Amac tembel cizim
+                 * degil, DOGRU OLCUM.
+                 */
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    state = listeDurumu,
+                    contentPadding = PaddingValues(LkSpacing.Space4),
                     verticalArrangement = Arrangement.spacedBy(LkSpacing.Space4)
                 ) {
                     // Header
+                    item {
                     Column(modifier = Modifier.fillMaxWidth()) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -113,7 +139,9 @@ fun FinancialModelScreen(
                             }
                         }
                     }
+                    }
 
+                    item {
                     if (workspaceName == null) {
                         LkInfoPanel(title = "İşletme gerekli", icon = Icons.Outlined.Info) {
                             Text(text = "Bu modeli çalıştırmak için bir işletme seçmeniz gerekir.", style = LkTypography.getBodySmall(), color = LkTextSecondary)
@@ -121,8 +149,9 @@ fun FinancialModelScreen(
                             LkButton(text = "İşletme Seç", onClick = onOpenWorkspace, modifier = Modifier.fillMaxWidth())
                         }
                     }
+                    }
 
-                    // Tab Row
+                    item {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -136,8 +165,29 @@ fun FinancialModelScreen(
                                 text = tab,
                                 style = LkTypography.getBodySmall().copy(fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal),
                                 color = if (selected) LkPrimary else LkTextSecondary,
+                                /*
+                                 * 🔴 BURADA `fillMaxWidth()` VARDI ve EKRAN
+                                 * HIC KAYDIRMIYORDU.
+                                 *
+                                 * Bu Row YATAY kaydiriliyor; yatay kaydirmada
+                                 * cocuklar SONSUZ genislik kisitiyla olculuyor.
+                                 * `fillMaxWidth()` "kisitin tamamini kapla"
+                                 * demek, yani sonsuzu istemek. Yedi sekme birden
+                                 * bunu isteyince satirin olculen genisligi
+                                 * tasiyor ve onu iceren DIKEY kaydirmali Column
+                                 * bozuluyordu.
+                                 *
+                                 * Olculen sonuc (08.09.2026, emulator): 1600
+                                 * piksellik kaydirmadan sonra "Model Girdileri"
+                                 * basligi TAM AYNI yerde kaliyordu; bes girdinin
+                                 * yalnizca ikisine ve "Modeli Çalıştır"
+                                 * dugmesine HIC ulasilamiyordu. Yani finansal
+                                 * model ekrani mobilde fiilen calismiyordu.
+                                 *
+                                 * Sekme kendi genisligi kadar yer kaplamali --
+                                 * zaten istenen de bu.
+                                 */
                                 modifier = Modifier
-                                    .fillMaxWidth()
                                     .padding(horizontal = LkSpacing.Space3, vertical = LkSpacing.Space2)
                                     .background(if (selected) LkPrimary.copy(alpha = 0.1f) else LkSurfacePanel, LkShapes.MD)
                                     .border(1.dp, if (selected) LkPrimary else LkLineStrong, LkShapes.MD)
@@ -146,12 +196,17 @@ fun FinancialModelScreen(
                         }
                     }
 
+                    }
+
+                    item {
                     if (actionError != null) {
                         Text(text = actionError!!, style = LkTypography.getBodySmall(), color = LkDanger)
                         Spacer(modifier = Modifier.height(LkSpacing.Space2))
                     }
 
-                    // Tab Content - rendered directly based on selectedTab
+                    }
+
+                    item {
                     when (selectedTab) {
                         0 -> WorkbenchTab(model, workspaceName, inputValues, inputErrors, scenarioName, state.isRunning, scenarioRuns, onOpenWorkspace, viewModel, { actionError = it })
                         1 -> InputsTab(model, workspaceName, inputValues, inputErrors, scenarioName, state.isRunning, onOpenWorkspace, viewModel, { actionError = it })
@@ -160,6 +215,7 @@ fun FinancialModelScreen(
                         4 -> ChecksTab(model, runResult)
                         5 -> SourcesTab(model)
                         6 -> VersionsTab(model)
+                    }
                     }
                 }
             }
@@ -182,7 +238,54 @@ private fun WorkbenchTab(
 ) {
     val latestRun = scenarioRuns[scenarioName] ?: scenarioRuns.values.firstOrNull()
 
+    val ipucu by viewModel.ipucu.collectAsState()
+    val kaynaklar by viewModel.kaynaklar.collectAsState()
+
+    /* Ipucu bir kez soruluyor; her yeniden cizimde istek atmak gereksiz. */
+    LaunchedEffect(model.code) { viewModel.ipucuYukle() }
+
+    /*
+     * BELGEDEN ON DOLDURMA (madde 18) — bir kez, ekran acilirken.
+     *
+     * ⚠️ Kullanicinin YAZDIGI deger EZILMIYOR: yalnizca bos alanlar
+     * dolduruluyor. Ekrana donup elle duzelttigi bir rakami belgeden
+     * gelenle degistirmek, kullanicinin duzeltmesini yok saymak olurdu.
+     */
+    LaunchedEffect(model.code) {
+        viewModel.belgedenOnDoldur().forEach { (alan, deger) ->
+            if (inputValues[alan].isNullOrBlank()) {
+                inputValues[alan] = LkFormatting.formatNumber(deger)
+            }
+        }
+    }
+
     Column(modifier = Modifier.fillMaxWidth()) {
+        /*
+         * PAZARYERI IPUCU — kullanicinin KENDI satis verisi.
+         *
+         * 🔴 Mobilde HIC YOKTU. Webde model ekraninin ustunde duruyor
+         * (`FinancialModelWorkspace.jsx`): son 90 gunun gercek siparis
+         * kalemlerinden ortalama fiyat ve komisyon.
+         *
+         * ⚠️ Kutu YALNIZ doldurulacak alan varsa ciziliyor. Baglantisi
+         * olmayan ya da `PRODUCT_PROFITABILITY` disindaki bir modelde
+         * "veriniz yok" demek yerine hic gorunmuyor.
+         */
+        val ipucuAlanlari = viewModel.ipucuDegerleri()
+        if (ipucu != null && ipucuAlanlari.isNotEmpty()) {
+            PazaryeriIpucuKutusu(
+                ipucu = ipucu!!,
+                onDoldur = {
+                    ipucuAlanlari.forEach { (alan, deger) ->
+                        inputValues[alan] = LkFormatting.formatNumber(deger)
+                        inputErrors.remove(alan)
+                    }
+                    viewModel.ipucuKaynagiIsaretle(ipucuAlanlari.keys)
+                }
+            )
+            Spacer(modifier = Modifier.height(LkSpacing.Space3))
+        }
+
         LkSectionHeader(title = "Model Girdileri", subtitle = "${model.inputs.size} alan")
         Spacer(modifier = Modifier.height(LkSpacing.Space2))
         model.inputs.forEach { input ->
@@ -197,6 +300,23 @@ private fun WorkbenchTab(
                 error = inputErrors[input.key],
                 suffix = input.unit.ifBlank { null }
             )
+
+            /*
+             * KAYNAK KUNYESI — yalniz degeri kullanici KOYMADIYSA.
+             *
+             * Kendi yazdigi sayi icin "bu nereden geldi" diye sormak
+             * anlamsiz; webdeki girdi basina dort alanlik kunye formu
+             * telefonda da yapilabilir bir is degil. Onun yerine:
+             * nereden geldigi YAZILIYOR, belgeden geldiyse
+             * "doğruladım" isteniyor.
+             */
+            kaynaklar[input.key]?.let { kaynak ->
+                GirdiKaynagiSatiri(
+                    kaynak = kaynak,
+                    onDogrula = { viewModel.dogrulamayiDegistir(input.key, it) }
+                )
+            }
+
             if (input.description.isNotBlank()) {
                 Text(text = input.description, style = LkTypography.getMetadata(), color = LkTextMuted, modifier = Modifier.padding(bottom = LkSpacing.Space2))
             }
@@ -284,6 +404,19 @@ private fun WorkbenchTab(
                     color = LkTextMuted
                 )
             }
+
+            /*
+             * KARAR GUNLUGU — "bu sonuca dayanarak ne karar verdim".
+             *
+             * 🔴 Mobilde HIC YOKTU. Model calisiyor, sonuc goruluyor, ama
+             * karar hicbir yere yazilamiyordu.
+             *
+             * ⚠️ YALNIZ CALISMA VARSA ciziliyor: sunucu `modelRunId`
+             * istiyor. Calistirilmamis bir modelden karar kaydetmek,
+             * dayanaksiz bir kayit uretmek olurdu.
+             */
+            Spacer(modifier = Modifier.height(LkSpacing.Space3))
+            KararKaydetBolumu(viewModel = viewModel)
         } ?: Text(
             text = "Henüz çalışma yok. Girdileri doldurup modeli çalıştırın.",
             style = LkTypography.getBodySmall(),
@@ -751,6 +884,170 @@ fun LkCalculationStepRowPublic(step: CalculationStepDto) {
         if (step.result != null) {
             Spacer(modifier = Modifier.height(2.dp))
             Text(text = "= ${step.result.displayValue()}", style = LkTypography.getBodyStrong(), color = LkPrimary)
+        }
+    }
+}
+
+/**
+ * PAZARYERI IPUCU KUTUSU.
+ *
+ * Kullanicinin kendi satis verisinden ortalama fiyat ve komisyon.
+ *
+ * ⚠️ SAYILAR SUNUCUDAN; hicbiri burada hesaplanmiyor ya da tahmin
+ * edilmiyor. Komisyon orani gelmemisse sunucunun kendi notu yaziliyor
+ * ("Komisyon orani bu baglantida saglanmadi") -- sifir varsaymak
+ * komisyonu yok saymak olurdu.
+ */
+@Composable
+private fun PazaryeriIpucuKutusu(
+    ipucu: com.localkarar.app.network.dto.HesaplamaIpucuDto,
+    onDoldur: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(LkShapes.SM)
+            .background(LkPrimary.copy(alpha = 0.08f))
+            .padding(LkSpacing.Space3)
+    ) {
+        Text(
+            text = "PAZARYERİ VERİNİZ",
+            style = LkTypography.getMicro(),
+            color = LkPrimary
+        )
+        Spacer(Modifier.height(LkSpacing.Space1))
+
+        val fiyat = ipucu.avgUnitPrice
+        Text(
+            text = buildString {
+                append("Son 90 günde ${ipucu.sampleSize} sipariş kaleminde ")
+                append("ortalama satış fiyatı ")
+                append(LkFormatting.formatMoney(fiyat, ipucu.currency))
+                append(".")
+                ipucu.avgCommissionPercent?.let {
+                    append(" Ortalama komisyon %${LkFormatting.formatNumber(it)}.")
+                }
+            },
+            style = LkTypography.getMetadata(),
+            color = LkTextSecondary
+        )
+
+        /* Sunucunun kendi notu — komisyon yoksa ne yapilacagini soyluyor. */
+        if (!ipucu.note.isNullOrBlank()) {
+            Spacer(Modifier.height(LkSpacing.Space1))
+            Text(ipucu.note, style = LkTypography.getMicro(), color = LkTextMuted)
+        }
+
+        Spacer(Modifier.height(LkSpacing.Space2))
+        LkButton(
+            text = "Bu değerlerle doldur",
+            variant = LkButtonVariant.SECONDARY,
+            onClick = onDoldur,
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+}
+
+/**
+ * Bir girdinin nereden geldigi + belgeden geldiyse dogrulama.
+ *
+ * ⚠️ BELGEDEN GELEN DEGER DOGRULANMADAN MODEL CALISMIYOR: sunucu
+ * reddediyor ("OCR belge verileri modelde kullanilmadan once kullanici
+ * tarafindan dogrulanmalidir"). Bu kutu o kapinin arayuz tarafi --
+ * kullaniciyi zorlamak icin degil, okunan rakamin yanlis olabilecegini
+ * ona soylemek icin.
+ */
+@Composable
+private fun GirdiKaynagiSatiri(
+    kaynak: com.localkarar.app.calculations.GirdiKaynagi,
+    onDogrula: (Boolean) -> Unit
+) {
+    Column(modifier = Modifier.fillMaxWidth().padding(bottom = LkSpacing.Space2)) {
+        Text(
+            text = kaynak.referans,
+            style = LkTypography.getMicro(),
+            color = LkTextMuted
+        )
+        /* Dogrulama kutusu YALNIZ belgeden gelen degerlerde: pazaryeri
+           verisi sunucunun kendi kaydindan geliyor, okunmus bir metin
+           degil. */
+        if (kaynak.tur == "document") {
+            Spacer(Modifier.height(LkSpacing.Space1))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                androidx.compose.material.Checkbox(
+                    checked = kaynak.dogrulandi == true,
+                    onCheckedChange = onDogrula
+                )
+                Text(
+                    text = "Bu değeri belgeyle karşılaştırdım",
+                    style = LkTypography.getMetadata(),
+                    color = LkTextSecondary
+                )
+            }
+        }
+    }
+}
+
+/**
+ * KARAR GUNLUGU KAYDI.
+ *
+ * Model calismasinin altinda: "bu sonuca dayanarak ne karar verdim ve
+ * ne bekliyorum". Web ile ayni iki alan.
+ *
+ * ⚠️ Form KAPALI basliyor. Her calistirmadan sonra iki bos kutu
+ * acmak, kullaniciya doldurmasi gereken bir odev gibi gorunurdu; karar
+ * kaydetmek istege bagli.
+ */
+@Composable
+private fun KararKaydetBolumu(viewModel: FinancialModelViewModel) {
+    var acik by remember { mutableStateOf(false) }
+    var karar by remember { mutableStateOf("") }
+    var beklenen by remember { mutableStateOf("") }
+    val kaydediliyor by viewModel.kararKaydediliyor.collectAsState()
+
+    if (!acik) {
+        LkButton(
+            text = "Bu sonuca göre karar kaydet",
+            variant = LkButtonVariant.SECONDARY,
+            onClick = { acik = true },
+            modifier = Modifier.fillMaxWidth()
+        )
+        return
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(LkSpacing.Space3)) {
+        Text("KARAR GÜNLÜĞÜ", style = LkTypography.getMicro(), color = LkTextMuted)
+        LkTextField(
+            value = karar,
+            onValueChange = { karar = it },
+            label = "Ne karar verdin?"
+        )
+        LkTextField(
+            value = beklenen,
+            onValueChange = { beklenen = it },
+            label = "Ne olmasını bekliyorsun?"
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
+            LkButton(
+                text = if (kaydediliyor) "Kaydediliyor..." else "Kaydet",
+                onClick = {
+                    viewModel.kararKaydet(karar, beklenen) {
+                        acik = false; karar = ""; beklenen = ""
+                    }
+                },
+                /* Sunucu ikisi icin de en az uc karakter istiyor; kapiyi
+                   burada da tutmak, dolduramadigi bir formu gonderip
+                   hata almasini onluyor. */
+                enabled = !kaydediliyor && karar.trim().length >= 3 && beklenen.trim().length >= 3,
+                modifier = Modifier.weight(1f)
+            )
+            LkButton(
+                text = "Vazgeç",
+                variant = LkButtonVariant.SECONDARY,
+                onClick = { acik = false },
+                enabled = !kaydediliyor,
+                modifier = Modifier.weight(1f)
+            )
         }
     }
 }

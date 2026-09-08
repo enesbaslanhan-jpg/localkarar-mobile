@@ -4,6 +4,7 @@ import com.localkarar.app.ui.components.LkHeroPage
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -17,12 +18,17 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.localkarar.app.core.LkDateUtils
 import com.localkarar.app.core.SecureScreen
 import com.localkarar.app.network.dto.IntegrationConnectionDto
 import com.localkarar.app.network.dto.MarketplaceEntryDto
 import com.localkarar.app.ui.components.LkButton
+import com.localkarar.app.ui.components.LkCard
 import com.localkarar.app.ui.components.LkButtonVariant
 import com.localkarar.app.ui.components.LkChip
 import com.localkarar.app.ui.components.LkEmptyState
@@ -58,11 +64,14 @@ fun IntegrationsScreen(
 
     /* §0: ham Scaffold + TopAppBar yerine hero kabugu. */
     LkHeroPage(
-        title = "Pazaryeri Entegrasyonları",
+        title = "Entegrasyonlar",
         onBack = onNavigateBack,
         heroExtra = {
+            val content = uiState as? IntegrationsUiState.Content
             Text(
-                text = "Bağlantı, eşitleme ve durum",
+                text = content?.let {
+                    "${it.katalog.size} bağlantı · ${it.baglantilar.count { connection -> connection.status == "ACTIVE" }} çalışıyor"
+                } ?: "Bağlantı, eşitleme ve durum",
                 style = LkTypography.getMetadata(),
                 color = LkHero.OnHeroSecondary,
                 modifier = Modifier.padding(
@@ -126,13 +135,32 @@ private fun SaglayiciKarti(
 ) {
     var formAcik by remember { mutableStateOf(false) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(LkSurfacePanel, RoundedCornerShape(12.dp))
-            .padding(LkSpacing.Space4)
-    ) {
+    val bagli = baglanti != null && baglanti.status == "ACTIVE"
+
+    LkCard {
         Row(verticalAlignment = Alignment.CenterVertically) {
+            SaglayiciIsareti(saglayici.provider, saglayici.label)
+            Spacer(modifier = Modifier.width(LkSpacing.Space3))
+            /*
+             * Baglanti durumu NOKTAYLA da soyleniyor — mockup'ta bagli
+             * saglayici yesil nokta tasiyor. Nokta tek basina kalmiyor,
+             * yanindaki hap ayni seyi kelimeyle de yaziyor (§19: durum
+             * yalniz renge yaslanmaz).
+             */
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .background(
+                        when {
+                            saglayici.comingSoon -> LkTextMuted
+                            bagli -> LkSuccess
+                            baglanti != null -> LkWarning
+                            else -> LkLineStrong
+                        },
+                        CircleShape
+                    )
+            )
+            Spacer(modifier = Modifier.width(LkSpacing.Space3))
             Text(
                 text = saglayici.label,
                 style = LkTypography.getCardTitle(),
@@ -152,14 +180,20 @@ private fun SaglayiciKarti(
 
         if (baglanti?.lastSyncedAt != null) {
             Spacer(modifier = Modifier.height(LkSpacing.Space1))
+            /*
+             * 🔴 HAM ISO DAMGASI BASILIYORDU: "Son eşitleme:
+             * 2026-09-05T09:41:12.482Z". Mockup "2 dk önce eşitlendi"
+             * diyor ve dogru olan da bu — kullanicinin sordugu sey
+             * damganin kendisi degil, uzerinden ne kadar gectigi.
+             */
             Text(
-                text = "Son eşitleme: ${baglanti.lastSyncedAt}",
+                text = LkDateUtils.formatTimeAgo(baglanti.lastSyncedAt) + " eşitlendi",
                 style = LkTypography.getMetadata(),
                 color = LkTextMuted
             )
         }
 
-        if (saglayici.comingSoon || !saglayici.enabled) return@Column
+        if (saglayici.comingSoon || !saglayici.enabled) return@LkCard
 
         Spacer(modifier = Modifier.height(LkSpacing.Space3))
 
@@ -271,5 +305,45 @@ private fun BaglantiFormu(
                 enabled = !islemDevamEdiyor
             )
         }
+    }
+}
+
+/**
+ * Pazaryeri isareti.
+ *
+ * 🔴 BES SAGLAYICI DA AYNI GORUNUYORDU: kartlarda yalnizca durum noktasi
+ * ve ad vardi, listeyi tararken hangi pazaryerine baktigini ancak yaziyi
+ * okuyarak anliyordun.
+ *
+ * ⚠️ GERCEK LOGOLAR KULLANILMIYOR. Trendyol / Hepsiburada / n11 / Shopify
+ * logolari tescilli marka; dosyalari uygulamaya koymak marka sahibinin
+ * kullanim izniyle olur. Yerine her pazaryerinin KENDI MARKA RENGINDE
+ * bas harf kutucugu ciziliyor: taniticiligi veriyor, izinsiz varlik
+ * tasimiyor. Izinli logo dosyalari gelirse yalniz bu bilesenin ici
+ * degisir.
+ */
+@Composable
+private fun SaglayiciIsareti(provider: String, label: String) {
+    val (zemin, harf) = when (provider.uppercase()) {
+        "TRENDYOL" -> Color(0xFFF27A1A) to "ty"
+        "HEPSIBURADA" -> Color(0xFFFF6000) to "hb"
+        "N11" -> Color(0xFFE4022C) to "n11"
+        "SHOPIFY" -> Color(0xFF5E8E3E) to "S"
+        "AMAZON" -> Color(0xFFFF9900) to "a"
+        else -> LkSurfaceTile to label.take(1).uppercase()
+    }
+    Box(
+        modifier = Modifier
+            .size(36.dp)
+            .clip(LkShapes.MD)
+            .background(zemin),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = harf,
+            style = LkTypography.getBodyStrong(),
+            color = Color.White,
+            fontWeight = FontWeight.Bold
+        )
     }
 }

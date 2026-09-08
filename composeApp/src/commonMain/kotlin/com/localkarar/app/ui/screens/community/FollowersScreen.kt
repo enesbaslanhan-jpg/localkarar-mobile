@@ -1,5 +1,8 @@
 package com.localkarar.app.ui.screens.community
 
+import com.localkarar.app.ui.components.LkLoadingDesen
+import com.localkarar.app.ui.components.LkLoadingState
+import com.localkarar.app.ui.components.LkCard
 import com.localkarar.app.ui.components.LkAvatar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -45,9 +48,7 @@ fun FollowersScreen(
     ) {
         when (val s = followListState) {
             is SocialViewModel.FollowListUiState.Loading -> {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = LkPrimary)
-                }
+                LkLoadingState(desen = LkLoadingDesen.LISTE)
             }
             is SocialViewModel.FollowListUiState.Error -> {
                 Column(
@@ -97,13 +98,10 @@ private fun FollowerRow(
     onClick: () -> Unit,
     onToggleFollow: () -> Unit
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        backgroundColor = LkSurfacePanel,
-        shape = LkShapes.MD,
-        elevation = 0.dp
+    /* §24: kenarlikli Material Card degil yukseltilmis LkCard. */
+    LkCard(
+        modifier = Modifier.clickable(onClick = onClick),
+        padding = 0.dp
     ) {
         Row(
             modifier = Modifier

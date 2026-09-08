@@ -20,6 +20,12 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.localkarar.app.navigation.Destination
+import com.localkarar.app.ui.components.LkHairline
+import com.localkarar.app.ui.components.LkListRow
+import com.localkarar.app.ui.components.LkRowGroup
+import com.localkarar.app.ui.components.LkMenuGrubu
+import com.localkarar.app.ui.components.LkMenuOgesi
+import com.localkarar.app.ui.components.LkMenuSheet
 import com.localkarar.app.ui.theme.*
 
 private data class ProductItem(
@@ -128,141 +134,34 @@ fun ProductCenterSheet(
         )
     )
 
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(LkSurfaceCanvas, shape = LkShapes.LG)
-            .padding(horizontal = LkSpacing.Space6, vertical = LkSpacing.Space6)
-            .verticalScroll(rememberScrollState())
-    ) {
-        // Sheet Handle / Header
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(LkShapes.SM)
-                        .background(LkSurfaceSignature),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Apps,
-                        contentDescription = "Ürün Merkezi",
-                        tint = LkPrimary,
-                        modifier = Modifier.size(20.dp)
+    /*
+     * Ortak menu cekmecesi (`LkMenuSheet`).
+     *
+     * 🔴 BU YUZEY IKI KEZ YENIDEN CIZILDI: once iki sutunlu ciplak kart
+     * izgarasi (urun sahibi begenmedi), sonra duz gruplanmis liste (fazla
+     * sade bulundu). Ucuncusu ortak bilesende: gruplar cizgiyle
+     * kapatiliyor, kutucuklar yuzeyden yukseliyor ve basilinca iceri
+     * cokuyor. Isletme Bolumleri secicisiyle AYNI bilesen — ayni is icin
+     * iki desen kalmadi.
+     */
+    LkMenuSheet(
+        baslik = "Ürün Merkezi",
+        altBaslik = "Tüm LocalKarar modülleri ve araçları",
+        onClose = onClose,
+        modifier = modifier,
+        gruplar = groups.map { grup ->
+            LkMenuGrubu(
+                baslik = grup.groupTitle,
+                ogeler = grup.items.map { oge ->
+                    LkMenuOgesi(
+                        id = oge.title,
+                        baslik = oge.title,
+                        aciklama = oge.description,
+                        ikon = oge.icon,
+                        onClick = { onNavigate(oge.destination) }
                     )
                 }
-                Spacer(modifier = Modifier.width(LkSpacing.Space3))
-                Column {
-                    Text(
-                        text = "Ürün Merkezi",
-                        style = LkTypography.getSectionTitle(),
-                        color = LkTextPrimary
-                    )
-                    Text(
-                        text = "Tüm LocalKarar modülleri ve araçları",
-                        style = LkTypography.getMicro(),
-                        color = LkTextSecondary
-                    )
-                }
-            }
-
-            IconButton(onClick = onClose) {
-                Icon(
-                    imageVector = Icons.Outlined.Close,
-                    contentDescription = "Kapat",
-                    tint = LkTextSecondary
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(LkSpacing.Space4))
-        Divider(color = LkLineSoft)
-        Spacer(modifier = Modifier.height(LkSpacing.Space4))
-
-        // Product Groups
-        groups.forEachIndexed { groupIndex, group ->
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    text = group.groupTitle,
-                    style = LkTypography.getMetadata(),
-                    color = LkPrimary,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = LkSpacing.Space2)
-                )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space3)
-                ) {
-                    group.items.forEach { item ->
-                        ProductCard(
-                            item = item,
-                            onClick = { onNavigate(item.destination) },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                }
-            }
-
-            if (groupIndex < groups.size - 1) {
-                Spacer(modifier = Modifier.height(LkSpacing.Space5))
-            }
-        }
-
-        Spacer(modifier = Modifier.height(LkSpacing.Space8))
-    }
-}
-
-@Composable
-private fun ProductCard(
-    item: ProductItem,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .clip(LkShapes.MD)
-            .background(LkSurfacePanel)
-            .border(1.dp, LkLineSoft, LkShapes.MD)
-            .clickable(onClick = onClick)
-            .padding(LkSpacing.Space4)
-    ) {
-        Column {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clip(LkShapes.SM)
-                        .background(LkSurfaceSunken),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = item.icon,
-                        contentDescription = item.title,
-                        tint = LkPrimary,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.width(LkSpacing.Space3))
-                Text(
-                    text = item.title,
-                    style = LkTypography.getBodyStrong(),
-                    color = LkTextPrimary,
-                    maxLines = 1
-                )
-            }
-            Spacer(modifier = Modifier.height(LkSpacing.Space2))
-            Text(
-                text = item.description,
-                style = LkTypography.getMicro(),
-                color = LkTextSecondary,
-                maxLines = 2
             )
         }
-    }
+    )
 }

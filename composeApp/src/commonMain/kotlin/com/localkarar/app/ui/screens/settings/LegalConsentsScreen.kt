@@ -1,30 +1,43 @@
 package com.localkarar.app.ui.screens.settings
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.*
+import androidx.compose.material.Icon
+import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.OpenInNew
 import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.localkarar.app.core.openExternalUrl
 import com.localkarar.app.network.ApiConfig
 import com.localkarar.app.settings.SettingsViewModel
 import com.localkarar.app.ui.components.LkButton
+import com.localkarar.app.ui.components.LkHairline
 import com.localkarar.app.ui.components.LkHeroPage
+import com.localkarar.app.ui.components.LkLoadingDesen
+import com.localkarar.app.ui.components.LkLoadingState
+import com.localkarar.app.ui.components.LkNotice
+import com.localkarar.app.ui.components.LkRowGroup
 import com.localkarar.app.ui.theme.*
 
+/**
+ * Mockup "Ayar 6 — Yasal izinler".
+ *
+ * 🔴 KART YIGINIYDI: her belge kendi kenarlikli kutusundaydi. Mockup'ta
+ * izinler TEK yuzeyde gruplanmis satirlar; ayarlar alaninin tamami boyle.
+ *
+ * ZORUNLU olan izin kapatilamaz ve NEDENI yaziyor; onay tarihi gorunur.
+ * Durum yalniz renge yaslanmiyor — ikon ve kelime birlikte (§19).
+ */
 @Composable
 fun LegalConsentsScreen(
     viewModel: SettingsViewModel,
@@ -34,111 +47,65 @@ fun LegalConsentsScreen(
         viewModel.loadConsents()
     }
 
-    LkHeroPage(title = "Yasal Bilgiler ve Onaylar", onBack = onBack) {
+    LkHeroPage(title = "Yasal izinler", onBack = onBack) {
         Column(
             Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(LkSpacing.Space4),
+            verticalArrangement = Arrangement.spacedBy(LkSpacing.Space4)
         ) {
             Text(
-                "LocalKarar platformu kullanım ve gizlilik koşulları aşağıda listelenmiştir. Yasal mevzuat gereğince güncellenen metinleri onaylayabilirsiniz.",
+                "Kullanım ve gizlilik koşulları aşağıda. Mevzuat gereği güncellenen metinleri buradan onaylayabilirsin.",
                 style = LkTypography.getBodySmall(),
                 color = LkTextSecondary
             )
 
             if (viewModel.consentsLoading && viewModel.legalDocuments.isEmpty()) {
-                Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = LkPrimary)
-                }
+                LkLoadingState(desen = LkLoadingDesen.LISTE)
             } else {
-                viewModel.legalDocuments.forEach { doc ->
-                    val isMissing = viewModel.missingConsents.any { it.type == doc.type }
-                    val acceptedItem = viewModel.acceptedConsents.find { it.documentType == doc.type }
+                LkRowGroup {
+                    viewModel.legalDocuments.forEachIndexed { index, doc ->
+                        val eksik = viewModel.missingConsents.any { it.type == doc.type }
+                        val onay = viewModel.acceptedConsents.find { it.documentType == doc.type }
 
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(LkShapes.MD)
-                            .border(1.dp, if (isMissing) LkWarning.copy(alpha = 0.5f) else LkLineSoft, LkShapes.MD),
-                        backgroundColor = LkSurfacePanel,
-                        elevation = 0.dp
-                    ) {
-                        Column(Modifier.padding(16.dp)) {
-                            Row(
-                                Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { openExternalUrl(ApiConfig.baseUrl + "/" + doc.type) }
+                                .padding(LkSpacing.Space4),
+                            verticalArrangement = Arrangement.spacedBy(LkSpacing.Space2)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
                                     text = doc.title,
                                     style = LkTypography.getBodyStrong(),
                                     color = LkTextPrimary,
-                                    fontWeight = FontWeight.Bold,
                                     modifier = Modifier.weight(1f)
                                 )
-                                Spacer(Modifier.width(8.dp))
-                                if (isMissing) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(4.dp))
-                                            .background(LkWarning.copy(alpha = 0.15f))
-                                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                                    ) {
-                                        Icon(
-                                            Icons.Outlined.Warning,
-                                            contentDescription = "Onay Bekliyor",
-                                            tint = LkWarning,
-                                            modifier = Modifier.size(14.dp)
-                                        )
-                                        Spacer(Modifier.width(4.dp))
-                                        Text(
-                                            "Onay Bekliyor",
-                                            style = LkTypography.getMicro(),
-                                            color = LkWarning,
-                                            fontWeight = FontWeight.SemiBold
-                                        )
-                                    }
-                                } else {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(4.dp))
-                                            .background(LkSuccess.copy(alpha = 0.15f))
-                                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                                    ) {
-                                        Icon(
-                                            Icons.Outlined.CheckCircle,
-                                            contentDescription = "Onaylandı",
-                                            tint = LkSuccess,
-                                            modifier = Modifier.size(14.dp)
-                                        )
-                                        Spacer(Modifier.width(4.dp))
-                                        Text(
-                                            "Onaylandı",
-                                            style = LkTypography.getMicro(),
-                                            color = LkSuccess,
-                                            fontWeight = FontWeight.SemiBold
-                                        )
-                                    }
-                                }
+                                DurumRozeti(eksik)
                             }
 
-                            Spacer(Modifier.height(8.dp))
+                            /*
+                             * "Zorunlu" etiketi: bu izinler kapatilamaz.
+                             * Sebebi de yaziyor — kapatilamayan bir secenegi
+                             * gerekcesiz gostermek kullaniciyi acikta birakir.
+                             */
                             Text(
-                                text = "Versiyon: ${doc.version}" + (acceptedItem?.acceptedAt?.let { " • Onay Tarihi: ${it.take(10)}" } ?: ""),
-                                style = LkTypography.getMicro(),
-                                color = LkTextSecondary
+                                text = buildString {
+                                    append("Sürüm ${doc.version}")
+                                    onay?.acceptedAt?.let { append(" · Onay: ${it.take(10)}") }
+                                    append(" · zorunlu, kapatılamaz")
+                                },
+                                style = LkTypography.getMetadata(),
+                                color = LkTextMuted
                             )
 
                             if (!doc.summary.isNullOrBlank()) {
-                                Spacer(Modifier.height(8.dp))
                                 Text(
                                     text = doc.summary,
                                     style = LkTypography.getBodySmall(),
-                                    color = LkTextPrimary
+                                    color = LkTextSecondary
                                 )
                             }
 
@@ -151,41 +118,35 @@ fun LegalConsentsScreen(
                              * goremiyordu. Parity eksiginden once bir uyum
                              * sorunu: okunamayan bir metne onay aliniyordu.
                              *
-                             * METIN KOPYALANMIYOR, gercek sayfa aciliyor.
-                             * Sebep: metinler 117 KB ve surumleriyle birlikte
-                             * hareket etmek zorunda -- `privacy.js` basindaki
-                             * not bunu acikca yaziyor ("once burasi
-                             * guncellenir, sonra version artirilir"). Ikinci
-                             * bir kopya, surum artisinda sessizce eskiyip
-                             * kullaniciya YANLIS metni onaylatirdi.
-                             *
-                             * Adres `ApiConfig.baseUrl` uzerinden: ayni
-                             * Fastify hem SPA'yi hem API'yi suniyor, yani
-                             * gelistirmede 10.0.2.2:3000, uretimde
-                             * localkarar.com -- ikisi de dogru sayfayi acar.
-                             * Belge `type` degerleri web rotalariyla birebir
-                             * ayni (terms, privacy, cookies, ...).
+                             * METIN KOPYALANMIYOR, gercek sayfa aciliyor:
+                             * metinler 117 KB ve surumleriyle birlikte
+                             * hareket etmek zorunda. Ikinci bir kopya, surum
+                             * artisinda sessizce eskiyip kullaniciya YANLIS
+                             * metni onaylatirdi.
                              */
-                            Spacer(Modifier.height(12.dp))
-                            TextButton(
-                                onClick = { openExternalUrl(ApiConfig.baseUrl + "/" + doc.type) },
-                                contentPadding = PaddingValues(0.dp)
-                            ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
                                     "Metni oku",
-                                    style = LkTypography.getBodySmall(),
-                                    color = LkPrimary,
-                                    fontWeight = FontWeight.SemiBold
+                                    style = LkTypography.getLabel(),
+                                    color = LkPrimary
+                                )
+                                Spacer(Modifier.width(LkSpacing.Space1))
+                                Icon(
+                                    Icons.Outlined.OpenInNew,
+                                    contentDescription = null,
+                                    tint = LkPrimary,
+                                    modifier = Modifier.size(14.dp)
                                 )
                             }
                         }
+
+                        if (index != viewModel.legalDocuments.lastIndex) LkHairline()
                     }
                 }
 
                 if (viewModel.missingConsents.isNotEmpty()) {
-                    Spacer(Modifier.height(8.dp))
                     LkButton(
-                        text = "Güncel Metinleri Onayla",
+                        text = "Güncel metinleri onayla",
                         onClick = { viewModel.acceptConsents() },
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -193,29 +154,37 @@ fun LegalConsentsScreen(
             }
 
             viewModel.notice?.let {
-                Spacer(Modifier.height(8.dp))
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    backgroundColor = if (viewModel.noticeIsError) LkDanger.copy(alpha = 0.15f) else LkPrimary.copy(alpha = 0.15f),
-                    elevation = 0.dp
-                ) {
-                    Row(
-                        Modifier.fillMaxWidth().padding(12.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = it,
-                            style = LkTypography.getBodySmall(),
-                            color = if (viewModel.noticeIsError) LkDanger else LkPrimary,
-                            modifier = Modifier.weight(1f)
-                        )
-                        TextButton(onClick = { viewModel.clearNotice() }) {
-                            Text("Tamam", color = LkTextPrimary)
-                        }
-                    }
-                }
+                LkNotice(
+                    metin = it,
+                    hataMi = viewModel.noticeIsError,
+                    onKapat = { viewModel.clearNotice() }
+                )
             }
         }
+    }
+}
+
+/** Onay durumu: ikon + kelime. Tek basina renk yeterli degil (§19). */
+@Composable
+private fun DurumRozeti(eksik: Boolean) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .clip(LkShapes.FULL)
+            .background((if (eksik) LkWarning else LkSuccess).copy(alpha = 0.15f))
+            .padding(horizontal = LkSpacing.Space2, vertical = LkSpacing.Space1)
+    ) {
+        Icon(
+            imageVector = if (eksik) Icons.Outlined.Warning else Icons.Outlined.CheckCircle,
+            contentDescription = null,
+            tint = if (eksik) LkWarning else LkSuccess,
+            modifier = Modifier.size(14.dp)
+        )
+        Spacer(Modifier.width(LkSpacing.Space1))
+        Text(
+            text = if (eksik) "Onay bekliyor" else "Onaylandı",
+            style = LkTypography.getMicro(),
+            color = if (eksik) LkWarning else LkSuccess
+        )
     }
 }

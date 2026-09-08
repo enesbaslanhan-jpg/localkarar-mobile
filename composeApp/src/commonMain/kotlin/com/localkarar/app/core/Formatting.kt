@@ -52,3 +52,25 @@ object LkFormatting {
         return cleaned.toDoubleOrNull()
     }
 }
+/**
+ * TURKCEYE DUYARLI BUYUK HARF.
+ *
+ * 🔴 `String.uppercase()` TURKCE BILMIYOR ve ekranda yanlis yaziyordu.
+ *
+ * Kotlin Multiplatform'da `uppercase()` yerelden bagimsiz calisiyor:
+ * `i` harfini `I` yapiyor, oysa Turkcede `i`nin buyugu `İ`. Olculdu
+ * (08.09.2026, emulator): karar makbuzunda "İNDIRIM ÖNCESI KATKI"
+ * yaziyordu -- dogrusu "ÖNCESİ".
+ *
+ * Ayni hata avatar bas harflerinde de vardi: "İrem" adinin bas harfi
+ * `I` cikiyordu.
+ *
+ * ⚠️ `ı` harfi de ele aliniyor (`ı` -> `I`); yalnizca `i`yi cevirip
+ * digerini varsayilana birakmak, `ı` iceren kelimelerde ikinci bir
+ * sapma birakirdi.
+ *
+ * ⚠️ Kod/para birimi gibi ASCII tanimlayicilarda KULLANILMAZ; orada
+ * yerelden bagimsiz `uppercase()` dogru olan.
+ */
+fun String.trBuyuk(): String =
+    this.replace('i', 'İ').replace('ı', 'I').uppercase()

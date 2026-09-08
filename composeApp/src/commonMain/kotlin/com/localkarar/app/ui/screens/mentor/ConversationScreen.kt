@@ -1,5 +1,6 @@
 package com.localkarar.app.ui.screens.mentor
 
+import com.localkarar.app.ui.components.LkLoadingSpinner
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -31,10 +32,11 @@ import com.localkarar.app.mentor.ConversationViewModel
 import com.localkarar.app.mentor.StreamStatus
 import com.localkarar.app.network.dto.CitationDto
 import com.localkarar.app.network.dto.MessageDto
+import com.localkarar.app.ui.components.LkTextField
 import com.localkarar.app.ui.components.LkButton
 import com.localkarar.app.ui.components.LkButtonVariant
 import com.localkarar.app.ui.components.LkMarkdown
-import com.localkarar.app.ui.components.LkHeroPage
+import com.localkarar.app.ui.components.LkPageLayout
 import com.localkarar.app.ui.theme.*
 
 data class ParsedDisclaimer(
@@ -68,6 +70,24 @@ fun ConversationScreen(
     var renameText by remember { mutableStateOf("") }
     var toastMessage by remember { mutableStateOf<String?>(null) }
 
+    /*
+     * KARAR MAKBUZUNDAN GELEN BAGLAM.
+     *
+     * Karar aracinin sonucundaki "Mentora sor" burayi besliyor: baglam
+     * yazma kutusuna DUSUYOR, gonderilmiyor. Kullanici okuyup
+     * duzenleyip kendisi gonderiyor -- yazmadigi bir soruyu onun
+     * agzindan sormak dogru olmazdi.
+     *
+     * `al()` tek atislik: ayni baglam bir sonraki sohbette karsisina
+     * cikmiyor. Kutuda zaten yazi varsa DOKUNULMUYOR; kullanicinin
+     * yarim kalan mesajini ezmek en kotusu olurdu.
+     */
+    LaunchedEffect(Unit) {
+        com.localkarar.app.mentor.MentorPromptStore.al()?.let { baglam ->
+            if (viewModel.input.isBlank()) viewModel.onInputChange(baglam)
+        }
+    }
+
     LaunchedEffect(conversationId) {
         viewModel.setConversation(conversationId)
     }
@@ -82,7 +102,7 @@ fun ConversationScreen(
 
     val conversationTitle = (state as? ConversationViewModel.UiState.Content)?.conversation?.title ?: "Sohbet"
 
-    LkHeroPage(
+    LkPageLayout(
         title = conversationTitle,
         onBack = onBack,
         actions = {
@@ -94,11 +114,11 @@ fun ConversationScreen(
             }
         }
     ) {
-        Column(Modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize().imePadding()) {
             when (val s = state) {
                 is ConversationViewModel.UiState.Loading -> {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = LkPrimary)
+                        LkLoadingSpinner(size = 26.dp)
                     }
                 }
                 is ConversationViewModel.UiState.Error -> {
@@ -166,13 +186,13 @@ fun ConversationScreen(
 
                     // Stream Error banner
                     viewModel.streamError?.let { err ->
-                        Card(
+                        /* §0: ham Material Card degil sistem yuzeyi. */
+                        Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 4.dp),
-                            backgroundColor = LkDanger.copy(alpha = 0.12f),
-                            shape = RoundedCornerShape(8.dp),
-                            elevation = 0.dp
+                                .padding(horizontal = LkSpacing.Space4, vertical = LkSpacing.Space1)
+                                .clip(LkShapes.SM)
+                                .background(LkDanger.copy(alpha = 0.12f))
                         ) {
                             Row(
                                 modifier = Modifier.padding(10.dp),
@@ -223,11 +243,10 @@ fun ConversationScreen(
             onDismissRequest = { showRenameDialog = false },
             title = { Text("Sohbeti Yeniden Adlandır", style = LkTypography.getSectionTitle()) },
             text = {
-                OutlinedTextField(
+                LkTextField(
                     value = renameText,
                     onValueChange = { renameText = it },
-                    label = { Text("Sohbet Başlığı") },
-                    singleLine = true,
+                    label = "Sohbet başlığı",
                     modifier = Modifier.fillMaxWidth()
                 )
             },
@@ -273,16 +292,23 @@ private fun MessageBubble(
      * ile zemin neredeyse ayni beyazdi ve balonun nerede bittigi
      * gorulmuyordu.
      */
-        Card(
-            modifier = Modifier.fillMaxWidth(if (isUser) 0.85f else 0.95f),
-            backgroundColor = if (isUser) LkPrimary else LkSurfaceRaised,
-            elevation = 0.dp,
-            shape = RoundedCornerShape(
-                topStart = 16.dp,
-                topEnd = 16.dp,
-                bottomStart = if (isUser) 16.dp else 4.dp,
-                bottomEnd = if (isUser) 4.dp else 16.dp
-            )
+        /*
+         * Baloncuk: giden sag ve marka renginde, gelen sol ve yuzey
+         * renginde (mockup "Topluluk 5" / "Mentor 2"). Kirik kose
+         * hangi tarafin konustugunu sekille de soyluyor.
+         */
+        Column(
+            modifier = Modifier
+                .fillMaxWidth(if (isUser) 0.85f else 0.95f)
+                .clip(
+                    RoundedCornerShape(
+                        topStart = 16.dp,
+                        topEnd = 16.dp,
+                        bottomStart = if (isUser) 16.dp else 4.dp,
+                        bottomEnd = if (isUser) 4.dp else 16.dp
+                    )
+                )
+                .background(if (isUser) LkPrimaryFill else LkSurfaceRaised)
         ) {
             Column(Modifier.padding(14.dp)) {
                 if (isUser) {
@@ -326,12 +352,13 @@ private fun MessageBubble(
                     // Disclaimer Section if present
                     parsed.disclaimer?.let { disclaimerText ->
                         Spacer(Modifier.height(10.dp))
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            backgroundColor = LkWarning.copy(alpha = 0.12f),
-                            shape = RoundedCornerShape(8.dp),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, LkWarning.copy(alpha = 0.3f)),
-                            elevation = 0.dp
+                        /* §0: ham Material Card degil sistem yuzeyi. */
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(LkShapes.SM)
+                                .background(LkWarning.copy(alpha = 0.12f))
+                                .border(1.dp, LkWarning.copy(alpha = 0.3f), LkShapes.SM)
                         ) {
                             Row(modifier = Modifier.padding(10.dp), verticalAlignment = Alignment.Top) {
                                 Icon(
@@ -461,11 +488,22 @@ private fun StreamingBubble(
     onStop: () -> Unit
 ) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
-        Card(
-            modifier = Modifier.fillMaxWidth(0.95f),
-            backgroundColor = LkSurfacePanel,
-            elevation = 0.dp,
-            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 4.dp, bottomEnd = 16.dp)
+        /*
+         * Gelen baloncuk: sol, yuzey renginde, sol alt kosesi kirik.
+         * Ham Material Card degil — sistem yuzeyi + sekil.
+         */
+        Column(
+            modifier = Modifier
+                .fillMaxWidth(0.95f)
+                .clip(
+                    RoundedCornerShape(
+                        topStart = 16.dp,
+                        topEnd = 16.dp,
+                        bottomStart = 4.dp,
+                        bottomEnd = 16.dp
+                    )
+                )
+                .background(LkSurfaceRaised)
         ) {
             Column(Modifier.padding(14.dp)) {
                 Row(
@@ -474,7 +512,7 @@ private fun StreamingBubble(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        CircularProgressIndicator(Modifier.size(14.dp), strokeWidth = 2.dp, color = LkPrimary)
+                        LkLoadingSpinner(size = 16.dp)
                         Spacer(Modifier.width(6.dp))
                         Text(
                             text = provider ?: "AI Mentor Yanıtlıyor…",
@@ -513,27 +551,26 @@ private fun ChatInputBar(
             .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.Bottom
     ) {
-        OutlinedTextField(
+        /*
+         * Yazma alani mockup "Mentor 2"deki gibi: sistem alani, gonder
+         * dugmesi ayri daire. Ham Material alan kendi yaricapini ve kendi
+         * odak halkasini getiriyordu.
+         */
+        LkTextField(
             value = value,
             onValueChange = onValueChange,
-            modifier = Modifier.weight(1f),
-            placeholder = { Text("Mesajınızı yazın… (En fazla 8000 karakter)") },
+            placeholder = "Mentora sorun…",
             enabled = enabled,
-            maxLines = 5,
-            textStyle = LkTypography.getBody(),
-            colors = TextFieldDefaults.outlinedTextFieldColors(
-                backgroundColor = LkSurfacePanel,
-                focusedBorderColor = LkPrimary,
-                unfocusedBorderColor = LkLineSoft
-            )
+            modifier = Modifier.weight(1f)
         )
         Spacer(Modifier.width(8.dp))
         if (isStreaming) {
             Button(
                 onClick = onStop,
-                modifier = Modifier.height(54.dp),
+                modifier = Modifier.size(54.dp),
+                contentPadding = PaddingValues(0.dp),
                 colors = ButtonDefaults.buttonColors(backgroundColor = LkDanger, contentColor = LkOnPrimary),
-                shape = RoundedCornerShape(8.dp)
+                shape = CircleShape
             ) {
                 Icon(Icons.Outlined.Stop, contentDescription = "Durdur")
             }
@@ -541,9 +578,10 @@ private fun ChatInputBar(
             Button(
                 onClick = onSend,
                 enabled = enabled && value.isNotBlank(),
-                modifier = Modifier.height(54.dp),
-                colors = ButtonDefaults.buttonColors(backgroundColor = LkPrimary, contentColor = LkOnPrimary),
-                shape = RoundedCornerShape(8.dp)
+                modifier = Modifier.size(54.dp),
+                contentPadding = PaddingValues(0.dp),
+                colors = ButtonDefaults.buttonColors(backgroundColor = LkPrimaryFill, contentColor = LkOnPrimary),
+                shape = CircleShape
             ) {
                 Icon(Icons.Outlined.Send, contentDescription = "Gönder")
             }
@@ -559,11 +597,13 @@ private fun EditMessageBar(
     onSubmit: () -> Unit,
     enabled: Boolean
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth().padding(8.dp),
-        backgroundColor = LkSurfacePanel,
-        shape = RoundedCornerShape(8.dp),
-        elevation = 0.dp
+    /* §0: ham Material Card degil sistem yuzeyi. */
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(LkSpacing.Space2)
+            .clip(LkShapes.MD)
+            .background(LkSurfacePanel)
     ) {
         Column(Modifier.padding(12.dp)) {
             Row(
@@ -577,13 +617,12 @@ private fun EditMessageBar(
                 }
             }
             Spacer(Modifier.height(6.dp))
-            OutlinedTextField(
+            LkTextField(
                 value = text,
                 onValueChange = onTextChange,
-                modifier = Modifier.fillMaxWidth(),
-                maxLines = 4,
+                singleLine = false,
                 enabled = enabled,
-                textStyle = LkTypography.getBody()
+                modifier = Modifier.fillMaxWidth()
             )
             Spacer(Modifier.height(8.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {

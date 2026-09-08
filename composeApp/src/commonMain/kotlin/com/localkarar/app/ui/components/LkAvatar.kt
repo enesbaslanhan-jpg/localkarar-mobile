@@ -1,5 +1,6 @@
 package com.localkarar.app.ui.components
 
+import com.localkarar.app.core.trBuyuk
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -41,7 +42,7 @@ fun LkAvatar(
     harfOverride: String? = null
 ) {
     val harf = harfOverride
-        ?: ad?.trim()?.take(1)?.uppercase()?.takeIf { it.isNotBlank() }
+        ?: ad?.trim()?.take(1)?.trBuyuk()?.takeIf { it.isNotBlank() }
         ?: "?"
 
     Box(

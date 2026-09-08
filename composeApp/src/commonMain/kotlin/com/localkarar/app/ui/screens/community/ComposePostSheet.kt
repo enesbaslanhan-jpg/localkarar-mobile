@@ -1,5 +1,6 @@
 package com.localkarar.app.ui.screens.community
 
+import com.localkarar.app.ui.components.LkLoadingSpinner
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -16,9 +17,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import com.localkarar.app.community.CommunityViewModel
+import com.localkarar.app.ui.components.LkAvatar
 import com.localkarar.app.core.rememberFilePicker
 import com.localkarar.app.ui.components.LkButton
+import com.localkarar.app.ui.components.LkTextField
 import com.localkarar.app.ui.components.LkButtonVariant
 import com.localkarar.app.ui.theme.*
 
@@ -44,6 +52,15 @@ fun ComposePostSheet(
 
     val replyTarget = viewModel.replyTargetPost
     val quoteTarget = viewModel.quoteTargetPost
+
+    /* Etiket listesi akistan turetiliyor; webde de ayni kaynak. */
+    val feedState by viewModel.feedState.collectAsState()
+    val katkicilar = remember(feedState) {
+        (feedState as? CommunityViewModel.FeedUiState.Content)
+            ?.let { katkicilariCikar(it.posts) }
+            .orEmpty()
+    }
+    var etiketAcik by remember { mutableStateOf(false) }
 
     val title = when {
         replyTarget != null -> "Yanıt Yaz"
@@ -122,27 +139,16 @@ fun ComposePostSheet(
                 }
 
                 // Text field
-                OutlinedTextField(
+                /* §0: ham Material alan degil sistem alani (LkTextField). */
+                LkTextField(
                     value = viewModel.metinInput,
                     onValueChange = { viewModel.onMetinChange(it) },
-                    placeholder = {
-                        Text(
-                            if (quoteTarget != null) "Düşüncelerini ekle..." else "Toplulukla bir şeyler paylaş...",
-                            style = LkTypography.getBody(),
-                            color = LkTextMuted
-                        )
-                    },
+                    placeholder = if (quoteTarget != null) "Düşüncelerini ekle..."
+                        else "Toplulukla bir şeyler paylaş...",
+                    singleLine = false,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(140.dp),
-                    colors = TextFieldDefaults.outlinedTextFieldColors(
-                        backgroundColor = LkSurfaceSunken,
-                        textColor = LkTextPrimary,
-                        cursorColor = LkPrimary,
-                        focusedBorderColor = LkPrimary,
-                        unfocusedBorderColor = LkLineSoft
-                    ),
-                    shape = LkShapes.MD
+                        .height(140.dp)
                 )
 
                 Spacer(Modifier.height(6.dp))
@@ -159,7 +165,7 @@ fun ComposePostSheet(
                             enabled = !viewModel.isUploadingMedia && viewModel.attachedMedia == null
                         ) {
                             if (viewModel.isUploadingMedia) {
-                                CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = LkPrimary)
+                                LkLoadingSpinner(size = 18.dp)
                             } else {
                                 Icon(Icons.Outlined.AttachFile, contentDescription = "Medya Ekle", tint = LkPrimary)
                             }
@@ -169,6 +175,31 @@ fun ComposePostSheet(
                             style = LkTypography.getMicro(),
                             color = LkTextSecondary
                         )
+
+                        /*
+                         * ETIKETLE — webin `EtiketSecici`si
+                         * (`CommunityPage.jsx:587`, `feed.mention.pick`).
+                         *
+                         * 🔴 Mobilde YOKTU: kullanici birinden bahsetmek
+                         * icin adini elle, dogru yazmak zorundaydi.
+                         *
+                         * ⚠️ Liste webdekiyle AYNI kaynaktan: akista en
+                         * cok paylasan dort kisi. Sunucuda kisi arama ucu
+                         * yok; "tum kullanicilar" diye bir liste
+                         * uydurulmuyor.
+                         *
+                         * ⚠️ Kimse yoksa dugme HIC cizilmiyor -- web de
+                         * oyle yapiyor (`if (!kisiler.length) return null`).
+                         */
+                        if (katkicilar.isNotEmpty()) {
+                            IconButton(onClick = { etiketAcik = !etiketAcik }) {
+                                Icon(
+                                    Icons.Outlined.AlternateEmail,
+                                    contentDescription = "Etiketle",
+                                    tint = if (etiketAcik) LkPrimary else LkTextSecondary
+                                )
+                            }
+                        }
                     }
 
                     Text(
@@ -176,6 +207,44 @@ fun ComposePostSheet(
                         style = LkTypography.getMicro(),
                         color = if (viewModel.metinInput.length >= 480) LkDanger else LkTextMuted
                     )
+                }
+
+                /* Etiketlenecek kisiler — dugmenin hemen altinda aciliyor. */
+                if (etiketAcik && katkicilar.isNotEmpty()) {
+                    Spacer(Modifier.height(6.dp))
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(LkShapes.SM)
+                            .background(LkSurfaceSunken)
+                            .padding(vertical = 4.dp)
+                    ) {
+                        katkicilar.forEach { kisi ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        viewModel.onMetinChange(
+                                            metneEtiketEkle(viewModel.metinInput, kisi.ad)
+                                        )
+                                        etiketAcik = false
+                                    }
+                                    /* §19: dokunma hedefi en az 44dp. */
+                                    .heightIn(min = 44.dp)
+                                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                LkAvatar(ad = kisi.ad, avatarUrl = kisi.avatarUrl, boyut = 24.dp)
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    text = kisi.ad,
+                                    style = LkTypography.getBodySmall(),
+                                    color = LkTextPrimary,
+                                    maxLines = 1
+                                )
+                            }
+                        }
+                    }
                 }
 
                 // Attached media preview pill

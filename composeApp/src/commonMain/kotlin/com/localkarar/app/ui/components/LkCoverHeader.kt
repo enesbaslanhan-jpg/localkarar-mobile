@@ -1,5 +1,6 @@
 package com.localkarar.app.ui.components
 
+import com.localkarar.app.core.trBuyuk
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -122,7 +123,7 @@ fun LkCoverHeader(
             ) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(
-                        text = ad.trim().take(1).uppercase().ifBlank { "?" },
+                        text = ad.trim().take(1).trBuyuk().ifBlank { "?" },
                         style = LkTypography.getTitleL(),
                         color = Color.White,
                         fontWeight = FontWeight.Bold

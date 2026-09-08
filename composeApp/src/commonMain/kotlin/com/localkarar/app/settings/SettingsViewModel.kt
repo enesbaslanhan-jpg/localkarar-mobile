@@ -126,6 +126,84 @@ class SettingsViewModel(
         }
     }
 
+    /*
+     * MOCKUP "AYAR 2" ALANLARI.
+     *
+     * 🔴 EKRAN YALNIZ ADI DUZENLIYORDU. Sunucu uc alan daha kabul ediyor
+     * (`auth.ts` `profilSemasi`: bio, location, websiteUrl) ve `UserDto`
+     * ucunu de tasiyor; mobilde girilecek yer yoktu.
+     *
+     * ⚠️ "Kullanıcı adı" mockup'ta var ama SUNUCUDA YOK — kullanicilarin
+     * `username` alani bulunmuyor. Uydurma bir alan koymak, kaydedilmeyen
+     * bir kutu gostermek olurdu.
+     */
+    var editBio by mutableStateOf("")
+    var editLocation by mutableStateOf("")
+    var editWebsite by mutableStateOf("")
+    var coverLoading by mutableStateOf(false)
+
+    /** Alanlari acik olan kullanicinin mevcut degerleriyle doldurur. */
+    fun profilAlanlariniHazirla() {
+        val u = user ?: return
+        editName = u.name
+        editBio = u.bio.orEmpty()
+        editLocation = u.location.orEmpty()
+        editWebsite = u.websiteUrl.orEmpty()
+    }
+
+    fun onEditBioChange(value: String) { editBio = value }
+    fun onEditLocationChange(value: String) { editLocation = value }
+    fun onEditWebsiteChange(value: String) { editWebsite = value }
+
+    fun saveProfile(onUserUpdated: (UserDto) -> Unit) {
+        val ad = editName.trim()
+        if (ad.length < 2) {
+            setNotice("İsim en az 2 karakter olmalıdır.", isError = true)
+            return
+        }
+        val site = editWebsite.trim()
+        if (site.isNotBlank() && !site.startsWith("http://") && !site.startsWith("https://")) {
+            setNotice("Site adresi http:// veya https:// ile başlamalı.", isError = true)
+            return
+        }
+        nameLoading = true
+        viewModelScope.launch {
+            repository.updateProfile(
+                name = ad,
+                bio = editBio.trim(),
+                location = editLocation.trim(),
+                websiteUrl = site
+            ).onSuccess { updated ->
+                user = user?.copy(
+                    name = updated.name,
+                    bio = updated.bio,
+                    location = updated.location,
+                    websiteUrl = updated.websiteUrl,
+                    avatarUrl = updated.avatarUrl ?: user?.avatarUrl,
+                    coverUrl = updated.coverUrl ?: user?.coverUrl
+                )
+                user?.let { onUserUpdated(it) }
+                setNotice("Profil güncellendi.")
+            }.onFailure { e ->
+                setNotice(e.message ?: "Profil güncellenemedi.", isError = true)
+            }
+            nameLoading = false
+        }
+    }
+
+    fun uploadCover(name: String, bytes: ByteArray, onNewSession: (String, UserDto) -> Unit) {
+        coverLoading = true
+        viewModelScope.launch {
+            repository.uploadCover(name, bytes).onSuccess {
+                setNotice("Kapak fotoğrafı yüklendi.")
+                refresh(onNewSession = onNewSession)
+            }.onFailure { e ->
+                setNotice(e.message ?: "Kapak yüklenemedi.", isError = true)
+            }
+            coverLoading = false
+        }
+    }
+
     fun onPasswordCurrentChange(value: String) {
         passwordCurrent = value
     }

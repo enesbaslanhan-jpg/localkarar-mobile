@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import com.localkarar.app.decision.DecisionToolUiState
 import com.localkarar.app.decision.DecisionToolViewModel
 import com.localkarar.app.ui.components.LkErrorState
+import com.localkarar.app.ui.components.LkLoadingDesen
 import com.localkarar.app.ui.components.LkLoadingState
 import com.localkarar.app.ui.components.LkHeroPage
 
@@ -35,7 +36,7 @@ fun DecisionToolScreen(
         Box(modifier = Modifier.fillMaxSize()) {
             when (val state = uiState) {
                 is DecisionToolUiState.Loading,
-                is DecisionToolUiState.Ready -> LkLoadingState()
+                is DecisionToolUiState.Ready -> LkLoadingState(desen = LkLoadingDesen.DETAY)
                 is DecisionToolUiState.Error -> LkErrorState(
                     message = state.message,
                     onRetry = { viewModel.startOrResume() }

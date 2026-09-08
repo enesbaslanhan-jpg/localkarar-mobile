@@ -114,3 +114,109 @@ actual fun rememberFilePicker(onFilePicked: (PickedFile?) -> Unit): () -> Unit {
         }
     }
 }
+/**
+ * iOS'ta kamera yolu HENUZ YOK.
+ *
+ * `UIImagePickerController` sarmalayicisi yazilmadi; `null` donerek
+ * arayuze "bu platformda bu dugmeyi cizme" deniyor. Yanlis calisan bir
+ * dugme yerine olmayan bir dugme.
+ */
+@Composable
+actual fun rememberCameraCapture(onPhotoTaken: (PickedFile?) -> Unit): (() -> Unit)? = null
+
+/**
+ * iOS PAYLASIM SAYFASI — `UIActivityViewController`.
+ *
+ * Android'in `ACTION_SEND` seciciyle ayni is: kullaniciya "Mesajlar,
+ * Mail, Dosyalara Kaydet, WhatsApp..." listesini acar. iOS'ta "indir"
+ * kavrami zaten yok; belgeyi bir yere gondermenin TEK dogru yolu bu.
+ *
+ * ⚠️ Kamera aksine burada `null` DONMUYOR: bu API her iOS surumunde var
+ * ve sarmalanmasi kucuk. Dolayisiyla disa aktarma dugmesi iOS'ta da
+ * ciziliyor.
+ */
+@OptIn(ExperimentalForeignApi::class)
+@Composable
+actual fun rememberFileSharer(): ((SharedFile) -> Unit)? {
+    return { dosya ->
+        try {
+            /*
+             * Gecici dizine yaziliyor; iOS bu dizini kendisi temizliyor,
+             * bu yuzden Android'deki gibi elle sureye bakan bir temizlik
+             * gerekmiyor.
+             */
+            val klasor = NSTemporaryDirectory()
+            val yol = klasor + dosya.name
+
+            val veri = dosya.bytes.usePinned { sabit ->
+                NSData.create(
+                    bytes = sabit.addressOf(0),
+                    length = dosya.bytes.size.toULong()
+                )
+            }
+            veri.writeToFile(yol, atomically = true)
+
+            val url = NSURL.fileURLWithPath(yol)
+            val denetleyici = UIActivityViewController(
+                activityItems = listOf(url),
+                applicationActivities = null
+            )
+
+            /*
+             * En ustteki denetleyiciden sunuluyor — `rememberFilePicker`
+             * ile ayni desen. Kok denetleyiciden sunmak, uzerinde acik
+             * bir sayfa varken "already presenting" hatasi verirdi.
+             */
+            var ustVc = UIApplication.sharedApplication.keyWindow?.rootViewController
+            while (ustVc?.presentedViewController != null) {
+                ustVc = ustVc.presentedViewController
+            }
+
+            if (ustVc == null) {
+                AppLog.w("Platform", "paylasim icin rootViewController yok")
+                AppMessages.hata("Dosya paylaşılamadı.")
+            } else {
+                /*
+                 * iPad'de `popoverPresentationController` bir kaynak
+                 * gostermeden sunulursa uygulama COKUYOR. Kaynak olarak
+                 * sunan gorunumun ortasi veriliyor.
+                 */
+                denetleyici.popoverPresentationController?.sourceView = ustVc.view
+                ustVc.presentViewController(denetleyici, animated = true, completion = null)
+            }
+        } catch (e: Exception) {
+            AppLog.e("Platform", "dosya paylasilamadi", e)
+            AppMessages.hata("Dosya paylaşılamadı.")
+        }
+    }
+}
+
+/**
+ * ⚠️ BU MAKINEDE DERLENMEDI. Kotlin/Native'in Apple hedefleri macOS
+ * istiyor; gelistirme Windows uzerinde yurudu. Kod `rememberFileSharer`
+ * ile ayni deseni izliyor ama DENENMEDI.
+ */
+@Composable
+actual fun rememberTextSharer(): ((baslik: String, metin: String) -> Unit)? {
+    return { _, metin ->
+        try {
+            val denetleyici = UIActivityViewController(
+                activityItems = listOf(metin),
+                applicationActivities = null
+            )
+            var ustVc = UIApplication.sharedApplication.keyWindow?.rootViewController
+            while (ustVc?.presentedViewController != null) {
+                ustVc = ustVc.presentedViewController
+            }
+            if (ustVc == null) {
+                AppMessages.hata("Paylaşılamadı.")
+            } else {
+                denetleyici.popoverPresentationController?.sourceView = ustVc.view
+                ustVc.presentViewController(denetleyici, animated = true, completion = null)
+            }
+        } catch (e: Exception) {
+            AppLog.e("Platform", "metin paylasilamadi", e)
+            AppMessages.hata("Paylaşılamadı.")
+        }
+    }
+}

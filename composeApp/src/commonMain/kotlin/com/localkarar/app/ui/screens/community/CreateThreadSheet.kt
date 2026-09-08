@@ -1,5 +1,6 @@
 package com.localkarar.app.ui.screens.community
 
+import com.localkarar.app.ui.components.LkLoadingSpinner
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -19,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.localkarar.app.community.ThreadsViewModel
 import com.localkarar.app.ui.components.LkButton
+import com.localkarar.app.ui.components.LkTextField
 import com.localkarar.app.ui.theme.*
 
 @Composable
@@ -58,40 +60,27 @@ fun CreateThreadSheet(
             ) {
                 // Group Name input (if > 1 participants selected)
                 if (isGroup) {
-                    OutlinedTextField(
+                    LkTextField(
                         value = viewModel.newThreadName,
                         onValueChange = { viewModel.onNewThreadNameChange(it) },
-                        placeholder = { Text("Grup Adı (İsteğe bağlı)", style = LkTypography.getBodySmall(), color = LkTextMuted) },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = TextFieldDefaults.outlinedTextFieldColors(
-                            backgroundColor = LkSurfaceSunken,
-                            textColor = LkTextPrimary,
-                            cursorColor = LkPrimary,
-                            focusedBorderColor = LkPrimary,
-                            unfocusedBorderColor = LkLineSoft
-                        ),
-                        shape = LkShapes.MD,
-                        singleLine = true
+                        placeholder = "Grup adı (isteğe bağlı)"
                     )
                     Spacer(Modifier.height(8.dp))
                 }
 
                 // Search box
-                OutlinedTextField(
+                LkTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
-                    placeholder = { Text("Kişi ara...", style = LkTypography.getBodySmall(), color = LkTextMuted) },
-                    leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null, tint = LkTextSecondary) },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = TextFieldDefaults.outlinedTextFieldColors(
-                        backgroundColor = LkSurfaceSunken,
-                        textColor = LkTextPrimary,
-                        cursorColor = LkPrimary,
-                        focusedBorderColor = LkPrimary,
-                        unfocusedBorderColor = LkLineSoft
-                    ),
-                    shape = LkShapes.MD,
-                    singleLine = true
+                    placeholder = "Kişi ara...",
+                    leadingContent = {
+                        Icon(
+                            Icons.Outlined.Search,
+                            contentDescription = null,
+                            tint = LkTextMuted,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                 )
 
                 Spacer(Modifier.height(8.dp))
@@ -106,7 +95,7 @@ fun CreateThreadSheet(
 
                 if (viewModel.isLoadingPeople) {
                     Box(Modifier.fillMaxWidth().height(120.dp), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = LkPrimary, strokeWidth = 2.dp)
+                        LkLoadingSpinner(size = 26.dp)
                     }
                 } else {
                     LazyColumn(

@@ -47,6 +47,15 @@ class SocialViewModel(
         data class Content(
             val summary: OwnSummaryDto,
             val posts: List<CommunityPostDto> = emptyList(),
+            /**
+             * Kendi MEDYA sekmem.
+             *
+             * 🔴 WEBDE VARDI, MOBILDE YOKTU. `kendiSekmeleri()` dort sekme
+             * sayiyor (paylasim, medya, begeni, kayit); mobil ucunu
+             * gosteriyordu. Uc de ayni: `/community/people/:id/posts?tur=media`
+             * — kendi kimligimle cagriliyor.
+             */
+            val media: List<CommunityPostDto> = emptyList(),
             val likes: List<CommunityPostDto> = emptyList(),
             val bookmarks: List<CommunityPostDto> = emptyList()
         ) : OwnProfileUiState
@@ -197,17 +206,23 @@ class SocialViewModel(
     // OWN PROFILE METHODS
     // ==========================================
 
-    fun loadOwnProfile() {
+    fun loadOwnProfile(ownUserId: Int? = null) {
         viewModelScope.launch {
             _ownProfileState.value = OwnProfileUiState.Loading
             repository.getOwnSummary().onSuccess { summary ->
                 val posts = repository.getOwnList("posts").getOrDefault(emptyList())
                 val likes = repository.getOwnList("likes").getOrDefault(emptyList())
                 val bookmarks = repository.getOwnList("bookmarks").getOrDefault(emptyList())
+                /* Medya ucu kimlik istiyor; kimlik bilinmiyorsa sekme bos kalir,
+                   uydurma yapilmaz. */
+                val media = ownUserId
+                    ?.let { repository.getOtherUserPosts(it, tur = "media").getOrDefault(emptyList()) }
+                    ?: emptyList()
 
                 _ownProfileState.value = OwnProfileUiState.Content(
                     summary = summary,
                     posts = posts,
+                    media = media,
                     likes = likes,
                     bookmarks = bookmarks
                 )

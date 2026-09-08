@@ -115,6 +115,31 @@ fun SupportScreen(
                 .padding(LkSpacing.Space4),
             verticalArrangement = Arrangement.spacedBy(LkSpacing.Space3)
         ) {
+            /*
+             * MOCKUP "AYAR 7" SIRASI: once SIK SORULANLAR, sonra ULAŞ.
+             * Ekran dogrudan forma aciliyordu; cogu soru yanitini
+             * asagidaki listede buluyor ve talep hic acilmiyor.
+             */
+            Text(
+                text = "SIK SORULANLAR",
+                style = LkTypography.getMicro(),
+                color = LkTextSecondary
+            )
+            SupportFaqList()
+
+            Spacer(modifier = Modifier.height(LkSpacing.Space4))
+
+            Text(
+                text = "ULAŞ",
+                style = LkTypography.getMicro(),
+                color = LkTextSecondary
+            )
+            Text(
+                text = "Yanıtı burada bulamadıysan yaz; genelde 1 iş günü içinde dönüyoruz.",
+                style = LkTypography.getBodySmall(),
+                color = LkTextMuted
+            )
+
             LkTextField(value = ad, onValueChange = { ad = it }, label = "Adınız")
             LkTextField(
                 value = eposta,

@@ -13,6 +13,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.*
@@ -48,6 +49,11 @@ import com.localkarar.app.ui.components.LkTabs
 import com.localkarar.app.ui.components.LkSectionHeader
 import com.localkarar.app.ui.components.LkCard
 import com.localkarar.app.ui.components.LkListRow
+import com.localkarar.app.ui.components.LkRowGroup
+import com.localkarar.app.ui.components.LkHairline
+import com.localkarar.app.ui.components.LkTextField
+import com.localkarar.app.ui.components.LkButtonVariant
+import com.localkarar.app.ui.components.LkButton
 import com.localkarar.app.ui.components.LkPressable
 import com.localkarar.app.ui.theme.*
 import kotlinx.datetime.Clock
@@ -78,8 +84,10 @@ fun CalculationsScreen(
     viewModel: CalculationsViewModel,
     onCalculationSelected: (CalculationItem) -> Unit,
     onDetailedSelected: ((CalculationItem) -> Unit)? = null,
-    onNavigateToWorkspace: () -> Unit,
-    onBack: () -> Unit,
+    onKayitEkle: () -> Unit,
+    onBelgeler: () -> Unit,
+    onTakvim: () -> Unit,
+    onBack: (() -> Unit)? = null,
     navController: NavController
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -125,12 +133,24 @@ fun CalculationsScreen(
                     ),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        Icons.Outlined.ArrowBack,
-                        contentDescription = "Geri",
-                        tint = LkHero.OnHero
-                    )
+                /*
+                 * 🔴 GERI OKU KOK EKRANDA DA CIZILIYOR VE HICBIR SEY
+                 * YAPMIYORDU. Bu ekran alt gezinme sekmesi; yigininda
+                 * altinda hicbir sey yok, `popBackStack` false donuyor.
+                 * Calismayan bir kontrolu cizmek, kullaniciya uygulamanin
+                 * bozuk oldugunu soyler. Ok yalniz gercekten donulecek bir
+                 * yer varken var.
+                 */
+                if (onBack != null) {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            Icons.Outlined.ArrowBack,
+                            contentDescription = "Geri",
+                            tint = LkHero.OnHero
+                        )
+                    }
+                } else {
+                    Spacer(Modifier.width(LkSpacing.Space5))
                 }
                 Text(
                     text = "Hesaplamalar",
@@ -177,7 +197,9 @@ fun CalculationsScreen(
                                 onCategoryChanged = { viewModel.updateCategoryFilter(it) },
                                 onCalculationSelected = onCalculationSelected,
                                 onDetailedSelected = onDetailedSelected,
-                                onNavigateToWorkspace = onNavigateToWorkspace,
+                                onKayitEkle = onKayitEkle,
+                                onBelgeler = onBelgeler,
+                                onTakvim = onTakvim,
                                 onOpenPricingTool = {
                                     navController.navigateTo(Destination.FormulaDetail("fiyat_mimarisi"))
                                 }
@@ -212,107 +234,307 @@ private fun KatalogTab(
     onCategoryChanged: (String) -> Unit,
     onCalculationSelected: (CalculationItem) -> Unit,
     onDetailedSelected: ((CalculationItem) -> Unit)? = null,
-    onNavigateToWorkspace: () -> Unit,
+    onKayitEkle: () -> Unit,
+    onBelgeler: () -> Unit,
+    onTakvim: () -> Unit,
     onOpenPricingTool: () -> Unit
 ) {
-    val visibleItems = remember(catalog, categoryFilter) {
-        if (categoryFilter == "all") catalog
+    /*
+     * KATALOG — onaylanan foy ("Hesap 1" / "Hesap 2").
+     *
+     * 🔴 18 ARAC TEK DUZ LISTEDEYDI, ustunde yatay kaydirilan bir kategori
+     * hap seridi vardi. Serit ekranin ustunu kapliyor ama kategorinin kac
+     * arac tasidigini soylemiyordu; kullanici araci ancak listeyi bastan
+     * sona kaydirarak buluyordu.
+     *
+     * Yeni yapi: ARAMA → kategori izgarasi (sayilariyla) → kategoriye
+     * girilince o kategorinin arac listesi. Kategoriler
+     * `CALCULATION_CATEGORIES` ile birebir ayni; yeni kategori
+     * uydurulmadi.
+     */
+    var arama by remember { mutableStateOf("") }
+
+    val aramaSonucu = remember(catalog, arama) {
+        val q = arama.trim()
+        if (q.length < 2) emptyList()
+        else catalog.filter {
+            it.title.contains(q, ignoreCase = true) ||
+                it.description.contains(q, ignoreCase = true)
+        }
+    }
+
+    val kategoriAraclari = remember(catalog, categoryFilter) {
+        if (categoryFilter == "all") emptyList()
         else catalog.filter { it.category == categoryFilter }
     }
 
+    /*
+     * 🔴 KATEGORIYE GIRINCE EKRAN ONCEKI KAYDIRMA KONUMUNDA KALIYORDU:
+     * izgaranin altina inip bir kategoriye dokunan kullanici, arac
+     * listesinin ORTASINDA aciyordu ve basligi hic gormuyordu.
+     */
+    val listeDurumu = rememberLazyListState()
+    LaunchedEffect(categoryFilter) { listeDurumu.scrollToItem(0) }
+
     LazyColumn(
+        state = listeDurumu,
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = LkSpacing.Space4)
+        contentPadding = PaddingValues(
+            start = LkSpacing.Space4,
+            end = LkSpacing.Space4,
+            bottom = LkSpacing.Space8
+        ),
+        verticalArrangement = Arrangement.spacedBy(LkSpacing.Space5)
     ) {
-        // Prototipteki sira: filtre haplari → Fiyatlandirma Sihirbazi →
-        // arac listesi. Sihirbaz ekranin one cikan blogu, en ustte.
+
         item {
-            PricingWizardSection(
-                onOpenFullTool = onOpenPricingTool,
-                modifier = Modifier.padding(horizontal = LkSpacing.Space4, vertical = LkSpacing.Space3)
+            LkTextField(
+                value = arama,
+                onValueChange = { arama = it },
+                placeholder = "Araç ara — “komisyon”, “başabaş”…",
+                leadingContent = {
+                    Icon(
+                        Icons.Outlined.Search,
+                        contentDescription = null,
+                        tint = LkTextMuted,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
             )
         }
 
-        // Quick workspace entry points
-        item {
-            Column(modifier = Modifier.padding(horizontal = LkSpacing.Space4, vertical = LkSpacing.Space3)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space3)
-                ) {
-                    QuickActionCard(
-                        icon = Icons.Outlined.AccountBalanceWallet,
-                        title = "Gelir, gider ve tahsilat",
-                        subtitle = "Kayıt ekle",
-                        modifier = Modifier.weight(1f),
-                        onClick = onNavigateToWorkspace
-                    )
-                    QuickActionCard(
-                        icon = Icons.Outlined.Description,
-                        title = "Fatura ve belgeler",
-                        subtitle = "Belge yükle",
-                        modifier = Modifier.weight(1f),
-                        onClick = onNavigateToWorkspace
-                    )
-                }
-                Spacer(modifier = Modifier.height(LkSpacing.Space3))
-                QuickActionCard(
-                    icon = Icons.Outlined.CalendarToday,
-                    title = "Ödeme takvimi",
-                    subtitle = "Vadeleri ve yaklaşan işlemleri gör",
-                    modifier = Modifier.fillMaxWidth(),
-                    onClick = onNavigateToWorkspace
-                )
-            }
-        }
-
-        // Category filter chips
-        item {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = LkSpacing.Space4, vertical = LkSpacing.Space2),
-                horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2)
-            ) {
-                CALCULATION_CATEGORIES.forEach { category ->
-                    LkChip(
-                        text = category.label,
-                        selected = categoryFilter == category.key,
-                        onClick = { onCategoryChanged(category.key) }
-                    )
-                }
-            }
-        }
-
-        // Section title
-        item {
-            Spacer(modifier = Modifier.height(LkSpacing.Space2))
-            LkSectionHeader(
-                title = "Bugün ne hesaplamak istiyorsunuz?",
-                modifier = Modifier.padding(horizontal = LkSpacing.Space4)
-            )
-        }
-
-        if (visibleItems.isEmpty()) {
+        /*
+         * ARAMA HER SEYIN ONUNE GECIYOR: yazi varken kategori izgarasi da
+         * arac listesi de gizleniyor. Iki liste birden gostermek "hangisi
+         * benim aradigim" sorusunu doguruyordu.
+         */
+        if (arama.trim().length >= 2) {
             item {
-                LkEmptyState(
-                    title = "Sonuç bulunamadı",
-                    description = "Bu kategoride hesaplama aracı yok."
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
+                    LkSectionHeader(title = "ARAMA SONUCU")
+                    if (aramaSonucu.isEmpty()) {
+                        Text(
+                            text = "“${arama.trim()}” için araç bulunamadı.",
+                            style = LkTypography.getBodySmall(),
+                            color = LkTextMuted
+                        )
+                    } else {
+                        AracListesi(
+                            araclar = aramaSonucu,
+                            onCalculationSelected = onCalculationSelected,
+                            onDetailedSelected = onDetailedSelected
+                        )
+                    }
+                }
             }
+            return@LazyColumn
+        }
+
+        if (categoryFilter == "all") {
+            /* Fiyatlandirma sihirbazi — ekranin one cikan araci, kendi
+               blogunda kaliyor. */
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
+                    LkSectionHeader(title = "SIK KULLANILAN")
+                    PricingWizardSection(onOpenFullTool = onOpenPricingTool)
+                }
+            }
+
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
+                    LkSectionHeader(title = "KATEGORİLER")
+                    /*
+                     * Izgara ELLE kuruluyor (`chunked(2)`), `LazyVerticalGrid`
+                     * ile degil: ic ice iki kaydirilabilir liste Compose'da
+                     * olcum hatasi verir.
+                     */
+                    val kategoriler = CALCULATION_CATEGORIES.filter { it.key != "all" }
+                    kategoriler.chunked(2).forEach { satir ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
+                            satir.forEach { kategori ->
+                                val adet = catalog.count { it.category == kategori.key }
+                                KategoriKutusu(
+                                    baslik = kategori.label,
+                                    ikon = kategoriIkonu(kategori.key),
+                                    adet = adet,
+                                    onClick = { onCategoryChanged(kategori.key) },
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                            /* Tek kalan kategori satiri germesin. */
+                            if (satir.size == 1) Spacer(Modifier.weight(1f))
+                        }
+                    }
+                }
+            }
+
+            /* İşletme Takibi kisayollari BU EKRANDAN KALKTI: ayni uc giris
+               (kayit, belge, takvim) artik Genel Bakis'in kendi
+               gruplarinda ve ait olduklari yer orasi. */
         } else {
-            items(visibleItems, key = { it.id }) { item ->
-                CalculationCard(
-                    item = item,
-                    onClick = { onCalculationSelected(item) },
-                    onOpenDetailed = { onDetailedSelected?.invoke(item) ?: onCalculationSelected(item) },
-                    onOpenQuick = { onCalculationSelected(item) }
+            item {
+                val kategori = CALCULATION_CATEGORIES.firstOrNull { it.key == categoryFilter }
+                Column(verticalArrangement = Arrangement.spacedBy(LkSpacing.Space3)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Outlined.ArrowBack,
+                            contentDescription = "Tüm kategoriler",
+                            tint = LkTextSecondary,
+                            modifier = Modifier
+                                .size(38.dp)
+                                .clip(LkShapes.FULL)
+                                .clickable { onCategoryChanged("all") }
+                                .padding(9.dp)
+                        )
+                        Spacer(Modifier.width(LkSpacing.Space2))
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                text = kategori?.label ?: "Araçlar",
+                                style = LkTypography.getSectionTitle(),
+                                color = LkTextPrimary
+                            )
+                            Text(
+                                text = "${kategoriAraclari.size} araç",
+                                style = LkTypography.getMetadata(),
+                                color = LkTextSecondary
+                            )
+                        }
+                    }
+
+                    if (kategoriAraclari.isEmpty()) {
+                        LkEmptyState(
+                            title = "Sonuç bulunamadı",
+                            description = "Bu kategoride hesaplama aracı yok."
+                        )
+                    } else {
+                        AracListesi(
+                            araclar = kategoriAraclari,
+                            onCalculationSelected = onCalculationSelected,
+                            onDetailedSelected = onDetailedSelected
+                        )
+                    }
+                }
+            }
+
+            item {
+                LkButton(
+                    text = "Tüm kategoriler",
+                    variant = LkButtonVariant.SECONDARY,
+                    onClick = { onCategoryChanged("all") },
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
         }
     }
 }
+
+/**
+ * Kategori kutucugu — foydeki izgara.
+ *
+ * Adet ONEMLI: hangi kategoriye girmeye deger oldugunu soyleyen tek
+ * bilgi o. Hap seridinde bu bilgi yoktu.
+ */
+/**
+ * Kategori ikonlari.
+ *
+ * Hepsi ayni hesap makinesi ikonuyla cizildiginde izgara alti ayni
+ * kutucuk gibi okunuyordu; ikon ayirt etmiyorsa yer kaplamaktan baska
+ * is gormez.
+ */
+private fun kategoriIkonu(anahtar: String): androidx.compose.ui.graphics.vector.ImageVector = when (anahtar) {
+    "cash" -> Icons.Outlined.AccountBalanceWallet
+    "profitability" -> Icons.Outlined.TrendingUp
+    "customer" -> Icons.Outlined.People
+    "operations" -> Icons.Outlined.Inventory2
+    "growth" -> Icons.Outlined.Rocket
+    "valuation" -> Icons.Outlined.Insights
+    else -> Icons.Outlined.Calculate
+}
+
+@Composable
+private fun KategoriKutusu(
+    baslik: String,
+    ikon: androidx.compose.ui.graphics.vector.ImageVector,
+    adet: Int,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .clip(LkShapes.MD)
+            .background(LkSurfacePanel)
+            .clickable(onClick = onClick)
+            .heightIn(min = 92.dp)
+            .padding(LkSpacing.Space3),
+        verticalArrangement = Arrangement.spacedBy(LkSpacing.Space2)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(32.dp)
+                .clip(LkShapes.SM)
+                .background(LkSurfaceTile),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = ikon,
+                contentDescription = null,
+                tint = LkTileInk,
+                modifier = Modifier.size(17.dp)
+            )
+        }
+        Text(
+            text = baslik,
+            style = LkTypography.getBodySmall(),
+            color = LkTextPrimary,
+            maxLines = 2
+        )
+        Text(
+            text = if (adet == 1) "1 araç" else "$adet araç",
+            style = LkTypography.getMicro(),
+            color = LkTextMuted
+        )
+    }
+}
+
+/**
+ * Arac listesi — KART DEGIL SATIR.
+ *
+ * Kartlarla bir ekrana iki arac siginiyordu; satirla bes tanesi
+ * goruluyor. Rozet aracin kipini soyluyor: hizli hesap mi, ileri analiz
+ * mi (`CalculationItem.modeLabels`).
+ */
+@Composable
+private fun AracListesi(
+    araclar: List<CalculationItem>,
+    onCalculationSelected: (CalculationItem) -> Unit,
+    onDetailedSelected: ((CalculationItem) -> Unit)? = null
+) {
+    LkRowGroup {
+        araclar.forEachIndexed { index, arac ->
+            if (index > 0) LkHairline()
+            LkListRow(
+                baslik = arac.title,
+                altBaslik = arac.description.ifBlank {
+                    "${arac.inputCount} bilgiyle hesaplanır"
+                },
+                kategori = if (arac.supportsQuickCalculation) "Hızlı" else "İleri analiz",
+                onClick = {
+                    if (arac.supportsQuickCalculation) onCalculationSelected(arac)
+                    else onDetailedSelected?.invoke(arac) ?: onCalculationSelected(arac)
+                },
+                sag = {
+                    Icon(
+                        Icons.Outlined.ChevronRight,
+                        contentDescription = null,
+                        tint = LkTextMuted,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            )
+        }
+    }
+}
+
 
 @Composable
 private fun QuickActionCard(

@@ -13,6 +13,6 @@
       renkte oluyor ve gecis gorunmez hale geliyor.
     -->
     <style name="Theme.LocalKarar" parent="@android:style/Theme.Material.Light.NoActionBar">
-        <item name="android:windowBackground">@color/lk_acilis_zemini</item>
+        <item name="android:windowBackground">@drawable/acilis_zemini</item>
     </style>
 </resources>

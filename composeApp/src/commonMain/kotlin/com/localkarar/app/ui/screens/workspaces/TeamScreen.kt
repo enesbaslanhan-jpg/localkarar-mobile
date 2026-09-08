@@ -48,7 +48,25 @@ fun TeamScreen(
     var showInviteDialog by remember { mutableStateOf(false) }
     var actionError by remember { mutableStateOf<String?>(null) }
 
-    LkHeroPage(title = "Ekip", onBack = onBack) {
+    LkHeroPage(
+        title = "Ekip",
+        onBack = onBack,
+        actions = {
+            IconButton(onClick = { showInviteDialog = true }) {
+                Icon(Icons.Outlined.PersonAdd, contentDescription = "Davet et", tint = LkHero.OnHero)
+            }
+        },
+        heroExtra = {
+            val content = uiState as? TeamUiState.Content
+            content?.let {
+                Text(
+                    text = "${it.members.size} üye · ${it.invitations.size} davet bekliyor",
+                    style = LkTypography.getMetadata(), color = LkHero.OnHeroSecondary,
+                    modifier = Modifier.padding(start = LkSpacing.Space5, top = LkSpacing.Space2)
+                )
+            }
+        }
+    ) {
         Column(modifier = Modifier.fillMaxSize()) {
             if (actionError != null) {
                 Text(
@@ -71,14 +89,6 @@ fun TeamScreen(
                             contentPadding = PaddingValues(LkSpacing.Space4),
                             verticalArrangement = Arrangement.spacedBy(LkSpacing.Space4)
                         ) {
-                            item {
-                                LkButton(
-                                    text = "Üye Davet Et",
-                                    onClick = { showInviteDialog = true },
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-                            }
-
                             item { LkSectionHeader(title = "Üyeler", subtitle = "${state.members.size} üye") }
                             /* Tek yukseltilmis yuzey; her uye kendi kartinda degil. */
                             item {

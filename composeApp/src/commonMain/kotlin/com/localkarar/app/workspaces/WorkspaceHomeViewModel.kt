@@ -45,6 +45,27 @@ class WorkspaceHomeViewModel(
     private val _ordersLoaded = MutableStateFlow(false)
     val ordersLoaded: StateFlow<Boolean> = _ordersLoaded.asStateFlow()
 
+    /**
+     * GENEL BAKISIN BOLUM SAYILARI.
+     *
+     * Onay alinan foyde her bolum satiri altinda GERCEK bir sayi var
+     * ("24 ürün · 3 stok azaldı"). Bu sayilar ozet ucundan gelmiyor;
+     * her biri kendi ucundan cekiliyor.
+     *
+     * ⚠️ Hepsi `null` baslar ve istek basarisiz olursa `null` KALIR —
+     * satir o zaman alt yazisiz cizilir. Sifir yazmak, sayiyi
+     * bilmedigimiz halde "hic yok" demek olurdu.
+     */
+    data class BolumSayilari(
+        val urun: Int? = null,
+        val stokAzalan: Int? = null,
+        val belge: Int? = null,
+        val okunmamisBildirim: Int? = null
+    )
+
+    private val _sayilar = MutableStateFlow(BolumSayilari())
+    val sayilar: StateFlow<BolumSayilari> = _sayilar.asStateFlow()
+
     init {
         load()
     }
@@ -80,6 +101,35 @@ class WorkspaceHomeViewModel(
                        ekranin geri kalanini bozmamali. */
                     _ordersLoaded.value = false
                 }
+        }
+
+        /*
+         * Bolum sayilari — her biri AYRI coroutine.
+         *
+         * Tek bir `launch` icinde sirayla beklenselerdi, belge ucu yavas
+         * oldugunda urun sayisi da gecikirdi; ekran zaten gelen sayiyi
+         * geldiginde yaziyor.
+         */
+        viewModelScope.launch {
+            repository.getProducts(workspaceId = workspaceId).onSuccess { liste ->
+                _sayilar.value = _sayilar.value.copy(urun = liste.total)
+            }
+        }
+        viewModelScope.launch {
+            repository.getProducts(workspaceId = workspaceId, stockFilter = "low")
+                .onSuccess { liste ->
+                    _sayilar.value = _sayilar.value.copy(stokAzalan = liste.total)
+                }
+        }
+        viewModelScope.launch {
+            repository.getDocuments(workspaceId).onSuccess { yanit ->
+                _sayilar.value = _sayilar.value.copy(belge = yanit.total)
+            }
+        }
+        viewModelScope.launch {
+            repository.getNotifications(workspaceId).onSuccess { yanit ->
+                _sayilar.value = _sayilar.value.copy(okunmamisBildirim = yanit.unreadCount)
+            }
         }
     }
 }

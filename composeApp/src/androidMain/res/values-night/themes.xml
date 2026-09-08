@@ -2,6 +2,6 @@
 <resources>
     <!-- Koyu tema karsiligi. Gerekcesi values/themes.xml icinde. -->
     <style name="Theme.LocalKarar" parent="@android:style/Theme.Material.NoActionBar">
-        <item name="android:windowBackground">@color/lk_acilis_zemini</item>
+        <item name="android:windowBackground">@drawable/acilis_zemini</item>
     </style>
 </resources>

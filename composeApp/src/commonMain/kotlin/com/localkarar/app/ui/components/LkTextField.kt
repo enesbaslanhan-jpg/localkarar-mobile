@@ -32,6 +32,7 @@ import com.localkarar.app.ui.theme.LkDanger
 import com.localkarar.app.ui.theme.LkPrimary
 import com.localkarar.app.ui.theme.LkLineStrong
 import com.localkarar.app.ui.theme.LkShapes
+import com.localkarar.app.ui.theme.LkSpacing
 import com.localkarar.app.ui.theme.LkSurfaceSunken
 import com.localkarar.app.ui.theme.LkTextMuted
 import com.localkarar.app.ui.theme.LkTextPrimary
@@ -64,6 +65,8 @@ fun LkTextField(
     visualTransformation: VisualTransformation = VisualTransformation.None,
     enabled: Boolean = true,
     trailingContent: @Composable (() -> Unit)? = null,
+    /** Alanin BASINDA duran icerik — arama ikonu gibi. */
+    leadingContent: @Composable (() -> Unit)? = null,
     /**
      * Cok satirli giris (destek mesaji, not, aciklama).
      *
@@ -138,6 +141,19 @@ fun LkTextField(
                     // mesajda imleci kutunun ortasinda birakirdi.
                     verticalAlignment = if (singleLine) Alignment.CenterVertically else Alignment.Top
                 ) {
+                    /*
+                     * 🔴 `trailingContent` PARAMETRE OLARAK VARDI AMA HIC
+                     * CIZILMIYORDU. Dort cagiran taraf onu geciriyordu ve
+                     * dordu de sessizce kayboluyordu: parola alaninin goz
+                     * dugmesi, tarih seciciNin takvim ikonu, sayisal alanin
+                     * birim eki ve karar girdisinin son eki. Parametreyi
+                     * kabul edip cizmemek, kullanmamaktan daha kotu —
+                     * cagiran taraf isini yaptigini saniyor.
+                     */
+                    if (leadingContent != null) {
+                        leadingContent()
+                        Box(Modifier.width(LkSpacing.Space2))
+                    }
                     Box(modifier = Modifier.weight(1f)) {
                         if (value.isEmpty()) {
                             Text(
@@ -146,6 +162,10 @@ fun LkTextField(
                             )
                         }
                         innerTextField()
+                    }
+                    if (trailingContent != null) {
+                        Box(Modifier.width(LkSpacing.Space2))
+                        trailingContent()
                     }
                 }
             }

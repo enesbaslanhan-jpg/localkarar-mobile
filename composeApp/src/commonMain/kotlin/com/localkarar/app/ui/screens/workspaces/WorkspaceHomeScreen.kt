@@ -2,11 +2,11 @@ package com.localkarar.app.ui.screens.workspaces
 
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.horizontalScroll
-import com.localkarar.app.ui.components.rememberLkSheetState
-import com.localkarar.app.ui.components.LkSheet
 import com.localkarar.app.ui.screens.home.RECORD_TYPE_LABEL
 import com.localkarar.app.ui.components.LkProgressPill
-import com.localkarar.app.ui.components.LkIconTile
+import com.localkarar.app.ui.components.rememberLkSayac
+import com.localkarar.app.ui.components.rememberLkSheetState
+import com.localkarar.app.ui.components.LkSheet
 import com.localkarar.app.ui.components.LkRowGroup
 import com.localkarar.app.ui.components.LkListRow
 import androidx.compose.foundation.layout.offset
@@ -49,11 +49,8 @@ import com.localkarar.app.core.LkDateUtils
 import com.localkarar.app.core.LkFormatting
 import com.localkarar.app.network.dto.BusinessRecordDto
 import com.localkarar.app.ui.components.LkErrorState
-import com.localkarar.app.ui.components.LkInfoPanel
+import com.localkarar.app.ui.components.LkLoadingDesen
 import com.localkarar.app.ui.components.LkLoadingState
-import com.localkarar.app.ui.components.LkMetricCard
-import com.localkarar.app.ui.components.LkSection
-import com.localkarar.app.ui.components.LkTactileAction
 import com.localkarar.app.ui.components.LkHairline
 import com.localkarar.app.ui.components.LkSectionHeader
 import com.localkarar.app.ui.theme.*
@@ -76,15 +73,16 @@ fun WorkspaceHomeScreen(
     onOpenRecord: (String) -> Unit,
     onAddRecord: () -> Unit,
     onOpenSectionSelector: () -> Unit,
-    onBack: () -> Unit
+    onBack: (() -> Unit)? = null
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val orders by viewModel.orders.collectAsState()
+    val sayilar by viewModel.sayilar.collectAsState()
+    val sheetState = rememberLkSheetState()
+    var seciliDurum by remember { mutableStateOf<String?>(null) }
     val ordersLoaded by viewModel.ordersLoaded.collectAsState()
 
     val state = uiState
-    val sheetState = rememberLkSheetState()
-    var seciliDurum by remember { mutableStateOf<String?>(null) }
 
     /*
      * §24.6 — hero baslik blogu + binen yuzey.
@@ -113,12 +111,24 @@ fun WorkspaceHomeScreen(
                     ),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        Icons.Outlined.ArrowBack,
-                        contentDescription = "Geri",
-                        tint = LkHero.OnHero
-                    )
+                /*
+                 * 🔴 GERI OKU KOK EKRANDA DA CIZILIYOR VE HICBIR SEY
+                 * YAPMIYORDU. Bu ekran alt gezinme sekmesi; yigininda
+                 * altinda hicbir sey yok, `popBackStack` false donuyor.
+                 * Calismayan bir kontrolu cizmek, kullaniciya uygulamanin
+                 * bozuk oldugunu soyler. Ok yalniz gercekten donulecek bir
+                 * yer varken var.
+                 */
+                if (onBack != null) {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            Icons.Outlined.ArrowBack,
+                            contentDescription = "Geri",
+                            tint = LkHero.OnHero
+                        )
+                    }
+                } else {
+                    Spacer(Modifier.width(LkSpacing.Space5))
                 }
                 Text(
                     text = "İşletme Takibi",
@@ -142,7 +152,8 @@ fun WorkspaceHomeScreen(
                     ) {
                         HeroTutar(
                             "30 GÜN ALACAK",
-                            LkFormatting.formatMoney(ozet.nextThirtyDays.receivable, state.workspace.currency),
+                            ozet.nextThirtyDays.receivable,
+                            { LkFormatting.formatMoney(it, state.workspace.currency) },
                             Modifier.weight(1f)
                         )
                         Box(
@@ -153,7 +164,8 @@ fun WorkspaceHomeScreen(
                         )
                         HeroTutar(
                             "30 GÜN BORÇ",
-                            LkFormatting.formatMoney(ozet.nextThirtyDays.payable, state.workspace.currency),
+                            ozet.nextThirtyDays.payable,
+                            { LkFormatting.formatMoney(it, state.workspace.currency) },
                             Modifier.weight(1f).padding(start = LkSpacing.Space4)
                         )
                     }
@@ -220,118 +232,158 @@ fun WorkspaceHomeScreen(
                 .background(LkSurfaceCanvas)
         ) {
         when (state) {
-            is WorkspaceHomeUiState.Loading -> LkLoadingState()
+            is WorkspaceHomeUiState.Loading -> LkLoadingState(desen = LkLoadingDesen.DETAY)
             is WorkspaceHomeUiState.Error -> LkErrorState(
                 message = state.message,
                 onRetry = { viewModel.load() }
             )
             is WorkspaceHomeUiState.Content -> {
+                /*
+                 * GENEL BAKIS — onaylanan foy ("Takip 1").
+                 *
+                 * 🔴 EKRAN HICBIR SORUYU CEVAPLAMIYORDU: hero'nun altinda
+                 * yalniz "Yaklaşan Kayıtlar" ve bir dugme vardi; isletmenin
+                 * geri kalanina ancak bolum cekmecesinden ulasiliyordu.
+                 *
+                 * Foydeki dort grup: DURUM (sayilar), PARA, TICARET,
+                 * OPERASYON. Grup ve satir adlari bolum cekmecesiyle AYNI —
+                 * ayni yere iki farkli isim ogretmiyoruz.
+                 *
+                 * ⚠️ Alt yazidaki her sayi sunucudan geliyor; gelmeyen sayi
+                 * hic yazilmiyor (bkz. `WorkspaceHomeViewModel.BolumSayilari`).
+                 */
+                val summary = state.summary
+                val paraBirimi = state.workspace.currency
+
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(
                         start = LkSpacing.Space4,
                         end = LkSpacing.Space4,
                         top = LkSpacing.Space5,
-                        bottom = LkSpacing.Space4
+                        bottom = LkSpacing.Space8
                     ),
-                    verticalArrangement = Arrangement.spacedBy(LkSpacing.Space4)
+                    verticalArrangement = Arrangement.spacedBy(LkSpacing.Space5)
                 ) {
-                    /*
-                     * Isletme adi ve "Ozet" sayaclari kaldirildi.
-                     *
-                     * Ad zaten ustteki "Genel Bakış" hapinin actigi secicide
-                     * ve gezinti baglaminda var; ekranin ilk okunan sey
-                     * isletmenin adi degil PARASI olmali (hero'daki tutarlar).
-                     * Acik/geciken sayilari da hareket listesinden okunuyor.
-                     */
 
-                    state.summary?.let { summary ->
+                    // ------------------------------------------- DURUM
+                    if (summary != null) {
                         item {
-                            // Prototipteki `metrics-row`: kutu YOK, bolum acik.
-                            // Onceden dort ayri `LkMetricCard` vardi ve sayfa
-                            // kart yigini gibi duruyordu.
-                            /*
-                             * "Ozet" bolumu kaldirildi (mockup'ta yok):
-                             * 30 gunluk alacak/borc hero'da, acik ve geciken
-                             * sayilari da hareket listesinden okunuyor.
-                             *
-                             * Yalniz "yonu belirsiz" uyarisi KALDI — o
-                             * kayitlar hicbir toplama girmiyor ve bu satir
-                             * olmadan ekranin HICBIR yerinde gorunmuyorlar.
-                             */
-                            Column {
-                                // Yonu belirsiz kayitlar hicbir toplama girmiyor;
-                                // kendi satiri olmadan ekranda hic gorunmuyorlar.
-                                val bekleyen = summary.awaitingDirection
-                                if (bekleyen != null && bekleyen.count > 0) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .background(LkWarning.copy(alpha = 0.12f), LkShapes.SM)
-                                            .padding(LkSpacing.Space3),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Icon(
-                                            Icons.Outlined.HelpOutline,
-                                            contentDescription = null,
-                                            tint = LkWarning,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                        Spacer(Modifier.width(LkSpacing.Space3))
-                                        Column {
-                                            Text(
-                                                "Yön bekliyor · " + LkFormatting.formatMoney(bekleyen.amount, state.workspace.currency),
-                                                style = LkTypography.getBodyStrong(),
-                                                color = LkTextPrimary
-                                            )
-                                            Text(
-                                                bekleyen.count.toString() + " kayıt · borç mu alacak mı belirsiz",
-                                                style = LkTypography.getMetadata(),
-                                                color = LkTextMuted
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        if (summary.upcoming.isNotEmpty()) {
-                            item {
-                                LkSection(title = "Yaklaşan Kayıtlar") {
-                                    /*
-                                     * §24 — satirlar TEK YUKSELTILMIS YUZEYDE.
-                                     *
-                                     * Sarmalanmadiginda acik temada zeminle ayni
-                                     * renge dusuyorlar ve liste bir nesne gibi
-                                     * degil, zemine yazilmis metin gibi okunuyor.
-                                     * Koyu temada daha az belliydi; emulatorde
-                                     * acik tema karesinde ortaya cikti.
-                                     */
-                                    LkRowGroup {
-                                        summary.upcoming.take(5).forEachIndexed { i, record ->
-                                            UpcomingRecordRow(record, onOpen = { onOpenRecord(record.id) })
-                                            if (i != minOf(4, summary.upcoming.lastIndex)) LkHairline()
-                                        }
-                                    }
+                            Column(verticalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
+                                LkSectionHeader(title = "BUGÜN NE DURUMDAYIM?")
+                                Row(horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
+                                    DurumKutusu(
+                                        sayi = summary.counts.overdue,
+                                        etiket = "Geciken",
+                                        vurgu = LkDanger,
+                                        onClick = onOpenRecords,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    DurumKutusu(
+                                        sayi = summary.counts.dueToday,
+                                        etiket = "Bugün",
+                                        vurgu = LkWarning,
+                                        onClick = onOpenCalendar,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    DurumKutusu(
+                                        sayi = summary.counts.open,
+                                        etiket = "Açık kayıt",
+                                        vurgu = LkLineStrong,
+                                        onClick = onOpenRecords,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    DurumKutusu(
+                                        sayi = summary.counts.awaitingDirection,
+                                        etiket = "Yön bekleyen",
+                                        vurgu = LkSuccess,
+                                        onClick = onOpenRecords,
+                                        modifier = Modifier.weight(1f)
+                                    )
                                 }
                             }
                         }
                     }
 
                     /*
-                     * 🔴 "ISLETME BOLUMLERI" IZGARASI KALDIRILDI.
+                     * SON HAREKETLER — ekranin GERCEK VERI blogu.
                      *
-                     * Mockup'ta bu ekranda boyle bir izgara YOK: hero, donem,
-                     * son hareketler ve cekmece var. Izgara ekranin yarisini
-                     * kapliyor ve cekmecenin altinda kaliyordu.
-                     *
-                     * ⚠️ ERISIM KAYBI YOK — kontrol edildi: ustteki
-                     * "Genel Bakış" hapi `WorkspaceSectionSheet`i aciyor ve
-                     * o sayfada ONBIR bolumun hepsi var (Kayıtlar, Siparişler,
-                     * Ürünler, Belgeler, Bildirimler, Takvim, Ekip, Kişiler,
-                     * Aktiviteler, Entegrasyonlar, Ayarlar). Izgara ikinci
-                     * bir yoldu, tek yol degil.
+                     * 🔴 BURADA "TİCARET" VE "OPERASYON" DIYE IKI GEZINTI
+                     * GRUBU VARDI (Siparişler, Ürünler, Takvim, Belgeler,
+                     * Bildirimler). Hepsi zaten ustteki bolum menusunde
+                     * duruyor; ana ekran ayni menuyu ikinci kez cizmek
+                     * yerine PARAYI gostermeli. Foydeki ekran da oyle:
+                     * ozet → son hareketler → alttan acilan siparis
+                     * cekmecesi.
                      */
+                    if (summary != null) {
+                        item {
+                            Column(verticalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    LkSectionHeader(
+                                        title = "SON HAREKETLER",
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    Text(
+                                        text = "Tümü ›",
+                                        style = LkTypography.getLabel(),
+                                        color = LkPrimary,
+                                        modifier = Modifier
+                                            .clickable(onClick = onOpenRecords)
+                                            .padding(vertical = LkSpacing.Space2)
+                                    )
+                                }
+
+                                /*
+                                 * Gecikenler ONCE: vadesi gecmis bir kayit,
+                                 * yaklasan bir kayittan her zaman daha
+                                 * acildir. Ikisi de sunucudan geliyor
+                                 * (`overdue`, `upcoming`).
+                                 */
+                                val hareketler = (summary.overdue + summary.upcoming).take(8)
+
+                                LkRowGroup {
+                                    hareketler.forEachIndexed { i, record ->
+                                        UpcomingRecordRow(record, onOpen = { onOpenRecord(record.id) })
+                                        if (i != hareketler.lastIndex) LkHairline()
+                                    }
+
+                                    /*
+                                     * Yonu belirsiz kayitlar HICBIR toplama
+                                     * girmiyor; bu satir olmadan ekranin
+                                     * hicbir yerinde gorunmuyorlar.
+                                     */
+                                    val bekleyen = summary.awaitingDirection
+                                    if (bekleyen != null && bekleyen.count > 0) {
+                                        if (hareketler.isNotEmpty()) LkHairline()
+                                        LkListRow(
+                                            baslik = "${bekleyen.count} kaydın yönü belirsiz",
+                                            altBaslik = "Tahsilat mı ödeme mi seçilmeli",
+                                            tutar = LkFormatting.formatMoney(bekleyen.amount, paraBirimi),
+                                            tutarRengi = LkWarning,
+                                            onClick = onOpenRecords,
+                                            ikon = {
+                                                Icon(
+                                                    Icons.Outlined.HelpOutline,
+                                                    contentDescription = null,
+                                                    tint = LkWarning,
+                                                    modifier = Modifier.size(21.dp)
+                                                )
+                                            }
+                                        )
+                                    }
+
+                                    if (hareketler.isEmpty() && (bekleyen == null || bekleyen.count == 0)) {
+                                        LkListRow(
+                                            baslik = "Hareket yok",
+                                            altBaslik = "Önümüzdeki 30 günde vadesi gelen bir kayıt yok"
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
 
                     item {
                         LkButton(
@@ -469,6 +521,75 @@ fun WorkspaceHomeScreen(
     }   // cekmeceyi tasiyan Box
 }
 
+/**
+ * Durum kutucugu — foydeki dort sayidan biri.
+ *
+ * Ust kenardaki renk seridi durumu renkle SOYLEMIYOR, yalniz ayirt
+ * ediyor; anlam etiketten okunuyor (§19: durum yalniz renge yaslanmaz).
+ */
+@Composable
+private fun DurumKutusu(
+    sayi: Int,
+    etiket: String,
+    vurgu: androidx.compose.ui.graphics.Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .clip(LkShapes.MD)
+            .background(LkSurfacePanel)
+            .clickable(onClick = onClick)
+            .heightIn(min = 76.dp)
+            .padding(top = LkSpacing.Space2, bottom = LkSpacing.Space3),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Box(
+            Modifier
+                .padding(bottom = LkSpacing.Space2)
+                .width(24.dp)
+                .height(3.dp)
+                .clip(LkShapes.FULL)
+                .background(vurgu)
+        )
+        Text(
+            text = sayi.toString(),
+            style = LkTypography.getTitleS().numeric(),
+            color = LkTextPrimary
+        )
+        Text(
+            text = etiket,
+            style = LkTypography.getMicro(),
+            color = LkTextSecondary,
+            maxLines = 1
+        )
+    }
+}
+
+@Composable
+private fun BolumIkonu(ikon: ImageVector) {
+    Icon(
+        imageVector = ikon,
+        contentDescription = null,
+        tint = LkTileInk,
+        modifier = Modifier.size(21.dp)
+    )
+}
+
+@Composable
+private fun BolumOku() {
+    Icon(
+        Icons.Outlined.ChevronRight,
+        contentDescription = null,
+        tint = LkTextMuted,
+        modifier = Modifier.size(16.dp)
+    )
+}
+
+/** Iki parcadan yalniz DOLU olanlari birlestirir; hicbiri yoksa `null`. */
+private fun bolumAltYazisi(vararg parcalar: String?): String? =
+    parcalar.filterNotNull().joinToString(" · ").ifBlank { null }
 /*
  * Siparis durumlarinin Turkce karsiliklari.
  *
@@ -486,83 +607,30 @@ private val SIPARIS_DURUM_ETIKET = mapOf(
     "PARTIALLY_RETURNED" to "Kısmi iade"
 )
 
-/** Hero icindeki tutar. Etiket §24.6 geregi %85 beyaz opaklikta. */
+/**
+ * Hero icindeki tutar. Etiket §24.6 geregi %85 beyaz opaklikta.
+ *
+ * Tutar SAYARAK yukseliyor (§24 animasyon 1). Ham metin degil ham SAYI
+ * aliyor; bicimleme sayacin her karesinde yeniden yapiliyor, yoksa
+ * animasyon boyunca "₺0" yazip sonunda dogru degere ziplardi.
+ */
 @Composable
-private fun HeroTutar(etiket: String, deger: String, modifier: Modifier = Modifier) {
+private fun HeroTutar(
+    etiket: String,
+    deger: Double,
+    bicimle: (Double) -> String,
+    modifier: Modifier = Modifier
+) {
+    val anlik = rememberLkSayac(deger)
     Column(modifier) {
         Text(etiket, style = LkTypography.getMetadata(), color = LkHero.OnHeroSecondary)
         Spacer(Modifier.height(LkSpacing.Space1))
         Text(
-            deger,
+            bicimle(anlik),
             style = LkTypography.getTitleS().numeric(),
             color = LkHero.OnHero,
             maxLines = 1
         )
-    }
-}
-
-@Composable
-private fun OzetMetrik(
-    etiket: String,
-    deger: String,
-    renk: androidx.compose.ui.graphics.Color,
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier) {
-        Text(etiket, style = LkTypography.getBodySmall(), color = LkTextMuted)
-        Text(
-            text = deger,
-            style = LkTypography.getMetric().copy(fontFeatureSettings = "tnum"),
-            color = renk,
-            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
-        )
-    }
-}
-
-private data class SectionNavItem(
-    val label: String,
-    val icon: ImageVector,
-    val onClick: () -> Unit
-)
-
-@Composable
-private fun SectionNavRow(items: List<SectionNavItem>) {
-    // Prototipteki `actions-grid` + `tactile-action-btn` deseni.
-    //
-    // Onceden her bolum tam genislikte KART idi: 11 bolum icin ekranin
-    // tamami kart yigini oluyordu ve Ana Sayfa'daki "Hizli Islemler"
-    // izgarasindan farkli bir dil konusuyordu. Ayni sey ayni gorunmeli.
-    //
-    // Dort sutun: 11 oge uc satira sigiyor, dokunma hedefi korunuyor
-    // (`LkTactileAction` icinde 44dp kutu + etiket).
-    val satirlar = items.chunked(4)
-    Column(verticalArrangement = Arrangement.spacedBy(LkSpacing.Space4)) {
-        satirlar.forEach { satir ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space3)
-            ) {
-                satir.forEach { item ->
-                    /* §24 — Ana Sayfa'daki hizli islem izgarasiyla AYNI
-                       bilesen. Ayni sey ayni gorunmeli. */
-                    LkIconTile(
-                        etiket = item.label,
-                        onClick = item.onClick,
-                        modifier = Modifier.weight(1f),
-                        ikon = {
-                            Icon(
-                                item.icon,
-                                contentDescription = null,
-                                tint = LkTileInk,
-                                modifier = Modifier.size(22.dp)
-                            )
-                        }
-                    )
-                }
-                // Son satir eksikse hizalama bozulmasin diye bosluk.
-                repeat(4 - satir.size) { Spacer(modifier = Modifier.weight(1f)) }
-            }
-        }
     }
 }
 

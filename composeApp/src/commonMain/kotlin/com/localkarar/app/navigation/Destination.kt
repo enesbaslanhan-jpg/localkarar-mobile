@@ -16,6 +16,9 @@ sealed interface Destination {
     object Workspaces : Destination
     object Settings : Destination
 
+    /** Genel arama — webin ust cubuktaki arama kutusunun karsiligi. */
+    object Search : Destination
+
     data class CourseDetail(val courseId: Int) : Destination
     data class LessonReader(val courseId: Int, val lessonId: Int) : Destination
     data class DecisionSession(val sessionId: String) : Destination
@@ -24,7 +27,19 @@ sealed interface Destination {
         val formulaId: String,
         val historicalCalculation: FormulaCalculationDto? = null
     ) : Destination
-    data class FinancialModelDetail(val code: String) : Destination
+    /**
+     * Finansal model.
+     *
+     * `sourceDocumentId`: model bir BELGEDEN aciliyorsa o belgenin
+     * kimligi. Webde `?documentId=` ile tasiniyor; girdiler belgeden
+     * on doldurulup kaynak "belge" olarak isaretleniyor ve kullanicidan
+     * dogrulama isteniyor -- sunucu dogrulanmamis belge verisiyle model
+     * calistirmayi reddediyor.
+     */
+    data class FinancialModelDetail(
+        val code: String,
+        val sourceDocumentId: String? = null
+    ) : Destination
     data class ModelRuns(val workspaceId: String, val modelCode: String? = null) : Destination
     data class RunDetail(val workspaceId: String, val runId: String) : Destination
 
@@ -70,6 +85,34 @@ sealed interface Destination {
     data class CommunityFollowers(val userId: Int, val mode: String) : Destination
     data class CommunityThreadDetail(val threadId: String) : Destination
     object CommunityNotifications : Destination
+
+    /**
+     * Takip ve engelleme listesi.
+     *
+     * Topluluk profilinin icinden Ayarlar > Hesap altina tasindi;
+     * derin baglanti (`community?tab=people`) hala calisiyor.
+     */
+    /**
+     * Isletme kurulumu — web `/app/onboarding`.
+     *
+     * 🔴 Mobilde HIC YOKTU; `onboardingCompleted` okunuyor ama
+     * dolduracak ekran bulunmuyordu.
+     */
+    object Onboarding : Destination
+
+    /** Isletme oz degerlendirmesi — web `/app/assessment`. */
+    object Assessment : Destination
+
+    object CommunityPeople : Destination
+
+    /**
+     * Ekip davetini kabul etme — `/davet?token=` baglantisindan gelir.
+     *
+     * 🔴 Mobilde HIC YOKTU: davet gonderilebiliyor ama gelen davet
+     * KABUL EDILEMIYORDU. Davet e-postasini telefonunda acan kullanici
+     * duvara carpiyordu.
+     */
+    data class InvitationAccept(val token: String) : Destination
 
     object Profile : Destination
     object PasswordChange : Destination

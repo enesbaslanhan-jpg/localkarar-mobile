@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Igne −142°'den gelip kuzeye oturuyor: uygulamanin acilis hareketi
+  karsilama ekranindakiyle AYNI (bkz. LkPusulaKadrani).
+
+  ⚠️ Sure 900ms: Android acilis ekraninda animasyona en fazla ~1s
+  taniyor, uzunu kirpiliyor.
+-->
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/acilis_pusula">
+    <target android:name="pusulaIgnesi">
+        <aapt:attr xmlns:aapt="http://schemas.android.com/aapt" name="android:animation">
+            <objectAnimator
+                android:propertyName="rotation"
+                android:valueFrom="-142"
+                android:valueTo="0"
+                android:duration="900"
+                android:interpolator="@android:interpolator/decelerate_quint" />
+        </aapt:attr>
+    </target>
+</animated-vector>

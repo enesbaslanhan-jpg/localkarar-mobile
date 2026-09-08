@@ -21,8 +21,10 @@ import com.localkarar.app.network.dto.CourseDetailDto
 import com.localkarar.app.network.dto.LessonDetailDto
 import com.localkarar.app.network.dto.KnowledgeObjectMetadataDto
 import com.localkarar.app.ui.components.LkErrorState
+import com.localkarar.app.ui.components.LkLoadingDesen
 import com.localkarar.app.ui.components.LkLoadingState
-import com.localkarar.app.ui.components.LkHeroPage
+import com.localkarar.app.ui.components.LkPageLayout
+import com.localkarar.app.ui.components.LkOkumaGenisligi
 import com.localkarar.app.ui.components.MarkdownViewer
 import com.localkarar.app.ui.components.LkButton
 import com.localkarar.app.ui.components.LkButtonVariant
@@ -39,10 +41,10 @@ fun LessonReaderScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    LkHeroPage(title = "Ders", onBack = onBack) {
+    LkPageLayout(title = "Ders", onBack = onBack) {
         Box(modifier = Modifier.fillMaxSize()) {
             when (val state = uiState) {
-                is LessonReaderUiState.Loading -> LkLoadingState()
+                is LessonReaderUiState.Loading -> LkLoadingState(desen = LkLoadingDesen.DETAY)
                 is LessonReaderUiState.Error -> LkErrorState(
                     message = state.message,
                     onRetry = { viewModel.loadLesson() }
@@ -73,9 +75,14 @@ private fun LessonContent(
     onOpenDecisionTool: (String) -> Unit,
     onComplete: () -> Unit
 ) {
+    /*
+     * OKUMA OLCUSU (mockup "Akademi 3"): govde 65 karakteri gecmiyor.
+     * Telefonda etkisi yok, genis ekranda satir basini kaybettirmiyor.
+     */
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(LkSpacing.PadPanel),
+        modifier = Modifier.fillMaxHeight().widthIn(max = LkOkumaGenisligi),
+        contentPadding = PaddingValues(horizontal = LkSpacing.Space5, vertical = LkSpacing.Space4),
         verticalArrangement = Arrangement.spacedBy(LkSpacing.Space6)
     ) {
         item {
@@ -85,26 +92,38 @@ private fun LessonContent(
             val coursePercent = if (totalLessons > 0) ((doneLessons.toFloat() / totalLessons) * 100).toInt() else 0
             val lessonIndex = lessons.indexOfFirst { it.id == lesson.id }
             
-            // Header
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            /*
+             * DERS BASLIK BLOGU.
+             *
+             * 🔴 EKRAN "BIR DERS GIBI" DURMUYORDU: kurs adi, ilerleme
+             * yuzdesi, ders sayaci ve sure hepsi ayni kucuk gri puntoyla
+             * ust uste diziliydi; ardindan dogrudan metin duvari
+             * basliyordu. Once KURS (kucuk), sonra DERS ADI (sayfa
+             * basligi), sonra kunye haplari geliyor — okuyucu nerede
+             * oldugunu bir bakista goruyor.
+             */
+            /* Kurs adi ders adiyla AYNIYSA yazilmiyor: tek dersli
+               kurslarda ikisi ayni ve ust uste iki kez okunuyordu. */
+            if (!course.title.equals(lesson.title, ignoreCase = true)) {
                 Text(
-                    text = course.title,
-                    style = LkTypography.getMetadata(),
-                    color = LkTextSecondary
+                    text = course.title.uppercase(),
+                    style = LkTypography.getMicro(),
+                    color = LkPrimary
                 )
-                Text(
-                    text = "İlerleme %$coursePercent",
-                    style = LkTypography.getMetadata(),
-                    color = LkTextSecondary
-                )
+                Spacer(modifier = Modifier.height(LkSpacing.Space2))
             }
+            Text(text = lesson.title, style = LkTypography.getPageTitle(), color = LkTextPrimary)
             Spacer(modifier = Modifier.height(LkSpacing.Space3))
-            
-            // Progress Segments
+
+            Row(horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
+                DersKunyesi("Ders ${lessonIndex + 1}/$totalLessons")
+                lesson.estimatedMinutes?.let { DersKunyesi("$it dakika") }
+                DersKunyesi("Kurs ilerlemesi %$coursePercent")
+            }
+
+            Spacer(modifier = Modifier.height(LkSpacing.Space4))
+
+            // Kurstaki derslerin durumu — tek bakista okunan sekil.
             Row(
                 modifier = Modifier.fillMaxWidth().height(4.dp),
                 horizontalArrangement = Arrangement.spacedBy(2.dp)
@@ -120,27 +139,7 @@ private fun LessonContent(
                     Box(modifier = Modifier.weight(1f).fillMaxHeight().background(color))
                 }
             }
-            Spacer(modifier = Modifier.height(LkSpacing.Space6))
-            
-            // Lesson Title
-            Row(
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    text = "Ders ${(lessonIndex + 1)}/$totalLessons",
-                    style = LkTypography.getMetadata(),
-                    color = LkTextSecondary
-                )
-                Text(
-                    text = "${lesson.estimatedMinutes ?: 0} dakika",
-                    style = LkTypography.getMetadata(),
-                    color = LkTextSecondary
-                )
-            }
-            Spacer(modifier = Modifier.height(LkSpacing.Space2))
-            Text(text = lesson.title, style = LkTypography.getPageTitle(), color = LkTextPrimary)
-            
+
             Spacer(modifier = Modifier.height(LkSpacing.Space6))
             Divider(color = LkLineSoft, thickness = 1.dp)
             Spacer(modifier = Modifier.height(LkSpacing.Space6))
@@ -150,15 +149,27 @@ private fun LessonContent(
             if (ko != null) {
                 val metadata = ko.metadata
                 
-                // Short Summary
+                /*
+                 * ACILIS — dersin CEVAPLADIGI soru.
+                 *
+                 * Ozet alani "Pratik Karar: …" diye basliyor ve dersin
+                 * sordugu soruyu tasiyor. Duz kalin metin olarak
+                 * basildiginda govdenin ilk paragrafindan ayirt
+                 * edilmiyordu; artik kendi kartinda.
+                 */
                 if (metadata != null && (metadata.summary != null || metadata.description != null)) {
                     val text = metadata.summary ?: metadata.description
                     if (!text.isNullOrEmpty()) {
-                        Text(
-                            text = text,
-                            style = LkTypography.getBodyStrong(),
-                            color = LkTextPrimary
-                        )
+                        val soru = acilisSorusu(text)
+                        if (soru != null) {
+                            AcilisKarti(soru)
+                        } else {
+                            Text(
+                                text = text,
+                                style = LkTypography.getBodyStrong(),
+                                color = LkTextPrimary
+                            )
+                        }
                         Spacer(modifier = Modifier.height(LkSpacing.Space6))
                     }
                 }
@@ -175,7 +186,22 @@ private fun LessonContent(
                  */
                 val govde = kanonikBolumler?.body ?: ko.content
                 if (!govde.isNullOrEmpty()) {
-                    MarkdownViewer(content = removeDuplicateH1(govde, lesson.title))
+                    /*
+                     * ACILIS SORUSU KENDI KARTINDA.
+                     *
+                     * Ders govdeleri "Pratik Karar: …" diye acilan bir
+                     * soruyla basliyor — dersin CEVAPLADIGI soru bu.
+                     * Govdenin ilk paragrafi olarak basildiginda
+                     * digerlerinden ayirt edilmiyordu; ayri bir karta
+                     * alindi ve gerisi govde olarak devam ediyor.
+                     */
+                    val temizGovde = removeDuplicateH1(govde, lesson.title)
+                    val (acilis, kalan) = acilisSorusunuAyir(temizGovde)
+                    if (acilis != null) {
+                        AcilisKarti(acilis)
+                        Spacer(modifier = Modifier.height(LkSpacing.Space5))
+                    }
+                    MarkdownViewer(content = kalan)
                     Spacer(modifier = Modifier.height(LkSpacing.Space6))
                 }
                 
@@ -380,6 +406,7 @@ private fun LessonContent(
             }
         }
     }
+    }
 }
 
 private fun removeDuplicateH1(content: String, title: String): String {
@@ -403,3 +430,117 @@ private fun removeDuplicateH1(content: String, title: String): String {
 }
 
 
+/** Ders kunyesi hapi: "Ders 1/1", "5 dakika", "Kurs ilerlemesi %100". */
+@Composable
+private fun DersKunyesi(metin: String) {
+    Text(
+        text = metin,
+        style = LkTypography.getMicro(),
+        color = LkTextSecondary,
+        modifier = Modifier
+            .clip(LkShapes.FULL)
+            .background(LkSurfaceTile)
+            .padding(horizontal = LkSpacing.Space3, vertical = 5.dp)
+    )
+}
+
+/**
+ * Dersin cevapladigi soru.
+ *
+ * Sol kenardaki serit ve etiket bunun "ders metni" degil DERSIN SORUSU
+ * oldugunu soyluyor; renk tek basina bir sey anlatmiyor, etiket yaziyor.
+ */
+@Composable
+private fun AcilisKarti(metin: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(LkShapes.MD)
+            .background(LkSurfacePanel)
+            .height(IntrinsicSize.Min)
+    ) {
+        Box(
+            Modifier
+                .width(3.dp)
+                .fillMaxHeight()
+                .background(LkPrimary)
+        )
+        Column(
+            modifier = Modifier.padding(LkSpacing.Space4),
+            verticalArrangement = Arrangement.spacedBy(LkSpacing.Space2)
+        ) {
+            Text(
+                text = "BU DERSİN CEVAPLADIĞI SORU",
+                style = LkTypography.getMicro(),
+                color = LkPrimary
+            )
+            Text(
+                text = metin,
+                style = LkTypography.getBodyStrong(),
+                color = LkTextPrimary
+            )
+        }
+    }
+}
+
+/**
+ * Govdenin basindaki "Pratik Karar: …" paragrafini ayirir.
+ *
+ * ⚠️ ARANAN KALIP YOKSA HICBIR SEY YAPMIYOR: govde oldugu gibi
+ * donuyor. Her dersin boyle acildigi varsayilmiyor; kanonik olmayan bir
+ * ders eklenirse metnin ilk paragrafi sessizce baska bir kutuya
+ * girmemeli.
+ */
+private fun acilisSorusunuAyir(govde: String): Pair<String?, String> {
+    /*
+     * ⚠️ Bos satir ayraci `"\n\n"` DEGIL: icerikte satir sonlarinda
+     * bosluk kalabiliyor ve tek bir `\n\n` aramasi paragrafi hic
+     * bulamiyordu — kart bu yuzden ilk denemede hic cizilmedi.
+     */
+    val satirlar = govde.lines()
+
+    /*
+     * ⚠️ ACILIS BIR BASLIK: icerikte `## Pratik Karar: "…"` seklinde
+     * geliyor, paragraf olarak degil. Ilk denemede paragraf araniyordu ve
+     * kart hic cizilmedi.
+     *
+     * Yalniz govdenin BASINDAKI ilk birkac satira bakiliyor; metnin
+     * ortasindaki bir baslik acilis sayilmamali.
+     */
+    val bakilacak = satirlar.withIndex()
+        .filter { it.value.isNotBlank() }
+        .take(3)
+
+    val hedef = bakilacak.firstOrNull { (_, satir) ->
+        val t = satir.trimStart().trimStart('#').replace("**", "").trim()
+        t.startsWith("Pratik Karar", ignoreCase = true)
+    } ?: return null to govde
+
+    val soru = hedef.value.trimStart().trimStart('#').replace("**", "").trim()
+        .removePrefix("Pratik Karar")
+        .trimStart(':', ' ', '—', '-')
+        .trim()
+        .ifBlank { null } ?: return null to govde
+
+    /* Satir govdeden CIKARILIYOR; yoksa ayni metin iki kez okunur. */
+    val kalan = satirlar.filterIndexed { index, _ -> index != hedef.index }
+        .joinToString("\n")
+        .trim()
+    return soru to kalan
+}
+
+/**
+ * "Pratik Karar: …" ile baslayan metinden SORUYU cikarir.
+ *
+ * ⚠️ Kalip yoksa `null` doner ve metin oldugu gibi basilir; her dersin
+ * boyle acildigi varsayilmiyor.
+ */
+private fun acilisSorusu(metin: String): String? {
+    val temiz = metin.replace("**", "").trim()
+    if (!temiz.startsWith("Pratik Karar", ignoreCase = true)) return null
+    return temiz.removePrefix("Pratik Karar")
+        .removePrefix("PRATİK KARAR")
+        .trimStart(':', ' ', '—', '-')
+        .trim()
+        .ifBlank { null }
+}

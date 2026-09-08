@@ -1,7 +1,14 @@
 package com.localkarar.app.ui.components
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.CircularProgressIndicator
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
@@ -17,17 +24,124 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.localkarar.app.network.ApiError
 import com.localkarar.app.ui.theme.*
 
+/**
+ * Yukleme durumunun GORSEL kimligi — §24 dort zorunlu animasyondan ikincisi.
+ *
+ * 🔴 ONCEDEN EKRANIN ORTASINDA DONEN HALKAYDI. `LkSkeleton` bilesen
+ * katmaninda yaziliydi ama HICBIR EKRAN CAGIRMIYORDU; bekleme her yerde
+ * ayni anlamsiz halkayla gecistiriliyordu. Iskelet, gelecek icerigin
+ * SEKLINI onceden cizer: goz yerlesime hazirlanir, bekleme kisa hissedilir.
+ *
+ * Desen cagiran tarafca secilir, cunku liste ekraniyla form ekraninin
+ * iskeleti ayni degil; yanlis iskelet bosluga bakmaktan daha kotudur.
+ *
+ * Hareket kisitlamasi acikken parlama durur (`LkSkeleton` icinde), yer
+ * tutucular duz yuzey olarak kalir.
+ */
 @Composable
-fun LkLoadingState(modifier: Modifier = Modifier) {
-    Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            CircularProgressIndicator(color = LkPrimary)
-            Spacer(modifier = Modifier.height(LkSpacing.Space4))
-            Text(text = "Yükleniyor...", style = LkTypography.getBodySmall(), color = LkTextSecondary)
+fun LkLoadingState(
+    modifier: Modifier = Modifier,
+    desen: LkLoadingDesen = LkLoadingDesen.LISTE
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(LkSpacing.Space4)
+            .semantics { contentDescription = "Yükleniyor" },
+        verticalArrangement = Arrangement.spacedBy(LkSpacing.Space4)
+    ) {
+        when (desen) {
+            LkLoadingDesen.LISTE -> LkSkeletonRows(satir = 5)
+
+            LkLoadingDesen.DETAY -> {
+                LkCard {
+                    LkSkeleton(Modifier.fillMaxWidth(0.42f).height(12.dp))
+                    Spacer(Modifier.height(LkSpacing.Space3))
+                    LkSkeleton(Modifier.fillMaxWidth(0.66f).height(34.dp), LkShapes.MD)
+                    Spacer(Modifier.height(LkSpacing.Space4))
+                    Row(horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space4)) {
+                        LkSkeleton(Modifier.weight(1f).height(46.dp), LkShapes.MD)
+                        LkSkeleton(Modifier.weight(1f).height(46.dp), LkShapes.MD)
+                    }
+                }
+                LkSkeletonRows(satir = 3)
+            }
+
+            LkLoadingDesen.FORM -> {
+                repeat(4) {
+                    Column(verticalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
+                        LkSkeleton(Modifier.fillMaxWidth(0.3f).height(11.dp))
+                        LkSkeleton(Modifier.fillMaxWidth().height(52.dp), LkShapes.LG)
+                    }
+                }
+                LkSkeleton(Modifier.fillMaxWidth().height(52.dp), LkShapes.FULL)
+            }
+        }
+    }
+}
+
+/** Iskeletin hangi icerigi taklit edecegi. */
+enum class LkLoadingDesen { LISTE, DETAY, FORM }
+
+/**
+ * Satir ici / dugme ici bekleme.
+ *
+ * Iskelet ekranin tamamini temsil eder; bu ise TEK bir islemin surdugunu
+ * soyler (kaydet, esitle, gonder). Ikisi ayni sey degil.
+ */
+@Composable
+fun LkLoadingSpinner(
+    modifier: Modifier = Modifier,
+    size: Dp = 20.dp,
+    /** Renkli zemin uzerinde (hero, birincil dugme) marka rengi okunmaz. */
+    renk: Color = LkPrimary
+) {
+    /*
+     * 🔴 DONEN MAVI CEMBER (Material `CircularProgressIndicator`)
+     * KALDIRILDI. Sistemin kendi bileseniydi: kendi olcusunu, kendi
+     * hizini ve kendi mavisini getiriyordu; uygulamanin geri kalani §24
+     * dilindeyken bekleme gostergesi baska bir uygulamadan gelmis gibi
+     * duruyordu.
+     *
+     * Yerine UC NOKTA sirayla nefes aliyor. Sakin, ucuz ve marka
+     * rengiyle cizilen bir isaret.
+     *
+     * ⚠️ HAREKET KISITLIYKEN DONMEZ: noktalar sabit ve tam opakliktadir
+     * (§12) — bekleme yine anlasilir, ama ekranda titreyen bir sey olmaz.
+     */
+    val kisitli = isReducedMotionEnabled()
+    val nokta = size / 3.2f
+    val gecis = rememberInfiniteTransition(label = "yukleniyor")
+
+    Row(
+        modifier = modifier.height(size),
+        horizontalArrangement = Arrangement.spacedBy(nokta / 2),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        repeat(3) { index ->
+            val alpha = if (kisitli) 1f else gecis.animateFloat(
+                initialValue = 0.35f,
+                targetValue = 1f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(560, delayMillis = index * 160),
+                    repeatMode = RepeatMode.Reverse
+                ),
+                label = "nokta$index"
+            ).value
+
+            Box(
+                modifier = Modifier
+                    .size(nokta)
+                    .clip(CircleShape)
+                    .background(renk.copy(alpha = alpha))
+            )
         }
     }
 }

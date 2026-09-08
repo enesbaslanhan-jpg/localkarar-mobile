@@ -97,6 +97,43 @@ class WorkspaceRepository(private val api: SafeApiClient) {
         return api.put("$base/workspaces/$workspaceId/settings", body)
     }
 
+    /*
+     * e-FATURA GELEN KUTUSU — webdeki isletme ayarlarinin ikinci karti.
+     * Uclerin tamami MANAGER yetkisi istiyor (workspace.ts); yetkisiz
+     * kullanicida sunucu 403 donuyor ve arayuz bolumu gizliyor.
+     */
+    suspend fun getInbox(workspaceId: String): Result<InboxStatusDto> {
+        return api.get("$base/workspaces/$workspaceId/inbox")
+    }
+
+    /** Her cagri YENI adres uretiyor; yani ayni zamanda "adresi yenile". */
+    suspend fun enableInbox(workspaceId: String): Result<InboxStatusDto> {
+        return api.post("$base/workspaces/$workspaceId/inbox")
+    }
+
+    suspend fun disableInbox(workspaceId: String): Result<Unit> {
+        return api.delete("$base/workspaces/$workspaceId/inbox")
+    }
+
+    suspend fun getInboxSenders(workspaceId: String): Result<InboxSendersResponseDto> {
+        return api.get("$base/workspaces/$workspaceId/inbox/senders")
+    }
+
+    suspend fun addInboxSender(
+        workspaceId: String,
+        email: String,
+        label: String? = null
+    ): Result<Unit> {
+        return api.post(
+            "$base/workspaces/$workspaceId/inbox/senders",
+            AddInboxSenderRequestDto(email = email.trim(), label = label?.trim()?.ifBlank { null })
+        )
+    }
+
+    suspend fun removeInboxSender(workspaceId: String, senderId: String): Result<Unit> {
+        return api.delete("$base/workspaces/$workspaceId/inbox/senders/$senderId")
+    }
+
     suspend fun getActivity(workspaceId: String, limit: Int = 100): Result<ActivityResponseDto> {
         return api.get("$base/workspaces/$workspaceId/activity?limit=$limit")
     }
@@ -172,6 +209,152 @@ class WorkspaceRepository(private val api: SafeApiClient) {
 
     suspend fun updateDocumentMetadata(workspaceId: String, documentId: String, body: DocumentMetadataDto): Result<Unit> {
         return api.patch("$base/workspaces/$workspaceId/documents/$documentId", body)
+    }
+
+    /*
+     * KAYIT–BELGE BAGI (madde 11).
+     *
+     * 🔴 Uc sunucuda VARDI ama ne webde ne mobilde cagriliyordu:
+     * kullanici elindeki bir belgeyi mevcut bir kayda baglayamiyordu.
+     * Bag yalnizca belge analizinden URETILEN kayitlarda kuruluyordu.
+     *
+     * ⚠️ Koparma ucu bu turda SUNUCUYA EKLENDI; ekleme varken kaldirma
+     * yoktu ve yanlis baglanan belge geri alinamiyordu.
+     *
+     * ⚠️ Koparmak BELGEYI SILMEZ; belge calisma alaninda kalir.
+     * Belgeyi silmek icin `deleteDocument` var.
+     */
+    suspend fun attachDocumentToRecord(
+        workspaceId: String,
+        recordId: String,
+        documentId: String
+    ): Result<Unit> {
+        return api.post("$base/workspaces/$workspaceId/records/$recordId/documents/$documentId")
+    }
+
+    suspend fun detachDocumentFromRecord(
+        workspaceId: String,
+        recordId: String,
+        documentId: String
+    ): Result<Unit> {
+        return api.delete("$base/workspaces/$workspaceId/records/$recordId/documents/$documentId")
+    }
+
+    /*
+     * BELGE ONERISI — KABUL VE RET.
+     *
+     * 🔴 Bu iki cagri mobilde HIC YOKTU. Sunucu yuklenen belgeyi okuyup
+     * "bundan su kaydi acayim mi" diye soruyor; webde iki dugme var
+     * (`pages/Workspaces/Documents.jsx`), mobilde soru soruluyor ama
+     * cevap verilemiyordu.
+     *
+     * ⚠️ Adresteki bolum `document-suggestions`, `documents` DEGIL:
+     * pazaryeri kaynakli onerilerde belge yok (`documentId` null), o
+     * yuzden sunucu oneriyi belgenin altina degil kendi ucuna koymus.
+     */
+    /*
+     * DISA AKTARMA.
+     *
+     * 🔴 Mobilde HIC YOKTU. Webde kayit listesi CSV/Excel/PDF olarak
+     * indiriliyor (`Tracker.jsx` -> `exports.downloadRecords`).
+     *
+     * ⚠️ Telefonda "indirilenler klasoru" webdeki ile ayni sey degil:
+     * kullanici belgeyi muhasebecisine gondermek istiyor. Bu yuzden
+     * inen bayt dizisi sistem PAYLASIM sayfasina veriliyor
+     * (`rememberFileSharer`); "kaydet" onun icindeki seceneklerden biri.
+     *
+     * Suzgecler sorgu dizesiyle gidiyor: ekranda ne suzuldiyse disa
+     * aktarilan da o. Suzgecsiz tam liste gondermek, kullanicinin
+     * baktigi seyden baska bir dosya uretmek olurdu.
+     */
+    suspend fun exportRecords(
+        workspaceId: String,
+        format: String,
+        status: String? = null,
+        type: String? = null,
+        direction: String? = null
+    ): Result<ByteArray> {
+        val sorgu = listOfNotNull(
+            status?.let { "status=$it" },
+            type?.let { "type=$it" },
+            direction?.let { "direction=$it" }
+        ).joinToString("&")
+        val ek = if (sorgu.isBlank()) "" else "?$sorgu"
+        return api.getBytes("$base/workspaces/$workspaceId/exports/records.$format$ek")
+    }
+
+    /*
+     * TOPLU ICE AKTARMA.
+     *
+     * Iki asamali: `previewOnly = true` ile kac satirin gecerli oldugu
+     * ve hatalar goruluyor, kullanici onaylayinca `false` ile yaziliyor.
+     *
+     * ⚠️ SUNUCU SUTUN ESLESTIRMESINI KENDISI YAPMIYOR; istemci
+     * gonderiyor (`columnMapping`). Web bunu tarayicida CSV basligini
+     * okuyup takma adlarla esleyerek uretiyor; mobil ayni takma adlari
+     * kullaniyor (`iceAktarmaEslestir`).
+     */
+    suspend fun importRecords(
+        workspaceId: String,
+        fileId: String,
+        columnMapping: Map<String, String>,
+        previewOnly: Boolean
+    ): Result<RecordImportResultDto> {
+        return api.post(
+            "$base/workspaces/$workspaceId/records/import",
+            RecordImportRequestDto(fileId, columnMapping, previewOnly)
+        )
+    }
+
+    /** Tek bir kaydin PDF dokumu — webde de kayit basina indiriliyor. */
+    suspend fun exportRecordPdf(workspaceId: String, recordId: String): Result<ByteArray> {
+        return api.getBytes("$base/workspaces/$workspaceId/records/$recordId/export.pdf")
+    }
+
+    /*
+     * EKIP DAVETINI KABUL ET.
+     *
+     * 🔴 Mobilde HIC YOKTU: davet GONDERILEBILIYOR ama gelen davet
+     * kabul edilemiyordu. Davet e-postasini telefonunda acan kullanici
+     * akisin ortasinda kaliyordu.
+     *
+     * ⚠️ Adres calisma alani BAZLI DEGIL: davetli kisi henuz o calisma
+     * alaninin uyesi degil, dolayisiyla `/workspaces/{id}/...` altindaki
+     * yetki kapisindan gecemezdi. Sunucu bu yuzden ucu ustte tutuyor.
+     */
+    suspend fun acceptInvitation(token: String): Result<InvitationAcceptResponseDto> {
+        return api.post(
+            "$base/workspaces/invitations/accept",
+            InvitationAcceptRequestDto(token)
+        )
+    }
+
+    suspend fun acceptDocumentSuggestion(workspaceId: String, suggestionId: String): Result<Unit> {
+        return api.post("$base/workspaces/$workspaceId/document-suggestions/$suggestionId/accept")
+    }
+
+    /*
+     * BELGEDEN FINANSAL MODEL ONERISI.
+     *
+     * 🔴 Mobilde HIC YOKTU. Sunucu belgenin metninden hangi modelin
+     * calistirilabilecegini ve girdilerin ne kadarinin HAZIR oldugunu
+     * hesapliyor; webde belge kartinin altinda dugme olarak duruyor.
+     *
+     * ⚠️ Bu uc `financial-models/routes.ts` altinda ve adres
+     * `/workspaces/...` ile BASLIYOR ama isletme rotalarina ait degil;
+     * yine de ayni onek kullaniliyor.
+     */
+    suspend fun getDocumentModelSuggestions(
+        workspaceId: String,
+        documentId: String
+    ): Result<ModelOnerileriDto> {
+        return api.get(
+            "$base/workspaces/$workspaceId/documents/$documentId/financial-model-suggestions"
+        )
+    }
+
+    suspend fun rejectDocumentSuggestion(workspaceId: String, suggestionId: String): Result<Unit> {
+        return api.post("$base/workspaces/$workspaceId/document-suggestions/$suggestionId/reject")
     }
 
     // ========================================================================

@@ -40,6 +40,7 @@ import com.localkarar.app.network.dto.TrackerSummaryDto
 import com.localkarar.app.ui.components.LkButton
 import com.localkarar.app.ui.components.LkButtonVariant
 import com.localkarar.app.ui.components.LkErrorState
+import com.localkarar.app.ui.components.LkLoadingDesen
 import com.localkarar.app.ui.components.LkLoadingState
 import com.localkarar.app.ui.components.LkPageLayout
 import com.localkarar.app.ui.components.LkSection
@@ -151,7 +152,8 @@ fun HomeScreen(
     onNavigateToTracker: (String) -> Unit,
     /** Hizli Islem dosemesi: (isletmeId, kayitTuru, yon) */
     onQuickAction: (String, String, String) -> Unit,
-    onOpenProductCenter: () -> Unit = {}
+    onOpenProductCenter: () -> Unit = {},
+    onOpenSearch: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
@@ -165,7 +167,7 @@ fun HomeScreen(
         Box(modifier = Modifier.fillMaxSize().pullRefresh(pullRefreshState)) {
             when (val state = uiState) {
                 is HomeUiState.Loading -> {
-                    LkLoadingState()
+                    LkLoadingState(desen = LkLoadingDesen.DETAY)
                 }
                 is HomeUiState.Error -> {
                     LkErrorState(
@@ -182,7 +184,8 @@ fun HomeScreen(
                         onNavigateToWorkspaces = onNavigateToWorkspaces,
                         onNavigateToTracker = onNavigateToTracker,
                         onQuickAction = onQuickAction,
-                        onOpenProductCenter = onOpenProductCenter
+                        onOpenProductCenter = onOpenProductCenter,
+                        onOpenSearch = onOpenSearch
                     )
                 }
             }
@@ -206,7 +209,8 @@ private fun DashboardContent(
     onNavigateToTracker: (String) -> Unit,
     /** Hizli Islem dosemesi: (isletmeId, kayitTuru, yon) */
     onQuickAction: (String, String, String) -> Unit,
-    onOpenProductCenter: () -> Unit
+    onOpenProductCenter: () -> Unit,
+    onOpenSearch: () -> Unit
 ) {
     val scrollState = rememberScrollState()
 
@@ -247,6 +251,21 @@ private fun DashboardContent(
                         color = LkHero.OnHero
                     )
                 }
+                /*
+                 * GENEL ARAMA — webin ust cubuktaki arama kutusunun
+                 * mobildeki girisi.
+                 *
+                 * ⚠️ Kutu DEGIL simge: hero'da bir metin alani hem
+                 * selamlamayi asagi iter hem de klavyeyi Ana Sayfa'ya
+                 * baglar. Simge tam ekran arama sayfasini aciyor.
+                 */
+                IconButton(onClick = onOpenSearch) {
+                    Icon(
+                        Icons.Outlined.Search,
+                        contentDescription = "Ara",
+                        tint = LkHero.OnHero
+                    )
+                }
                 IconButton(onClick = onOpenProductCenter) {
                     Icon(
                         Icons.Outlined.GridView,
@@ -282,7 +301,14 @@ private fun DashboardContent(
             onNavigateToWorkspaces = onNavigateToWorkspaces
         )
 
-        // TasksPanel (Sıradaki işler)
+        // Hizli Islemler + Mentor seridi
+        QuickActionsCard(
+            activeWorkspaceId = state.activeWorkspaceId,
+            onQuickAction = onQuickAction,
+            onNavigateToWorkspaces = onNavigateToWorkspaces
+        )
+
+        // Mobil föy: özet → hızlı işlemler → sıradaki işler.
         TasksPanel(
             records = state.trackerRecords,
             upcomingTasks = state.dashboardData.upcomingTasks,
@@ -290,13 +316,7 @@ private fun DashboardContent(
             onNavigateToTracker = onNavigateToTracker
         )
 
-        // Hizli Islemler + Mentor seridi
-        QuickActionsCard(
-            activeWorkspaceId = state.activeWorkspaceId,
-            onQuickAction = onQuickAction,
-            onNavigateToWorkspaces = onNavigateToWorkspaces,
-            onNavigateToMentor = onNavigateToMentor
-        )
+        MentorSupport(onNavigateToMentor)
 
         // DecisionsPanel (Son kararlar)
         DecisionsPanel(
@@ -681,8 +701,7 @@ private fun GorevSatiriGorunumu(satir: GorevSatiri, onClick: () -> Unit) {
 private fun QuickActionsCard(
     activeWorkspaceId: String?,
     onQuickAction: (String, String, String) -> Unit,
-    onNavigateToWorkspaces: () -> Unit,
-    onNavigateToMentor: () -> Unit
+    onNavigateToWorkspaces: () -> Unit
 ) {
     LkSection(title = "Hızlı İşlemler") {
         if (activeWorkspaceId == null) {
@@ -733,9 +752,12 @@ private fun QuickActionsCard(
             }
         }
 
-        Spacer(Modifier.height(LkSpacing.Space2))
+    }
+}
 
-        /* Mentor seridi artik kendi yuzeyinde — sac teli cizgiyle degil. */
+@Composable
+private fun MentorSupport(onNavigateToMentor: () -> Unit) {
+    LkSection(title = "Karar desteği") {
         LkCard(padding = LkSpacing.Space4) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -748,7 +770,7 @@ private fun QuickActionsCard(
                         color = LkTextPrimary
                     )
                     Text(
-                        "Yalnızca ihtiyaç olduğunda açılır; ekranda sürekli durmaz.",
+                        "Sorularını AI Mentor ile değerlendir.",
                         style = LkTypography.getMetadata(),
                         color = LkTextMuted
                     )

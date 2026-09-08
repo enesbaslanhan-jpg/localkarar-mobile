@@ -3,6 +3,9 @@ package com.localkarar.app.network.dto
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 
 @Serializable
 data class WorkspaceSummaryDto(
@@ -38,6 +41,15 @@ data class WorkspaceMemberDto(
 data class WorkspaceDetailDto(
     val id: String,
     val name: String,
+    /**
+     * 🔴 SUNUCU GONDERIYOR, MOBIL OKUMUYORDU.
+     *
+     * `taxNumber` isletme detayinda geliyor (workspace.ts:455) ve
+     * e-Fatura yonunu (gelen mi giden mi) belirleyen alan bu. Mobilde
+     * DTO alani olmadigi icin `ignoreUnknownKeys` yuzunden sessizce
+     * dusuyordu; kullanici numarayi ne gorebiliyor ne girebiliyordu.
+     */
+    val taxNumber: String? = null,
     val legalName: String? = null,
     val sector: String? = null,
     val city: String? = null,
@@ -74,6 +86,8 @@ data class CreateWorkspaceRequestDto(
 data class UpdateWorkspaceRequestDto(
     val name: String? = null,
     val legalName: String? = null,
+    /** 10 haneli VKN ya da 11 haneli TCKN; sunucu bicimi dogruluyor. */
+    val taxNumber: String? = null,
     val sector: String? = null,
     val city: String? = null,
     val country: String? = null,
@@ -113,7 +127,14 @@ data class UpdateMemberRoleRequestDto(
 @Serializable
 data class BusinessContactDto(
     val id: String,
-    val workspaceId: String,
+    /*
+     * 🔴 ZORUNLU ALANDI VE SUNUCU HIC GONDERMIYOR.
+     * `/workspaces/:id/contacts` yaniti (workspace.ts:1114) alanlari tek tek
+     * seciyor ve `workspaceId` o listede YOK. kotlinx.serialization eksik
+     * zorunlu alanda istisna firlatiyordu; Kisiler ekrani "Isletme
+     * yuklenemedi" hatasiyla HIC ACILMIYORDU.
+     */
+    val workspaceId: String? = null,
     val type: String = "customer",
     val name: String,
     val legalName: String? = null,
@@ -176,7 +197,148 @@ data class BusinessRecordDto(
     val parentRecordId: String? = null,
     val metadata: Map<String, JsonElement> = emptyMap(),
     val createdAt: String? = null,
-    val updatedAt: String? = null
+    val updatedAt: String? = null,
+
+    /*
+     * ⚠️ ASAGIDAKI UCU YALNIZ DETAY UCUNDA DOLU.
+     *
+     * Liste ucu (`/records`) bunlari getirmiyor; varsayilanlari bos
+     * liste, yani liste ekrani hicbir sey cizmiyor. Sunucu detayda
+     * `include: { history, reminders, documents }` yapiyor
+     * (business-tracker.ts:654).
+     *
+     * 🔴 UCU DE MOBILDE HIC OKUNMUYORDU: kaydin dayanagi (hangi
+     * faturadan geldigi), hatirlaticilari ve gecmisi webde var,
+     * mobilde yoktu. "Bu rakam nereden geldi" sorusunun cevabi
+     * `documents` icinde duruyor.
+     */
+    val documents: List<RecordDocumentLinkDto> = emptyList(),
+    val reminders: List<RecordReminderDto> = emptyList(),
+    val history: List<RecordHistoryDto> = emptyList()
+)
+
+/** Kayda bagli belge — `BusinessRecordDocument` + belgenin kendisi. */
+@Serializable
+data class RecordDocumentLinkDto(
+    val id: String? = null,
+    val createdAt: String? = null,
+    val document: RecordDocumentDto? = null
+)
+
+@Serializable
+data class RecordDocumentDto(
+    val id: String? = null,
+    val originalName: String? = null,
+    val mimeType: String? = null,
+    val sizeBytes: Long? = null,
+    val category: String? = null,
+    val documentDate: String? = null,
+    /*
+     * 🔴 HAM BIRAKILIYOR — TIPLI DEGIL. Sebebi sunucudaki bir TUTARSIZLIK.
+     *
+     * Olculdu (07.09.2026): ayni alan iki ucta iki farkli bicimde
+     * geliyor. Belge LISTESI ucu onu cozup NESNE olarak donduruyor
+     * (`business-tracker.ts` -> `parseJson(document.analysis)`); kayit
+     * DETAY ucu ise `recordJson` yalniz `record.metadata`yi cozdugu icin
+     * ic ice gecmis belgenin alanini JSON DIZGESI olarak biraktiriyor.
+     *
+     * `DocumentAnalysisDto` olarak tiplendiginde detay ekrani tumden
+     * dusuyordu ("İşletme yüklenemedi") -- cunku gelen sey bir nesne
+     * degil, bir dize.
+     *
+     * ⚠️ Sunucuyu degistirmek yerine web ile AYNI savunma yapiliyor:
+     * `KayitDetay.jsx` icindeki `analiziCoz` da "nesneyse al, dizgeyse
+     * coz" diyor. Sunucunun bicimini degistirmek webin iki uctaki
+     * davranisini de etkilerdi; iki ürün ayni tutarsizligi ayni sekilde
+     * karsiliyor.
+     *
+     * Cozmek icin `eFaturayiCoz()` kullanilir.
+     */
+    val analysis: JsonElement? = null,
+    val createdAt: String? = null
+)
+
+/**
+ * `analysis` alanini e-Faturaya cevirir — nesne de olsa dize de olsa.
+ *
+ * Cozulemezse `null`: bozuk bir govdeden alan uydurmaktansa arayuz
+ * "fatura okunamadi" diyor.
+ */
+fun RecordDocumentDto.eFaturayiCoz(): EFaturaDto? {
+    val ham = analysis ?: return null
+    return try {
+        val nesne = when (ham) {
+            /* Dize hali: icerigi ikinci kez ayristiriliyor. */
+            is JsonPrimitive -> if (ham.isString) {
+                DtoJson.parseToJsonElement(ham.content)
+            } else return null
+            else -> ham
+        }
+        val eFatura = (nesne as? JsonObject)?.get("eFatura") ?: return null
+        if (eFatura is JsonNull) return null
+        DtoJson.decodeFromJsonElement(EFaturaDto.serializer(), eFatura)
+    } catch (e: Exception) {
+        null
+    }
+}
+
+/*
+ * Yalniz bu cozumleme icin; ag katmaninin Json'u ile ayni ayarlar.
+ * `ignoreUnknownKeys`: `analysis` icinde e-Fatura disinda ozet,
+ * anahtar kelimeler gibi alanlar da var.
+ */
+private val DtoJson = kotlinx.serialization.json.Json {
+    ignoreUnknownKeys = true
+    isLenient = true
+    coerceInputValues = true
+}
+
+/**
+ * UBL-TR e-Fatura'nin cozumlenmis hali — sunucudaki `UblFatura`
+ * (`src/services/e-fatura.ts:46`) ile birebir.
+ *
+ * ⚠️ `vadeTarihi` orneklerin %86'sinda YOK ve bu OLAGAN. Arayuz
+ * bosken "faturada belirtilmemiş" yaziyor; duzenleme tarihini vade
+ * yerine koymak, olmayan bir vadeyi varmis gibi gostermek olurdu.
+ */
+@Serializable
+data class EFaturaDto(
+    val id: String? = null,
+    val duzenlemeTarihi: String? = null,
+    val vadeTarihi: String? = null,
+    val paraBirimi: String? = null,
+    val odenecekTutar: Double? = null,
+    val kdvHaricTutar: Double? = null,
+    val satici: EFaturaTarafDto? = null,
+    val alici: EFaturaTarafDto? = null
+)
+
+@Serializable
+data class EFaturaTarafDto(
+    val unvan: String? = null,
+    val kimlik: String? = null,
+    /** VKN ya da TCKN. */
+    val kimlikTuru: String? = null
+)
+
+/** `BusinessReminder` — vade hatirlaticisi. */
+@Serializable
+data class RecordReminderDto(
+    val id: String? = null,
+    val scheduledAt: String? = null,
+    /** pending | sent */
+    val status: String? = null,
+    val sentAt: String? = null,
+    val channel: String? = null
+)
+
+/** `BusinessRecordHistory` — kaydin uzerinde ne yapildigi. */
+@Serializable
+data class RecordHistoryDto(
+    val id: String? = null,
+    val action: String? = null,
+    val reason: String? = null,
+    val createdAt: String? = null
 )
 
 @Serializable
@@ -375,9 +537,49 @@ data class DocumentSuggestionDto(
     val type: String? = null,
     val title: String? = null,
     val description: String? = null,
-    val payload: JsonElement? = null,
+    /*
+     * 🔴 PAYLOAD ARTIK TIPLI.
+     *
+     * `JsonElement` olarak duruyordu ve arayuz onu HIC OKUMUYORDU:
+     * belge yukleniyor, sunucu oneriyi uretiyor, mobil yalniz "analiz
+     * edildi" rozetini gosterip oneriyi yutuyordu. Belge yuklemenin
+     * asil faydasi -- okunan faturadan kayit acmak -- mobilde yoktu.
+     */
+    val payload: DocumentSuggestionPayloadDto? = null,
+    /*
+     * Sunucunun kendi guven olcusu (0..1). Webde yuzde olarak yaziliyor.
+     * ⚠️ Yoksa yazilmiyor: 0 yazmak "hic guvenmiyorum" demek olurdu,
+     * oysa bilinmeyen bir deger.
+     */
+    val confidence: Double? = null,
+    /** Sunucunun oneriyi neye dayandirdigi — fatura no, tarih, tutar. */
     val evidence: JsonElement? = null,
-    val status: String? = null
+    /** "proposed" | "accepted" | "rejected" */
+    val status: String? = null,
+    val suggestionType: String? = null
+)
+
+/**
+ * Onerilen kaydin alanlari — sunucudaki `RecordSuggestionPayload`
+ * (`src/services/document-suggestions.ts`) ile birebir.
+ *
+ * ⚠️ HICBIRI UYDURULMUYOR. `amount` ve `dueAt` null olabilir: e-Fatura
+ * orneklerinin cogunda vade yok ve sunucu bilerek bos birakiyor.
+ * Arayuz de bos biraktiginda tire yaziyor, sifir ya da bugunun tarihi
+ * DEGIL.
+ */
+@Serializable
+data class DocumentSuggestionPayloadDto(
+    /** payment | receivable | promissory_note | purchase | shipment */
+    val type: String? = null,
+    val title: String? = null,
+    val description: String? = null,
+    /** payable | receivable | neutral */
+    val direction: String? = null,
+    val amount: Double? = null,
+    val currency: String? = null,
+    val dueAt: String? = null,
+    val priority: String? = null
 )
 
 @Serializable
@@ -633,4 +835,157 @@ data class UpdateProductSettingsRequestDto(
     val tags: List<String>? = null,
     val lowStockThresholdOverride: Int? = null,
     val isFavorite: Boolean? = null
+)
+
+/*
+ * e-FATURA GELEN KUTUSU.
+ *
+ * 🔴 WEBDE VAR, MOBILDE HIC YOKTU. Isletme ayarlarinin uc kartindan biri
+ * bu (`Settings.jsx`): isletmeye ait bir e-posta adresi acilıyor,
+ * muhasebe programindan gonderilen faturalar onay bekleyen kayda
+ * donusuyor. Mobil kullanici adresi goremiyor, yenileyemiyor,
+ * kapatamiyor ve guvenilir gonderen ekleyemiyordu.
+ *
+ * ⚠️ Alan adlari TURKCE cunku sunucu oyle donuyor (workspace.ts:508).
+ */
+@Serializable
+data class InboxStatusDto(
+    val acik: Boolean = false,
+    val adres: String? = null,
+    /**
+     * Kanal sunucuda yapilandirilmis mi (INBOUND_MAIL_SECRET).
+     * Hazir degilse adres uretmek yaniltici olur: posta gelse bile
+     * islenmez — arayuz bunu soylemek zorunda.
+     */
+    val kanalHazir: Boolean = false
+)
+
+@Serializable
+data class InboxSenderDto(
+    val id: String,
+    val email: String,
+    val label: String? = null,
+    val createdAt: String? = null
+)
+
+@Serializable
+data class InboxSendersResponseDto(
+    val gonderenler: List<InboxSenderDto> = emptyList()
+)
+
+@Serializable
+data class AddInboxSenderRequestDto(
+    val email: String,
+    val label: String? = null
+)
+
+/** `POST /workspaces/invitations/accept` yaniti. */
+@Serializable
+data class InvitationAcceptResponseDto(
+    val accepted: Boolean = false,
+    val workspaceId: String? = null
+)
+
+@Serializable
+data class InvitationAcceptRequestDto(
+    val token: String
+)
+
+/**
+ * Belgeden cikan finansal model onerileri.
+ *
+ * `GET /workspaces/{ws}/documents/{id}/financial-model-suggestions`
+ *
+ * 🔴 Mobilde HIC YOKTU. Sunucu yuklenen belgenin metninden hangi
+ * finansal modelin calistirilabilecegini ve o model icin verinin ne
+ * kadarinin HAZIR oldugunu hesapliyor; web bunu belge kartinin altinda
+ * dugme olarak gosteriyor (`Documents.jsx`).
+ */
+@Serializable
+data class ModelOnerileriDto(
+    val documentId: String? = null,
+    val documentName: String? = null,
+    val extractedFieldCount: Int = 0,
+    val models: List<ModelOnerisiDto> = emptyList(),
+    /*
+     * Sunucunun kendi uyarisi — ornegin "Belgeden okunabilir finansal
+     * alan çıkarılamadı." Bos donebilir; o zaman yazilmiyor.
+     */
+    val warning: String? = null
+)
+
+@Serializable
+data class ModelOnerisiDto(
+    val code: String,
+    val name: String? = null,
+    /** 0..1 arasi; modelin girdilerinin ne kadari belgeden dolduruldu. */
+    val coverage: Double = 0.0,
+    /*
+     * Belgede bulunamayan girdiler — kullanicinin elle girecekleri.
+     *
+     * 🔴 ONCE `List<String>` YAZILMISTI VE ISTEK COKUYORDU. Yanilginin
+     * kaynagi web: `Documents.jsx` bu alandan yalnizca `.length`
+     * okuyor, dolayisiyla iceriginin ne oldugu oradan anlasilmiyor.
+     * Sunucu ise `{key, label, unit}` nesneleri donduruyor
+     * (olculdu 07.09.2026: "Expected beginning of the string, but got
+     * { at path: $.models[3].missingFields[0]").
+     *
+     * ⚠️ `label` ve `unit` SIMDILIK CIZILMIYOR ama tipli tutuluyor:
+     * eksik alanlari tek tek saymak yerine adiyla listelemek ileride
+     * anlamli olacak ve o zaman DTO'yu yeniden kesfetmek gerekmesin.
+     */
+    val missingFields: List<ModelEksikAlanDto> = emptyList(),
+    /*
+     * Belgeden OKUNAN degerler: modelin girdi anahtari -> sayi.
+     *
+     * 🔴 Sunucu gonderiyordu, mobil okumuyordu — bu yuzden "hesaplama
+     * öner" modeli aciyor ama faturadaki rakamlari TASIMIYORDU;
+     * kullanici okunan sayilari elle yeniden yaziyordu (madde 18).
+     *
+     * ⚠️ Bu degerler DOGRULANMIS SAYILMAZ. Sunucu, belgeden gelen bir
+     * alan `userVerified` olmadan modeli calistirmiyor. OCR ve
+     * ayristirma yanilabilir.
+     */
+    val mappedInputs: Map<String, JsonElement> = emptyMap()
+)
+
+@Serializable
+data class ModelEksikAlanDto(
+    val key: String? = null,
+    val label: String? = null,
+    /** Para birimi ya da olcu — ornegin "TRY", "adet". */
+    val unit: String? = null
+)
+
+/** `POST /workspaces/{ws}/records/import` istegi. */
+@Serializable
+data class RecordImportRequestDto(
+    /** Once `/documents/upload` ile yuklenen dosyanin kimligi. */
+    val fileId: String,
+    /** hedefAlan -> dosyadaki sutun basligi. */
+    val columnMapping: Map<String, String>,
+    val previewOnly: Boolean = true
+)
+
+/**
+ * Ic aktarma yaniti.
+ *
+ * `previewOnly = true` iken `preview`, `totalRows`, `validRows`,
+ * `errors` ve `sample` dolu; `false` iken sunucu olusturulan kayitlarin
+ * ozetini donduruyor.
+ */
+@Serializable
+data class RecordImportResultDto(
+    val preview: Boolean = false,
+    val totalRows: Int = 0,
+    val validRows: Int = 0,
+    val imported: Int = 0,
+    val errors: List<RecordImportErrorDto> = emptyList()
+)
+
+@Serializable
+data class RecordImportErrorDto(
+    val row: Int = 0,
+    val field: String? = null,
+    val message: String? = null
 )

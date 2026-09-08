@@ -25,6 +25,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.localkarar.app.ui.theme.LkLineSoft
+import com.localkarar.app.ui.theme.LkOnPrimary
 import com.localkarar.app.ui.theme.LkPrimaryDeep
 import com.localkarar.app.ui.theme.LkShapes
 import com.localkarar.app.ui.theme.LkSurfaceSunken
@@ -32,7 +33,6 @@ import com.localkarar.app.ui.theme.LkTextPrimary
 import com.localkarar.app.ui.theme.LkTextSecondary
 import com.localkarar.app.ui.theme.LkTypography
 import com.localkarar.app.ui.theme.LkSpacing
-import androidx.compose.ui.graphics.Color
 
 @Composable
 fun LkCourseCard(
@@ -64,14 +64,12 @@ fun LkCourseCard(
                     .width(80.dp)
                     .height(68.dp)
                     .clip(LkShapes.MD)
-                    // Mixing Warm (assume roughly #F59E0B) with SurfaceRaised for the background
-                    // For now using a deep primary tint as fallback
-                    .background(Color(0xFF2B3A41)), 
+                    .background(LkPrimaryDeep),
                 contentAlignment = Alignment.BottomStart
             ) {
                 Text(
                     text = "LK",
-                    style = LkTypography.getSectionTitle().copy(color = LkPrimaryDeep),
+                    style = LkTypography.getSectionTitle().copy(color = LkOnPrimary),
                     modifier = Modifier.padding(LkSpacing.Space3)
                 )
             }
@@ -91,14 +89,19 @@ fun LkCourseCard(
                     overflow = TextOverflow.Ellipsis
                 )
                 
-                val durationText = if (estimatedMinutes != null) "   dk" else ""
+                val durationText = estimatedMinutes?.let { " · $it dk" } ?: ""
                 Text(
-                    text = " ders",
+                    text = "$lessonCount ders$durationText",
                     style = LkTypography.getMetadata(),
                     color = LkTextSecondary
                 )
                 
-                val badgeText = if (progress != null) "% tamamlandı" else (level ?: "Yeni")
+                val badgeText = progress?.let { "%$it tamamlandı" } ?: when (level) {
+                    "beginner" -> "Başlangıç"
+                    "intermediate" -> "Orta"
+                    "advanced" -> "İleri"
+                    else -> level ?: "Yeni"
+                }
                 Box(
                     modifier = Modifier
                         .background(LkSurfaceSunken, LkShapes.FULL)

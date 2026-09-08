@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Android 12+ acilis ekrani.
+
+      Bu surumlerde sistem `windowBackground`u DEGIL kendi acilis ekranini
+      ciziyor: zemin `windowSplashScreenBackground`, ortadaki isaret
+      `windowSplashScreenAnimatedIcon`. Ikisi de verilmezse uygulama gri
+      bir kare ve varsayilan simgeyle acilir.
+    -->
+    <style name="Theme.LocalKarar" parent="@android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@drawable/acilis_zemini</item>
+        <item name="android:windowSplashScreenBackground">#FF1B3D4C</item>
+        <!-- Simgenin arkasindaki ACIK DAIRE kaldiriliyor: kadranin
+             kendisi zaten daire, ikinci bir halka "mavi serit" gibi
+             gorunuyordu. -->
+        <item name="android:windowSplashScreenIconBackgroundColor">#00000000</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/acilis_pusula</item>
+        <item name="android:windowSplashScreenAnimationDuration">900</item>
+    </style>
+</resources>

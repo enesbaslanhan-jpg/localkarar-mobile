@@ -29,6 +29,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.localkarar.app.ui.theme.*
 
+/** "1. Baslik" bicimindeki bolum numarasi. */
+private val BOLUM_NUMARASI = Regex("""^(\d+)\.\s+""")
+
 private sealed interface MarkdownBlock {
     data class Header(val level: Int, val text: String) : MarkdownBlock
     data class Paragraph(val text: String) : MarkdownBlock
@@ -36,6 +39,8 @@ private sealed interface MarkdownBlock {
     data class BulletItem(val text: String) : MarkdownBlock
     data class NumberedItem(val number: String, val text: String) : MarkdownBlock
     data class BlockQuote(val text: String) : MarkdownBlock
+    /** GFM tablosu — mentor yanitlarinda da geliyor. */
+    data class Table(val tablo: LkMdTablo) : MarkdownBlock
     data object DividerBlock : MarkdownBlock
 }
 
@@ -43,27 +48,89 @@ private sealed interface MarkdownBlock {
 fun LkMarkdown(
     content: String,
     modifier: Modifier = Modifier,
-    textColor: Color = LkTextPrimary
+    textColor: Color = LkTextPrimary,
+    /**
+     * OKUMA KIPI — ders govdesi gibi uzun metinler icin.
+     *
+     * Govde 15sp / satir yuksekligi 25,5sp (mockup "Akademi 3"in okuma
+     * olcusu), basliklar sayfa olceginde, bloklar arasi bosluk iki kati.
+     * Mentor balonu varsayilan (siki) kipte kaliyor.
+     */
+    okuma: Boolean = false
 ) {
     val blocks = remember(content) { parseMarkdownBlocks(content) }
+    val govdeStili =
+        if (okuma) LkTypography.getBody().copy(fontSize = 15.sp, lineHeight = 25.5.sp)
+        else LkTypography.getBody().copy(lineHeight = 22.sp)
 
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(6.dp)
+        verticalArrangement = Arrangement.spacedBy(if (okuma) 12.dp else 6.dp)
     ) {
         blocks.forEach { block ->
             when (block) {
                 is MarkdownBlock.Header -> {
-                    val style = when (block.level) {
-                        1 -> LkTypography.getSectionTitle().copy(color = textColor, fontWeight = FontWeight.Bold)
-                        2 -> LkTypography.getBodyStrong().copy(color = textColor, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    val style = when {
+                        okuma && block.level == 1 -> LkTypography.getPageTitle().copy(color = textColor)
+                        okuma && block.level == 2 -> LkTypography.getSectionTitle().copy(color = textColor)
+                        okuma -> LkTypography.getCardTitle().copy(color = textColor)
+                        block.level == 1 -> LkTypography.getSectionTitle().copy(color = textColor, fontWeight = FontWeight.Bold)
+                        block.level == 2 -> LkTypography.getBodyStrong().copy(color = textColor, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                         else -> LkTypography.getBodyStrong().copy(color = textColor, fontWeight = FontWeight.SemiBold)
                     }
-                    Text(
-                        text = parseInlineMarkdown(block.text, textColor),
-                        style = style,
-                        modifier = Modifier.padding(top = 4.dp, bottom = 2.dp)
-                    )
+                    /*
+                     * DERSTE BOLUM BASLIKLARI NUMARALI GELIYOR:
+                     * "1. Ciro İllüzyonu ve İndirimin Kâr Üzerindeki
+                     * Etkisi". Duz metin olarak basildiginda ders, arasi
+                     * ayrilmamis tek bir yazi blogu gibi okunuyordu.
+                     *
+                     * Okuma kipinde numara basliktan AYRILIP kendi
+                     * rozetine giriyor ve bolumun ustune ince bir ayrac
+                     * konuyor: sayfa "bolumleri olan bir ders" gibi
+                     * gorunuyor. Numarayi ekleyen biz degiliz — icerikte
+                     * zaten var, yalniz bicimi degisiyor.
+                     */
+                    val numara = if (okuma) BOLUM_NUMARASI.find(block.text)?.groupValues?.get(1) else null
+                    if (numara != null) {
+                        Column(
+                            modifier = Modifier.padding(top = 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Divider(color = LkLineSoft, thickness = 1.dp)
+                            Row(verticalAlignment = Alignment.Top) {
+                                Box(
+                                    modifier = Modifier
+                                        .padding(top = 2.dp)
+                                        .size(26.dp)
+                                        .clip(RoundedCornerShape(9.dp))
+                                        .background(LkSurfaceTile),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = numara,
+                                        style = LkTypography.getMicro(),
+                                        color = LkTileInk,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                                Spacer(Modifier.width(10.dp))
+                                Text(
+                                    text = parseInlineMarkdown(
+                                        block.text.replaceFirst(BOLUM_NUMARASI, ""),
+                                        textColor
+                                    ),
+                                    style = style,
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                        }
+                    } else {
+                        Text(
+                            text = parseInlineMarkdown(block.text, textColor),
+                            style = style,
+                            modifier = Modifier.padding(top = 4.dp, bottom = 2.dp)
+                        )
+                    }
                 }
                 is MarkdownBlock.Paragraph -> {
                     /*
@@ -78,35 +145,7 @@ fun LkMarkdown(
                      * ciziliyor. Onceden `$$\text{...}$$` kullaniciya HAM
                      * olarak gorunuyordu.
                      */
-                    val parcalar = remember(block.text) { matematikAyir(block.text) }
-                    if (parcalar.size == 1 && parcalar[0] is MetinParcasi.Duz) {
-                        Text(
-                            text = parseInlineMarkdown(block.text, textColor),
-                            style = LkTypography.getBody().copy(color = textColor, lineHeight = 22.sp)
-                        )
-                    } else {
-                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            parcalar.forEach { parca ->
-                                when (parca) {
-                                    is MetinParcasi.Duz -> {
-                                        val metin = parca.value.trim()
-                                        if (metin.isNotEmpty()) {
-                                            Text(
-                                                text = parseInlineMarkdown(metin, textColor),
-                                                style = LkTypography.getBody()
-                                                    .copy(color = textColor, lineHeight = 22.sp)
-                                            )
-                                        }
-                                    }
-                                    is MetinParcasi.Matematik -> LkMath(
-                                        latex = parca.latex,
-                                        blok = parca.blok,
-                                        renk = textColor
-                                    )
-                                }
-                            }
-                        }
-                    }
+                    MetinVeMatematik(block.text, govdeStili, textColor)
                 }
                 is MarkdownBlock.CodeBlock -> {
                     LkCodeBlockView(language = block.language, code = block.code)
@@ -120,9 +159,10 @@ fun LkMarkdown(
                             text = "• ",
                             style = LkTypography.getBody().copy(color = LkPrimary, fontWeight = FontWeight.Bold)
                         )
-                        Text(
-                            text = parseInlineMarkdown(block.text, textColor),
-                            style = LkTypography.getBody().copy(color = textColor, lineHeight = 20.sp),
+                        MetinVeMatematik(
+                            metin = block.text,
+                            stil = govdeStili,
+                            renk = textColor,
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -136,9 +176,10 @@ fun LkMarkdown(
                             text = "${block.number}. ",
                             style = LkTypography.getBody().copy(color = LkPrimary, fontWeight = FontWeight.Bold)
                         )
-                        Text(
-                            text = parseInlineMarkdown(block.text, textColor),
-                            style = LkTypography.getBody().copy(color = textColor, lineHeight = 20.sp),
+                        MetinVeMatematik(
+                            metin = block.text,
+                            stil = govdeStili,
+                            renk = textColor,
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -162,9 +203,62 @@ fun LkMarkdown(
                         )
                     }
                 }
+                is MarkdownBlock.Table -> {
+                    LkMarkdownTablo(
+                        tablo = block.tablo,
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    )
+                }
                 is MarkdownBlock.DividerBlock -> {
                     Divider(color = LkLineSoft, thickness = 1.dp, modifier = Modifier.padding(vertical = 4.dp))
                 }
+            }
+        }
+    }
+}
+
+/**
+ * Metin + LaTeX.
+ *
+ * 🔴 MATEMATIK YALNIZ PARAGRAFTA CIZILIYORDU. Ders govdelerinde hesap
+ * satirlarinin cogu MADDE ICINDE: "**İşçilik Saat Ücreti:** $48.000
+ * \text{ TL} \div 160 = 300$". Madde dali formulu hic islemedigi icin
+ * ekranda yalniz "İşçilik Saat Ücreti:" kaliyor, SAYI KAYBOLUYORDU —
+ * dersin anlatmak istedigi tek sey oydu.
+ */
+@Composable
+private fun MetinVeMatematik(
+    metin: String,
+    stil: androidx.compose.ui.text.TextStyle,
+    renk: Color,
+    modifier: Modifier = Modifier
+) {
+    val parcalar = remember(metin) { matematikAyir(metin) }
+    if (parcalar.size == 1 && parcalar[0] is MetinParcasi.Duz) {
+        Text(
+            text = parseInlineMarkdown(metin, renk),
+            style = stil.copy(color = renk),
+            modifier = modifier
+        )
+        return
+    }
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        parcalar.forEach { parca ->
+            when (parca) {
+                is MetinParcasi.Duz -> {
+                    val duz = parca.value.trim()
+                    if (duz.isNotEmpty()) {
+                        Text(
+                            text = parseInlineMarkdown(duz, renk),
+                            style = stil.copy(color = renk)
+                        )
+                    }
+                }
+                is MetinParcasi.Matematik -> LkMath(
+                    latex = parca.latex,
+                    blok = parca.blok,
+                    renk = renk
+                )
             }
         }
     }
@@ -223,7 +317,23 @@ private fun LkCodeBlockView(language: String?, code: String) {
     }
 }
 
+/**
+ * Once TABLOLAR ayriliyor, kalan metin satir satir cozumleniyor.
+ *
+ * 🔴 Tablo satirlari duz paragraf sayiliyordu: "| Baslik | Deger |"
+ * satirlari bir araya yapisip okunmaz bir blok haline geliyordu.
+ */
 private fun parseMarkdownBlocks(raw: String): List<MarkdownBlock> {
+    if (raw.isBlank()) return emptyList()
+    return lkMarkdownParcala(raw).flatMap { parca ->
+        when (parca) {
+            is LkMdParca.Tablo -> listOf(MarkdownBlock.Table(parca.tablo))
+            is LkMdParca.Metin -> parseMarkdownTextBlocks(parca.icerik)
+        }
+    }
+}
+
+private fun parseMarkdownTextBlocks(raw: String): List<MarkdownBlock> {
     if (raw.isBlank()) return emptyList()
 
     val blocks = mutableListOf<MarkdownBlock>()

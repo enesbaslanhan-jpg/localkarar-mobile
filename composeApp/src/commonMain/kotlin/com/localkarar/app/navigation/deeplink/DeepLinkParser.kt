@@ -42,6 +42,27 @@ object DeepLinkParser {
                 "/"
             }
 
+            /*
+             * DAVET BAGLANTISI — `/app/` DISINDAKI TEK ISTISNA.
+             *
+             * 🔴 MOBILDE HIC CALISMIYORDU. Ekip daveti e-postasi
+             * `https://localkarar.com/davet?token=...` gonderiyor
+             * (`mail-templates.ts:182`). Davetli kisi bunu TELEFONUNDA
+             * aciyor -- ekip davetinin dogal yeri orasi. Mobil yalniz
+             * `/app/` yollarini tanidigi icin baglanti tarayiciya
+             * dusuyor, uygulamada davet kabul etmenin HICBIR yolu yoktu.
+             *
+             * ⚠️ TOKEN SORGU DIZESINDE ve bu ayristirici sorgu dizesini
+             * en basta BILEREK atiyor (`substringBefore('?')`) --
+             * sorgudan gelen degerlerin yonlendirmeye karismasi bir
+             * saldiri yuzeyi. O karar KORUNUYOR: sorgu yalnizca bu tek
+             * yolda, yalnizca `token` anahtari icin ve KATI bir bicim
+             * dogrulamasindan gecerek okunuyor.
+             */
+            if (pathPart == "/davet") {
+                return davetiCoz(rawUrl)
+            }
+
             // Path must begin with /app/
             if (pathPart != "/app" && !pathPart.startsWith("/app/")) {
                 return DeepLinkResult.Unsupported
@@ -55,7 +76,7 @@ object DeepLinkParser {
             }
 
             val appSegments = segments.drop(1)
-            val target = matchSegments(appSegments)
+            val target = matchSegments(appSegments, rawUrl)
             if (target != null) {
                 DeepLinkResult.Success(target)
             } else {
@@ -66,7 +87,64 @@ object DeepLinkParser {
         }
     }
 
-    private fun matchSegments(segments: List<String>): DeepLinkTarget? {
+    /*
+     * Davet jetonunu sorgu dizesinden cikarir.
+     *
+     * Sunucu jetonu `hashToken` ile karsilastiriyor (`workspace.ts:1047`)
+     * ve uretimi rastgele bir onaltilik dize. Burada bicim KATI
+     * dogrulaniyor: yalnizca harf, rakam, tire ve alt tire; 16-256
+     * karakter. Amaç sunucunun isini yapmak degil, ekrana ve oradan
+     * istege GECERSIZ bir seyin girmemesi.
+     */
+    private fun davetiCoz(rawUrl: String): DeepLinkResult {
+        val sorgu = rawUrl.substringAfter('?', "").substringBefore('#')
+        if (sorgu.isBlank()) return DeepLinkResult.Malformed("Davet bağlantısında kod yok")
+
+        val jeton = sorgu.split('&')
+            .firstOrNull { it.startsWith("token=", ignoreCase = true) }
+            ?.substringAfter('=')
+            ?.trim()
+
+        if (jeton.isNullOrBlank()) {
+            return DeepLinkResult.Malformed("Davet bağlantısında kod yok")
+        }
+        if (!jeton.matches(JETON_BICIMI)) {
+            return DeepLinkResult.Malformed("Davet kodu geçersiz")
+        }
+        return DeepLinkResult.Success(DeepLinkTarget.Invitation(jeton))
+    }
+
+    private val JETON_BICIMI = Regex("^[A-Za-z0-9_-]{16,256}$")
+
+    /*
+     * AYARLAR BOLUMU — sorgu dizesinden okunan IKINCI ve son deger.
+     *
+     * Web ayarlar sayfasini tek adres altinda bolumlere ayiriyor
+     * (`SettingsPage.jsx` -> `bolumSec`): hem `?bolum=` hem `#bolum`.
+     * Mobilde bu bolumlerin cogu zaten Ayarlar listesinde yan yana
+     * duruyor, o yuzden hepsi icin ayri bir hedef YOK.
+     *
+     * ⚠️ YALNIZ `integrations` ceviriliyor: mobilde karsiligi ayri bir
+     * EKRAN (`WorkspaceIntegrations`) ve web dort yerden bu adrese
+     * gonderiyor. Diger degerler (`uyelik`, `profile`, `security`...)
+     * Ayarlar kokune dusuyor -- bugunku davranis, gerileme degil.
+     *
+     * ⚠️ Sorgudan okunan her sey bir saldiri yuzeyi; bu yuzden deger
+     * yonlendirmeye ham girmiyor, TEK bir sabitle karsilastiriliyor.
+     */
+    private fun ayarlarBolumu(rawUrl: String): String? {
+        val sorguVeParca = rawUrl.substringAfter('?', "")
+        val sorgu = sorguVeParca.substringBefore('#')
+        val sorgudan = sorgu.split('&')
+            .firstOrNull { it.startsWith("bolum=", ignoreCase = true) }
+            ?.substringAfter('=')
+            ?.trim()
+        if (!sorgudan.isNullOrBlank()) return sorgudan
+        /* Sorgu onceligi korunuyor; web de once sorguya bakiyor. */
+        return rawUrl.substringAfter('#', "").trim().takeIf { it.isNotBlank() }
+    }
+
+    private fun matchSegments(segments: List<String>, rawUrl: String): DeepLinkTarget? {
         if (segments.isEmpty()) return null
 
         return when (segments[0]) {
@@ -85,6 +163,8 @@ object DeepLinkParser {
                     else -> null
                 }
             }
+            "onboarding" -> if (segments.size == 1) DeepLinkTarget.OnboardingRoot else null
+            "assessment" -> if (segments.size == 1) DeepLinkTarget.AssessmentRoot else null
             "profil" -> {
                 when (segments.size) {
                     1 -> DeepLinkTarget.SelfProfile
@@ -189,7 +269,11 @@ object DeepLinkParser {
                 }
             }
             "settings" -> {
-                if (segments.size == 1) DeepLinkTarget.SettingsRoot else null
+                when {
+                    segments.size != 1 -> null
+                    ayarlarBolumu(rawUrl) == "integrations" -> DeepLinkTarget.IntegrationsRoot
+                    else -> DeepLinkTarget.SettingsRoot
+                }
             }
             else -> null
         }

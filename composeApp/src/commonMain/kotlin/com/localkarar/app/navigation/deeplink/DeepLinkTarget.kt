@@ -12,6 +12,14 @@ sealed interface DeepLinkTarget {
     data object SelfProfile : DeepLinkTarget
     data object NotificationsRoot : DeepLinkTarget
 
+    /**
+     * Ekip daveti — `https://localkarar.com/davet?token=...`
+     *
+     * `/app/` disindaki TEK hedef; gerekcesi `DeepLinkParser.davetiCoz`
+     * icinde yazili.
+     */
+    data class Invitation(val token: String) : DeepLinkTarget
+
     // Bilgi Kutuphanesi / Ogrenme Yolu (webde menude degil, rota olarak canli)
 
     // Mentor
@@ -44,7 +52,23 @@ sealed interface DeepLinkTarget {
     data class WorkspaceActivity(val workspaceId: String) : DeepLinkTarget
 
     // Settings
+    data object OnboardingRoot : DeepLinkTarget
+    data object AssessmentRoot : DeepLinkTarget
     data object SettingsRoot : DeepLinkTarget
+
+    /*
+     * PAZARYERI ENTEGRASYONLARI.
+     *
+     * 🔴 Webin adresi `/app/settings?bolum=integrations` ve DORT yerden
+     * bu adrese gonderiliyor (`Dashboard.jsx`, `Workspaces/index.jsx`,
+     * `WorkspaceLayout.jsx`). Mobil bu bagi tanimadigi icin baglanti
+     * duz Ayarlar'a dusuyordu.
+     *
+     * ⚠️ Calisma alani kimligi TASINMIYOR: webde de adreste yok, panel
+     * etkin calisma alanini kullaniyor. Mobilde de oyle -- etkin alan
+     * yoksa Ayarlar aciliyor (uydurma bir alan secilmiyor).
+     */
+    data object IntegrationsRoot : DeepLinkTarget
 
     // News
     data object NewsRoot : DeepLinkTarget
@@ -55,7 +79,12 @@ sealed interface DeepLinkTarget {
     data class WorkspaceRecordNative(val workspaceId: String, val recordId: String) : DeepLinkTarget
     data class NewsArticleNative(val articleId: String) : DeepLinkTarget
 
-    fun toDestination(): Destination = when (this) {
+    /**
+     * @param aktifCalismaAlaniId yalnizca calisma alani kimligi TASIMAYAN
+     *   ama bir alan GEREKTIREN hedefler icin kullaniliyor
+     *   ([IntegrationsRoot]). Verilmezse o hedef Ayarlar'a dusuyor.
+     */
+    fun toDestination(aktifCalismaAlaniId: String? = null): Destination = when (this) {
         is CommunityFeedRoot -> Destination.Community("feed")
         is CommunityPeopleRoot -> Destination.Community("people")
         is CommunityThreadsRoot -> Destination.Community("threads")
@@ -89,7 +118,13 @@ sealed interface DeepLinkTarget {
         is WorkspaceSettings -> Destination.WorkspaceSettings(workspaceId)
         is WorkspaceActivity -> Destination.Activity(workspaceId)
 
+        is Invitation -> Destination.InvitationAccept(token)
+        is OnboardingRoot -> Destination.Onboarding
+        is AssessmentRoot -> Destination.Assessment
         is SettingsRoot -> Destination.Settings
+        is IntegrationsRoot -> aktifCalismaAlaniId
+            ?.let { Destination.WorkspaceIntegrations(it) }
+            ?: Destination.Settings
         is NewsRoot -> Destination.News
 
         is CommunityThreadNative -> Destination.CommunityThreadDetail(threadId)

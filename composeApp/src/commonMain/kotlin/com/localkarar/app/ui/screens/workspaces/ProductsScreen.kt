@@ -1,5 +1,9 @@
 package com.localkarar.app.ui.screens.workspaces
 
+import com.localkarar.app.ui.components.LkLoadingSpinner
+import com.localkarar.app.ui.components.LkFilterBar
+import com.localkarar.app.ui.components.LkFilterGrup
+import com.localkarar.app.ui.components.LkFilterSecenek
 import com.localkarar.app.ui.components.LkHeroPage
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -72,11 +76,11 @@ fun ProductsScreen(
 
     /* §0: ham Scaffold + TopAppBar yerine hero kabugu. */
     LkHeroPage(
-        title = "Pazaryeri Ürünleri",
+        title = "Ürünler",
         onBack = onNavigateBack,
         heroExtra = {
             Text(
-                text = "Katalog ve satış performansı",
+                text = "${products.size} ürün · ${products.count { it.stock <= 5 }} kritik stok",
                 style = LkTypography.getMetadata(),
                 color = LkHero.OnHeroSecondary,
                 modifier = Modifier.padding(
@@ -105,170 +109,89 @@ fun ProductsScreen(
                 )
             }
 
-            // Provider Filter Chips
-            LazyRow(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = LkSpacing.Space4, vertical = 2.dp),
-                horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2)
-            ) {
-                items(PROVIDERS) { provider ->
-                    val isSelected = (selectedProvider == null && provider == TUM_SAGLAYICILAR) || (selectedProvider == provider)
-                    Box(
-                        modifier = Modifier
-                            .background(
-                                color = if (isSelected) LkPrimary else LkSurfacePanel,
-                                shape = LkShapes.SM
-                            )
-                            .border(
-                                width = 1.dp,
-                                color = if (isSelected) LkPrimary else LkLineSoft,
-                                shape = LkShapes.SM
-                            )
-                            .clickable {
-                                viewModel.setProviderFilter(workspaceId, if (provider == TUM_SAGLAYICILAR) null else provider)
-                            }
-                            .padding(horizontal = LkSpacing.Space3, vertical = 6.dp)
-                    ) {
-                        Text(
-                            text = provider,
-                            style = LkTypography.getMicro(),
-                            color = if (isSelected) LkOnPrimary else LkTextSecondary,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                        )
-                    }
-                }
+            /*
+             * 🔴 DORT SIRA MINIK HAP VARDI: saglayici, satis/stok durumu,
+             * performans penceresi ve siralama. Hepsi 11sp yazi ve ~24dp
+             * yukseklikti (§19 esigi 44dp) ve arama alaniyla birlikte
+             * ekranin yarisini kapliyordu; listeye sira gelmiyordu.
+             *
+             * Artik tek serit: stok/satis durumu gorunur, kalan uc grup
+             * "Filtreler"in arkasinda ve kac tanesinin acik oldugu rozetle
+             * yaziyor.
+             */
+            val durumSecili = when {
+                selectedStockFilter != null -> selectedStockFilter
+                selectedOnSale == true -> "onSale"
+                selectedOnSale == false -> "offSale"
+                else -> null
             }
-
-            // Sale & Stock Status Filter Chips
-            LazyRow(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = LkSpacing.Space4, vertical = 2.dp),
-                horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2)
-            ) {
-                item {
-                    StatusFilterChip(
-                        label = "Tümü",
-                        isSelected = selectedOnSale == null && selectedStockFilter == null,
-                        onClick = {
-                            viewModel.setOnSaleFilter(workspaceId, null)
+            LkFilterBar(
+                birincil = listOf(
+                    LkFilterSecenek("Tümü", null),
+                    LkFilterSecenek("Satışta", "onSale"),
+                    LkFilterSecenek("Satış dışı", "offSale"),
+                    LkFilterSecenek("Stok azaldı", "low"),
+                    LkFilterSecenek("Stok tükendi", "out")
+                ),
+                seciliBirincil = durumSecili,
+                onBirincil = { secim ->
+                    when (secim) {
+                        "onSale" -> {
                             viewModel.setStockFilter(workspaceId, null)
-                        }
-                    )
-                }
-                item {
-                    StatusFilterChip(
-                        label = "Satışta",
-                        isSelected = selectedOnSale == true && selectedStockFilter == null,
-                        onClick = {
                             viewModel.setOnSaleFilter(workspaceId, true)
-                            viewModel.setStockFilter(workspaceId, null)
                         }
-                    )
-                }
-                item {
-                    StatusFilterChip(
-                        label = "Satışta Değil",
-                        isSelected = selectedOnSale == false && selectedStockFilter == null,
-                        onClick = {
+                        "offSale" -> {
+                            viewModel.setStockFilter(workspaceId, null)
                             viewModel.setOnSaleFilter(workspaceId, false)
+                        }
+                        "low", "out" -> {
+                            viewModel.setOnSaleFilter(workspaceId, null)
+                            viewModel.setStockFilter(workspaceId, secim)
+                        }
+                        else -> {
+                            viewModel.setOnSaleFilter(workspaceId, null)
                             viewModel.setStockFilter(workspaceId, null)
                         }
-                    )
-                }
-                item {
-                    StatusFilterChip(
-                        label = "Kritik Stok",
-                        isSelected = selectedStockFilter == "low",
-                        onClick = {
-                            viewModel.setOnSaleFilter(workspaceId, null)
-                            viewModel.setStockFilter(workspaceId, "low")
-                        }
-                    )
-                }
-                item {
-                    StatusFilterChip(
-                        label = "Stok Tükendi",
-                        isSelected = selectedStockFilter == "out",
-                        onClick = {
-                            viewModel.setOnSaleFilter(workspaceId, null)
-                            viewModel.setStockFilter(workspaceId, "out")
-                        }
-                    )
-                }
-            }
-
-            // Performance Window & Sorting Controls
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = LkSpacing.Space4, vertical = 4.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Performance Window Chips
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    WINDOW_OPTIONS.forEach { (windowKey, windowLabel) ->
-                        val isSelected = selectedWindowDays == windowKey
-                        Box(
-                            modifier = Modifier
-                                .background(
-                                    color = if (isSelected) LkPrimary.copy(alpha = 0.2f) else LkSurfacePanel,
-                                    shape = LkShapes.SM
-                                )
-                                .border(
-                                    width = 1.dp,
-                                    color = if (isSelected) LkPrimary else LkLineSoft,
-                                    shape = LkShapes.SM
-                                )
-                                .clickable { viewModel.setPerformanceWindow(workspaceId, windowKey) }
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
-                        ) {
-                            Text(
-                                text = windowLabel,
-                                style = LkTypography.getMicro(),
-                                color = if (isSelected) LkPrimary else LkTextMuted,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                            )
-                        }
                     }
-                }
-
-                // Sort Chips (horizontal scrollable if needed)
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    items(SORT_OPTIONS) { (sortKey, sortLabel) ->
-                        val isSelected = selectedSort == sortKey
-                        Box(
-                            modifier = Modifier
-                                .background(
-                                    color = if (isSelected) LkSuccess.copy(alpha = 0.15f) else LkSurfacePanel,
-                                    shape = LkShapes.SM
-                                )
-                                .border(
-                                    width = 1.dp,
-                                    color = if (isSelected) LkSuccess else LkLineSoft,
-                                    shape = LkShapes.SM
-                                )
-                                .clickable { viewModel.setSort(workspaceId, sortKey) }
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
-                        ) {
-                            Text(
-                                text = sortLabel,
-                                style = LkTypography.getMicro(),
-                                color = if (isSelected) LkSuccess else LkTextSecondary,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                },
+                gruplar = listOf(
+                    LkFilterGrup(
+                        baslik = "PAZARYERİ",
+                        secenekler = PROVIDERS.map { saglayici ->
+                            LkFilterSecenek(
+                                saglayici,
+                                if (saglayici == TUM_SAGLAYICILAR) null else saglayici
                             )
-                        }
-                    }
-                }
-            }
+                        },
+                        secili = selectedProvider,
+                        onSecim = { viewModel.setProviderFilter(workspaceId, it) }
+                    ),
+                    LkFilterGrup(
+                        baslik = "PERFORMANS DÖNEMİ",
+                        secenekler = WINDOW_OPTIONS.map { (deger, etiket) ->
+                            LkFilterSecenek(etiket, deger)
+                        },
+                        secili = selectedWindowDays,
+                        varsayilan = "30",
+                        onSecim = { secim -> secim?.let { viewModel.setPerformanceWindow(workspaceId, it) } }
+                    ),
+                    LkFilterGrup(
+                        baslik = "SIRALAMA",
+                        secenekler = SORT_OPTIONS.map { (deger, etiket) ->
+                            LkFilterSecenek(etiket, deger)
+                        },
+                        secili = selectedSort.takeIf { it != "default" },
+                        onSecim = { secim -> viewModel.setSort(workspaceId, secim ?: "default") }
+                    )
+                ),
+                modifier = Modifier.padding(vertical = LkSpacing.Space2)
+            )
 
             Spacer(modifier = Modifier.height(4.dp))
 
             if (isLoading) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = LkPrimary)
+                    LkLoadingSpinner(size = 26.dp)
                 }
             } else if (error != null) {
                 Box(

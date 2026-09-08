@@ -15,4 +15,7 @@ actual object AppEnvironmentProvider {
 
     actual val isRelease: Boolean
         get() = BuildConfig.IS_RELEASE
+
+    actual val versionLabel: String
+        get() = "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})"
 }

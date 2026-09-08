@@ -26,8 +26,10 @@ import com.localkarar.app.core.LkFormatting
 import com.localkarar.app.network.dto.BusinessRecordDto
 import com.localkarar.app.ui.components.LkErrorState
 import com.localkarar.app.ui.components.LkInfoPanel
+import com.localkarar.app.ui.components.LkLoadingDesen
 import com.localkarar.app.ui.components.LkLoadingState
 import com.localkarar.app.ui.components.LkHeroPage
+import com.localkarar.app.ui.components.LkCard
 import com.localkarar.app.ui.theme.*
 import com.localkarar.app.workspaces.CalendarUiState
 import com.localkarar.app.workspaces.CalendarViewModel
@@ -40,11 +42,23 @@ fun CalendarScreen(
     onBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
+    /*
+     * 🔴 "BUGUN" TUSU HICBIR SEY YAPMIYOR GORUNUYORDU.
+     *
+     * `goToToday()` yalniz ay ve yili degistiriyordu; zaten bu aydaysan
+     * ekranda hicbir sey degismiyordu. Secili gun ise ayri bir yerel
+     * durumdu ve hic dokunulmuyordu. Artik tus bugunu SECIYOR: izgarada
+     * dolu daire bugune gecer ve altindaki liste bugunun kayitlarina
+     * doner -- tusun vaat ettigi sey de bu.
+     *
+     * Ekran ilk acildiginda da bugun secili geliyor; "Gün Seçin" diyen
+     * bos bir panelle acilmak, takvimin isini kullaniciya yikiyordu.
+     */
+    var selectedDate by remember { mutableStateOf<LocalDate?>(LkDateUtils.today()) }
 
-    LkHeroPage(title = "Takvim", onBack = onBack) {
+    LkHeroPage(title = (uiState as? CalendarUiState.Content)?.month?.title ?: "Takvim", onBack = onBack) {
         when (val state = uiState) {
-            is CalendarUiState.Loading -> LkLoadingState()
+            is CalendarUiState.Loading -> LkLoadingState(desen = LkLoadingDesen.DETAY)
             is CalendarUiState.Error -> LkErrorState(
                 message = state.message,
                 onRetry = { viewModel.loadMonth() }
@@ -60,7 +74,10 @@ fun CalendarScreen(
                             title = state.month.title,
                             onPrevious = { viewModel.goToPreviousMonth() },
                             onNext = { viewModel.goToNextMonth() },
-                            onToday = { viewModel.goToToday() }
+                            onToday = {
+                                viewModel.goToToday()
+                                selectedDate = LkDateUtils.today()
+                            }
                         )
                         Spacer(modifier = Modifier.height(LkSpacing.Space3))
                         MonthGrid(
@@ -144,13 +161,8 @@ private fun MonthGrid(
     onDateSelected: (LocalDate) -> Unit
 ) {
     val today = LkDateUtils.today()
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(LkSurfacePanel, LkShapes.MD)
-            .border(1.dp, LkLineStrong, LkShapes.MD)
-            .padding(LkSpacing.Space3)
-    ) {
+    /* Ay izgarasi tek yukseltilmis yuzeyde. */
+    LkCard(padding = LkSpacing.Space3) {
         Row(modifier = Modifier.fillMaxWidth()) {
             (0..6).forEach { index ->
                 Text(

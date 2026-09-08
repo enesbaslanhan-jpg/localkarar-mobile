@@ -1,6 +1,8 @@
 package com.localkarar.app.ui.screens.courses
 
 import com.localkarar.app.ui.components.LkProgress
+import com.localkarar.app.ui.components.LkProgressPill
+import com.localkarar.app.ui.components.LkCourseProgress
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -29,6 +31,7 @@ import com.localkarar.app.ui.components.LkLoadingState
 import com.localkarar.app.ui.components.LkHeroPage
 import com.localkarar.app.ui.components.LkCourseCard
 import com.localkarar.app.ui.components.LkCard
+import com.localkarar.app.ui.components.LkTextField
 import com.localkarar.app.ui.components.LkPressable
 import com.localkarar.app.ui.theme.*
 
@@ -36,7 +39,7 @@ import com.localkarar.app.ui.theme.*
 fun CoursesScreen(
     viewModel: CoursesViewModel,
     onNavigateToCourseDetail: (Int) -> Unit,
-    onBack: () -> Unit
+    onBack: (() -> Unit)? = null
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val activeView by viewModel.activeView.collectAsState()
@@ -45,7 +48,8 @@ fun CoursesScreen(
     val title = if (activeView == CoursesViewModel.ActiveView.ENROLLMENTS) "Kayıtlarım" else "Kurslar"
     
     LkHeroPage(
-        title = title
+        title = title,
+        onBack = onBack
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             // Action buttons
@@ -206,9 +210,7 @@ fun ActivePathHero(
             Spacer(modifier = Modifier.height(LkSpacing.Space4))
 
             if (activeCourse != null) {
-                LkProgress(progress = progress / 100f)
-                Spacer(modifier = Modifier.height(LkSpacing.Space2))
-                Text("%$progress tamamlandı", style = LkTypography.getMetadata(), color = LkTextSecondary)
+                LkCourseProgress(progress = progress / 100f)
             }
 
             Spacer(modifier = Modifier.height(LkSpacing.Space4))
@@ -240,14 +242,19 @@ fun FilterBar(data: CoursesStateData, viewModel: CoursesViewModel) {
             .padding(LkSpacing.Space4),
         verticalArrangement = Arrangement.spacedBy(LkSpacing.Space3)
     ) {
-        OutlinedTextField(
+        /* §0: ham Material alan degil sistem alani; arama ikonu bas icerikte. */
+        LkTextField(
             value = data.search,
             onValueChange = { viewModel.setSearch(it) },
-            modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("Kurs ara...") },
-            leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
-            singleLine = true,
-            colors = TextFieldDefaults.outlinedTextFieldColors(backgroundColor = LkSurfaceCanvas)
+            placeholder = "Kurs ara...",
+            leadingContent = {
+                Icon(
+                    Icons.Outlined.Search,
+                    contentDescription = null,
+                    tint = LkTextMuted,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
         )
         
         val scrollState = rememberScrollState()
@@ -361,7 +368,24 @@ fun EnrollmentCard(
             
             Spacer(modifier = Modifier.height(LkSpacing.Space4))
             
-            LkProgress(progress = enrollment.progress / 100f)
+            /*
+             * Mockup "Akademi 1": yuzde CUBUGUN ICINDE. Onceden 6dp'lik
+             * duz bir cubuk vardi ve oran hicbir yerde rakamla yazmiyordu;
+             * "%62" ile "%68" arasindaki farki cubuktan okumak mumkun degil.
+             */
+            LkProgressPill(
+                oran = enrollment.progress / 100f,
+                /* Toplam ders sayisi; "5/8" gibi tamamlanan sayisi sunucudan
+                   GELMIYOR ve yuzdeden turetilirse yuvarlama yuzunden
+                   yanlis rakam yazabilir. */
+                sagDeger = if (enrollment.courseLessonCount > 0) {
+                    "${enrollment.courseLessonCount} ders"
+                } else null,
+                dolguRengi = LkPrimaryFill,
+                dolguUstuRengi = LkOnPrimary,
+                yolRengi = LkSurfaceSunken,
+                yolUstuRengi = LkTextSecondary
+            )
         }
       }
     }

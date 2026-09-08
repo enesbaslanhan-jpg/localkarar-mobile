@@ -1,6 +1,7 @@
 package com.localkarar.app.community
 
 import com.localkarar.app.network.ApiConfig
+import com.localkarar.app.network.bosJsonGovde
 import com.localkarar.app.network.dto.*
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -19,7 +20,7 @@ class CommunityRepository(
     private val client: HttpClient,
     private val baseUrl: String = ApiConfig.baseUrl
 ) {
-    private val json = Json { ignoreUnknownKeys = true; isLenient = true }
+    private val json = Json { ignoreUnknownKeys = true; isLenient = true; coerceInputValues = true }
 
     private val communityBase = "$baseUrl/community"
     private val socialBase = "$baseUrl/community/social"
@@ -87,7 +88,7 @@ class CommunityRepository(
 
     suspend fun deletePost(postId: String): Result<Unit> {
         return try {
-            val response = client.delete("$communityBase/$postId")
+            val response = client.delete("$communityBase/$postId") { bosJsonGovde() }
             if (response.status.isSuccess()) {
                 Result.success(Unit)
             } else {
@@ -100,7 +101,7 @@ class CommunityRepository(
 
     suspend fun likePost(postId: String): Result<InteractionResponseDto> {
         return try {
-            val response = client.post("$communityBase/$postId/like")
+            val response = client.post("$communityBase/$postId/like") { bosJsonGovde() }
             if (response.status.isSuccess()) {
                 Result.success(response.body<InteractionResponseDto>())
             } else {
@@ -113,7 +114,7 @@ class CommunityRepository(
 
     suspend fun unlikePost(postId: String): Result<InteractionResponseDto> {
         return try {
-            val response = client.delete("$communityBase/$postId/like")
+            val response = client.delete("$communityBase/$postId/like") { bosJsonGovde() }
             if (response.status.isSuccess()) {
                 Result.success(response.body<InteractionResponseDto>())
             } else {
@@ -126,7 +127,7 @@ class CommunityRepository(
 
     suspend fun bookmarkPost(postId: String): Result<InteractionResponseDto> {
         return try {
-            val response = client.post("$communityBase/$postId/bookmark")
+            val response = client.post("$communityBase/$postId/bookmark") { bosJsonGovde() }
             if (response.status.isSuccess()) {
                 Result.success(response.body<InteractionResponseDto>())
             } else {
@@ -139,7 +140,7 @@ class CommunityRepository(
 
     suspend fun unbookmarkPost(postId: String): Result<InteractionResponseDto> {
         return try {
-            val response = client.delete("$communityBase/$postId/bookmark")
+            val response = client.delete("$communityBase/$postId/bookmark") { bosJsonGovde() }
             if (response.status.isSuccess()) {
                 Result.success(response.body<InteractionResponseDto>())
             } else {
@@ -193,7 +194,7 @@ class CommunityRepository(
 
     suspend fun discardMedia(mediaId: String): Result<Unit> {
         return try {
-            val response = client.delete("$communityBase/media/$mediaId")
+            val response = client.delete("$communityBase/media/$mediaId") { bosJsonGovde() }
             if (response.status.isSuccess()) {
                 Result.success(Unit)
             } else {
@@ -313,7 +314,7 @@ class CommunityRepository(
 
     suspend fun follow(personId: Int): Result<Boolean> {
         return try {
-            val response = client.post("$socialBase/people/$personId/follow")
+            val response = client.post("$socialBase/people/$personId/follow") { bosJsonGovde() }
             if (response.status.isSuccess()) {
                 val data = response.body<FollowActionResponseDto>()
                 Result.success(data.following)
@@ -327,7 +328,7 @@ class CommunityRepository(
 
     suspend fun unfollow(personId: Int): Result<Boolean> {
         return try {
-            val response = client.delete("$socialBase/people/$personId/follow")
+            val response = client.delete("$socialBase/people/$personId/follow") { bosJsonGovde() }
             if (response.status.isSuccess()) {
                 val data = response.body<FollowActionResponseDto>()
                 Result.success(data.following)
@@ -341,7 +342,7 @@ class CommunityRepository(
 
     suspend fun block(personId: Int): Result<Boolean> {
         return try {
-            val response = client.post("$socialBase/people/$personId/block")
+            val response = client.post("$socialBase/people/$personId/block") { bosJsonGovde() }
             if (response.status.isSuccess()) {
                 val data = response.body<BlockActionResponseDto>()
                 Result.success(data.blocked)
@@ -355,7 +356,7 @@ class CommunityRepository(
 
     suspend fun unblock(personId: Int): Result<Boolean> {
         return try {
-            val response = client.delete("$socialBase/people/$personId/block")
+            val response = client.delete("$socialBase/people/$personId/block") { bosJsonGovde() }
             if (response.status.isSuccess()) {
                 val data = response.body<BlockActionResponseDto>()
                 Result.success(data.blocked)
@@ -420,7 +421,7 @@ class CommunityRepository(
 
     suspend fun inviteDecision(threadId: String, karar: String): Result<String> {
         return try {
-            val response = client.post("$socialBase/threads/$threadId/invite/$karar")
+            val response = client.post("$socialBase/threads/$threadId/invite/$karar") { bosJsonGovde() }
             if (response.status.isSuccess()) {
                 val data = response.body<InviteDecisionResponseDto>()
                 Result.success(data.durum)
@@ -482,7 +483,7 @@ class CommunityRepository(
 
     suspend fun markNotificationsRead(): Result<Int> {
         return try {
-            val response = client.post("$socialBase/notifications/read")
+            val response = client.post("$socialBase/notifications/read") { bosJsonGovde() }
             if (response.status.isSuccess()) {
                 val data = response.body<MarkReadResponseDto>()
                 Result.success(data.okundu)

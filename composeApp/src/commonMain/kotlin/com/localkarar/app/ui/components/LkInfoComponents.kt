@@ -18,13 +18,19 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import com.localkarar.app.ui.theme.LkElevation
 import com.localkarar.app.ui.theme.LkLineStrong
+import com.localkarar.app.ui.theme.lkShadow
 import com.localkarar.app.ui.theme.LkPrimary
 import com.localkarar.app.ui.theme.LkPrimaryFill
 import com.localkarar.app.ui.theme.LkOnPrimary
@@ -158,12 +164,32 @@ fun LkChip(
 ) {
     // Secili zemin `primaryFill` (brand-500): §8.1 secili/primary yuzeyler
     // icin solid brand-500 istiyor ve beyaz yaziyla her iki modda AA gecer.
+    val etkilesim = remember { MutableInteractionSource() }
+    val basili by etkilesim.collectIsPressedAsState()
     Box(
         modifier = modifier
             .heightIn(min = 44.dp)
-            .clickable(onClick = onClick)
+            .clickable(
+                interactionSource = etkilesim,
+                indication = null,
+                onClick = onClick
+            )
             .padding(vertical = 6.dp)
             .height(32.dp)
+            /*
+             * DERINLIK: secili hap yuzeyden YUKSELIYOR, basiliyken
+             * duzlesiyor. Secili durum yalniz renkle degil golgeyle de
+             * belli oluyor — urun sahibinin istedigi "seçili olduğu
+             * derinlikle belli olsun".
+             */
+            .lkShadow(
+                when {
+                    basili -> 0.dp
+                    selected -> LkElevation.MD
+                    else -> 0.dp
+                },
+                CircleShape
+            )
             .background(if (selected) LkPrimaryFill else LkSurfaceRaised, CircleShape)
             .padding(horizontal = LkSpacing.Space3),
         contentAlignment = Alignment.Center

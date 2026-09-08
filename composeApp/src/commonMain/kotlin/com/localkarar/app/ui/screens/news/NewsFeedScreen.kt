@@ -1,5 +1,6 @@
 package com.localkarar.app.ui.screens.news
 
+import com.localkarar.app.ui.components.LkLoadingSpinner
 import androidx.compose.runtime.Composable
 
 import androidx.compose.foundation.background
@@ -97,7 +98,7 @@ fun NewsFeedScreen(
             when (val s = uiState) {
                 is NewsViewModel.UiState.Loading -> {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = LkPrimary)
+                        LkLoadingSpinner(size = 26.dp)
                     }
                 }
                 is NewsViewModel.UiState.Error -> {
@@ -129,10 +130,11 @@ fun NewsFeedScreen(
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             items(s.articles, key = { it.id }) { article ->
-                                NewsCard(
-                                    article = article,
-                                    onClick = { onOpenArticle(article.id) }
-                                )
+                                if (article.id == s.articles.first().id) {
+                                    NewsCard(article = article, onClick = { onOpenArticle(article.id) })
+                                } else {
+                                    NewsListRow(article = article, onClick = { onOpenArticle(article.id) })
+                                }
                             }
                             if (s.loadingMore) {
                                 item {
@@ -140,7 +142,7 @@ fun NewsFeedScreen(
                                         Modifier.fillMaxWidth().padding(8.dp),
                                         horizontalArrangement = Arrangement.Center
                                     ) {
-                                        CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp, color = LkPrimary)
+                                        LkLoadingSpinner(size = 24.dp)
                                     }
                                 }
                             } else if (viewModel.canLoadMore()) {
@@ -304,5 +306,27 @@ private fun NewsCard(
             }
         }
       }
+    }
+}
+
+/** Föyde ilk haber öne çıkar; devamı başlık ağırlıklı liste satırlarıdır. */
+@Composable
+private fun NewsListRow(article: NewsArticleDto, onClick: () -> Unit) {
+    Column(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = LkSpacing.Space4)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(categoryIcon(article.category), null, tint = LkPrimary, modifier = Modifier.size(28.dp))
+            Spacer(Modifier.width(LkSpacing.Space4))
+            Column(Modifier.weight(1f)) {
+                Text(article.title, style = LkTypography.getBodyStrong(), color = LkTextPrimary, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                Spacer(Modifier.height(LkSpacing.Space2))
+                Text("${article.sourceName} · ${LkDateUtils.formatDateTime(article.sourcePublishedAt)}", style = LkTypography.getMetadata(), color = LkTextSecondary)
+                article.importance?.takeIf { it.isNotBlank() && it.uppercase() != "LOW" }?.let {
+                    Text(importanceLabel(it), style = LkTypography.getMetadata(), color = importanceColor(it))
+                }
+            }
+            Icon(Icons.Outlined.ChevronRight, null, tint = LkTextMuted)
+        }
+        Spacer(Modifier.height(LkSpacing.Space4))
+        Divider(color = LkLineSoft)
     }
 }

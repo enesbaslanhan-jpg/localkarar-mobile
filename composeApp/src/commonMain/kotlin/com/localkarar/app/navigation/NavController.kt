@@ -26,7 +26,8 @@ object DestinationCodec {
             is Destination.NewsDetail -> "news_detail:${destination.articleId}"
             Destination.Calculations -> "calculations"
             is Destination.FormulaDetail -> "formula_detail:${destination.formulaId}"
-            is Destination.FinancialModelDetail -> "financial_model:${destination.code}"
+            is Destination.FinancialModelDetail ->
+                "financial_model:${destination.code}:${destination.sourceDocumentId ?: ""}"
             is Destination.ModelRuns -> "model_runs:${destination.workspaceId}:${destination.modelCode ?: ""}"
             is Destination.RunDetail -> "run_detail:${destination.workspaceId}:${destination.runId}"
             Destination.Workspaces -> "workspaces"
@@ -50,7 +51,12 @@ object DestinationCodec {
             is Destination.CommunityFollowers -> "community_followers:${destination.userId}:${destination.mode}"
             is Destination.CommunityThreadDetail -> "community_thread:${destination.threadId}"
             Destination.CommunityNotifications -> "community_notifications"
+            Destination.Onboarding -> "onboarding"
+            Destination.Assessment -> "assessment"
+            Destination.CommunityPeople -> "community_people"
+            is Destination.InvitationAccept -> "invitation_accept:${destination.token}"
             Destination.Settings -> "settings"
+            Destination.Search -> "search"
             Destination.Profile -> "profile"
             Destination.PasswordChange -> "password_change"
             Destination.EmailChange -> "email_change"
@@ -81,7 +87,10 @@ object DestinationCodec {
                 "news_detail" -> Destination.NewsDetail(parts[1])
                 "calculations" -> Destination.Calculations
                 "formula_detail" -> Destination.FormulaDetail(parts[1])
-                "financial_model" -> Destination.FinancialModelDetail(parts[1])
+                "financial_model" -> Destination.FinancialModelDetail(
+                    parts[1],
+                    parts.getOrNull(2)?.takeIf { it.isNotBlank() }
+                )
                 "model_runs" -> Destination.ModelRuns(parts[1], parts.getOrNull(2)?.ifBlank { null })
                 "run_detail" -> Destination.RunDetail(parts[1], parts[2])
                 "workspaces" -> Destination.Workspaces
@@ -105,7 +114,12 @@ object DestinationCodec {
                 "community_followers" -> Destination.CommunityFollowers(parts[1].toInt(), parts[2])
                 "community_thread" -> Destination.CommunityThreadDetail(parts[1])
                 "community_notifications" -> Destination.CommunityNotifications
+                "onboarding" -> Destination.Onboarding
+                "assessment" -> Destination.Assessment
+                "community_people" -> Destination.CommunityPeople
+                "invitation_accept" -> Destination.InvitationAccept(parts[1])
                 "settings" -> Destination.Settings
+                "search" -> Destination.Search
                 "profile" -> Destination.Profile
                 "password_change" -> Destination.PasswordChange
                 "email_change" -> Destination.EmailChange
@@ -174,6 +188,22 @@ class NavController(initialStack: List<Destination> = listOf(Destination.Home)) 
         } else {
             _backStack.value = currentStack + destination
         }
+    }
+
+    /**
+     * Tepedeki hedefi DEGISTIRIR, ustune eklemez.
+     *
+     * Ara ekranlar icin: kurs karti dogrudan dersi aciyor ama dersin
+     * hangisi oldugu ancak kurs detayi geldikten sonra biliniyor. Detay
+     * yiginda kalsaydi, dersten geri donen kullanici tekrar detaya
+     * duser, detay da tekrar derse yonlendirir — sonsuz dongü.
+     */
+    fun replaceTop(destination: Destination) {
+        val currentStack = _backStack.value
+        if (currentStack.lastOrNull() == destination) return
+        val newStack = currentStack.dropLast(1) + destination
+        _backStack.value = newStack
+        pruneStores(newStack)
     }
 
     fun popBackStack(): Boolean {

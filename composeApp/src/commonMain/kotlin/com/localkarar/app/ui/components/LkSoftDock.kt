@@ -2,7 +2,8 @@ package com.localkarar.app.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.Icon
@@ -65,16 +66,31 @@ fun LkSoftDock(
         tabs.forEach { tab ->
             /*
              * Dalgalanma (ripple) kapali: yuvarlak dock icinde dikdortgen
-             * dalga tasiyor. Secili durum zaten renkle belirtiliyor.
+             * dalga tasiyor.
+             *
+             * 🔴 SECILI SEKME YALNIZ RENKLE BELLIYDI.
+             *
+             * Olculdu (08.09.2026, emulator): erisilebilirlik agacinda
+             * secili sekme de secili olmayan da `selected="false"`
+             * geliyordu -- ekran okuyucu kullanicisinin hangi sekmede
+             * oldugunu anlamasinin HICBIR yolu yoktu. Bu, projenin kendi
+             * kurali olan "renk tek basina tasiyici olmamali"nin tam
+             * karsisiydi.
+             *
+             * `selectable` hem tiklamayi hem `Role.Tab` + secili
+             * durumunu veriyor; `clickable` yalnizca tiklamayi
+             * veriyordu.
              */
             val interaction = remember { MutableInteractionSource() }
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(3.dp),
                 modifier = Modifier
-                    .clickable(
+                    .selectable(
+                        selected = tab.selected,
                         interactionSource = interaction,
                         indication = null,
+                        role = Role.Tab,
                         onClick = tab.onClick
                     )
                     .padding(horizontal = 8.dp, vertical = 6.dp)
@@ -82,7 +98,9 @@ fun LkSoftDock(
             ) {
                 Icon(
                     imageVector = tab.icon,
-                    contentDescription = tab.label,
+                    /* Etiketi ASAGIDAKI metin tasiyor; ikona da vermek
+                       ekran okuyucuya adi IKI KEZ okuturdu. */
+                    contentDescription = null,
                     tint = if (tab.selected) LkPrimary else LkTextMuted,
                     modifier = Modifier.size(22.dp)
                 )

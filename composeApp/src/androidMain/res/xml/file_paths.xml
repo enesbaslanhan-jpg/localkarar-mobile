@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!--
+      Kamerayla cekilen belgenin gecici adresi.
+
+      YALNIZ onbellekteki `belge-cekim` klasoru paylasiliyor; uygulamanin
+      geri kalan dosyalari (oturum anahtari, indirilen belgeler) bu
+      saglayicidan erisilebilir DEGIL.
+    -->
+    <cache-path name="belge-cekim" path="belge-cekim/" />
+
+    <!--
+      Disa aktarilan kaydin/makbuzun paylasim icin yazildigi gecici adres.
+
+      Ayri bir klasor, `belge-cekim` ile karistirilmiyor: ikisinin omru
+      farkli. Cekim dosyasi okunur okunmaz siliniyor; paylasim dosyasi
+      alici uygulama okuyana kadar durmak zorunda ve bir sonraki
+      paylasimda temizleniyor.
+    -->
+    <cache-path name="paylasim" path="paylasim/" />
+</paths>

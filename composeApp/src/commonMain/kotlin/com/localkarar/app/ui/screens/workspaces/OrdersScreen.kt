@@ -1,5 +1,9 @@
 package com.localkarar.app.ui.screens.workspaces
 
+import com.localkarar.app.ui.components.LkLoadingSpinner
+import com.localkarar.app.ui.components.LkFilterBar
+import com.localkarar.app.ui.components.LkFilterGrup
+import com.localkarar.app.ui.components.LkFilterSecenek
 import com.localkarar.app.ui.components.LkHeroPage
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -79,14 +83,14 @@ fun OrdersScreen(
      * yuksekligini degistiriyordu.
      */
     LkHeroPage(
-        title = "Pazaryeri Siparişleri",
+        title = "Siparişler",
         onBack = onNavigateBack,
         actions = {
             if (isSyncing) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(20.dp).padding(end = 12.dp),
-                    color = LkHero.OnHero,
-                    strokeWidth = 2.dp
+                LkLoadingSpinner(
+                    modifier = Modifier.padding(end = 12.dp),
+                    size = 20.dp,
+                    renk = LkHero.OnHero
                 )
             } else {
                 IconButton(onClick = { viewModel.syncNow(workspaceId) }) {
@@ -99,9 +103,12 @@ fun OrdersScreen(
             }
         },
         heroExtra = {
-            if (!lastSyncedAt.isNullOrBlank()) {
+            if (!lastSyncedAt.isNullOrBlank() || orders.isNotEmpty()) {
                 Text(
-                    text = "Son eşitleme: ${lastSyncedAt?.take(16)?.replace("T", " ")}",
+                    text = buildString {
+                        append("${orders.size} sipariş")
+                        lastSyncedAt?.let { append(" · Son eşitleme ${it.take(16).replace("T", " ")}") }
+                    },
                     style = LkTypography.getMetadata(),
                     color = LkHero.OnHeroSecondary,
                     modifier = Modifier.padding(
@@ -147,79 +154,37 @@ fun OrdersScreen(
                 )
             }
 
-            // Provider Filter Chips
-            LazyRow(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = LkSpacing.Space4, vertical = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2)
-            ) {
-                items(PROVIDER_OPTIONS) { provider ->
-                    val isSelected = (selectedProvider == null && provider == TUM_SAGLAYICILAR) || (selectedProvider == provider)
-                    Box(
-                        modifier = Modifier
-                            .background(
-                                color = if (isSelected) LkPrimary else LkSurfacePanel,
-                                shape = LkShapes.SM
+            /*
+             * 🔴 IKI SIRA MINIK HAP VARDI (11sp yazi, ~24dp yukseklik).
+             * Dokunma hedegi §19'un 44dp esiginin yarisi kadardi ve
+             * ekranin ustunde iki sira yer kapliyordu. Artik tek serit:
+             * durum haplari gorunur, saglayici "Filtreler"in arkasinda.
+             */
+            LkFilterBar(
+                birincil = STATUS_OPTIONS.map { (deger, etiket) -> LkFilterSecenek(etiket, deger) },
+                seciliBirincil = selectedStatus,
+                onBirincil = { viewModel.setStatusFilter(it) },
+                gruplar = listOf(
+                    LkFilterGrup(
+                        baslik = "PAZARYERİ",
+                        secenekler = PROVIDER_OPTIONS.map { saglayici ->
+                            LkFilterSecenek(
+                                saglayici,
+                                if (saglayici == TUM_SAGLAYICILAR) null else saglayici
                             )
-                            .border(
-                                width = 1.dp,
-                                color = if (isSelected) LkPrimary else LkLineSoft,
-                                shape = LkShapes.SM
-                            )
-                            .clickable {
-                                viewModel.setProviderFilter(workspaceId, if (provider == TUM_SAGLAYICILAR) null else provider)
-                            }
-                            .padding(horizontal = LkSpacing.Space3, vertical = 6.dp)
-                    ) {
-                        Text(
-                            text = provider,
-                            style = LkTypography.getMicro(),
-                            color = if (isSelected) LkOnPrimary else LkTextSecondary,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                        )
-                    }
-                }
-            }
-
-            // Status Filter Chips
-            LazyRow(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = LkSpacing.Space4, vertical = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2)
-            ) {
-                items(STATUS_OPTIONS) { (status, label) ->
-                    val isSelected = selectedStatus == status
-                    Box(
-                        modifier = Modifier
-                            .background(
-                                color = if (isSelected) LkPrimary.copy(alpha = 0.15f) else LkSurfacePanel,
-                                shape = LkShapes.SM
-                            )
-                            .border(
-                                width = 1.dp,
-                                color = if (isSelected) LkPrimary else LkLineSoft,
-                                shape = LkShapes.SM
-                            )
-                            .clickable { viewModel.setStatusFilter(status) }
-                            .padding(horizontal = 10.dp, vertical = 4.dp)
-                    ) {
-                        Text(
-                            text = label,
-                            style = LkTypography.getMicro(),
-                            color = if (isSelected) LkPrimary else LkTextSecondary,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                        )
-                    }
-                }
-            }
+                        },
+                        secili = selectedProvider,
+                        onSecim = { viewModel.setProviderFilter(workspaceId, it) }
+                    )
+                ),
+                modifier = Modifier.padding(vertical = LkSpacing.Space2)
+            )
 
             Spacer(modifier = Modifier.height(4.dp))
 
             if (isLoading) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = LkPrimary)
+                    LkLoadingSpinner(size = 26.dp)
                 }
             } else if (error != null) {
                 Box(

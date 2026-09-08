@@ -39,14 +39,40 @@ import com.localkarar.app.workspaces.WorkspacesViewModel
 fun WorkspacesScreen(
     viewModel: WorkspacesViewModel,
     activeWorkspaceId: String?,
-    onOpenWorkspace: (String) -> Unit,
-    onBack: () -> Unit
+    /**
+     * Isletme aciliyor. ID ile birlikte AD da veriliyor: acilan isletme
+     * ayni zamanda AKTIF isletme oluyor ve kabuk adi rozette gosteriyor.
+     *
+     * 🔴 Once yalniz ID vardi ve cagiran taraf `setActive` HIC
+     * cagirmiyordu -- bkz. AppShell.
+     */
+    onOpenWorkspace: (String, String) -> Unit,
+    onBack: (() -> Unit)? = null
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showCreateDialog by remember { mutableStateOf(false) }
     var actionError by remember { mutableStateOf<String?>(null) }
 
-    LkHeroPage(title = "İşletme Takibi", onBack = onBack) {
+    LkHeroPage(
+        title = "İşletmelerim",
+        onBack = onBack,
+        actions = {
+            IconButton(onClick = { showCreateDialog = true }) {
+                Icon(Icons.Outlined.Add, contentDescription = "İşletme ekle", tint = LkHero.OnHero)
+            }
+        },
+        heroExtra = {
+            val count = (uiState as? WorkspacesUiState.Content)?.workspaces?.size
+            count?.let {
+                Text(
+                    text = "$it işletme · ${if (activeWorkspaceId == null) "aktif işletme seçilmedi" else "1 aktif"}",
+                    style = LkTypography.getMetadata(),
+                    color = LkHero.OnHeroSecondary,
+                    modifier = Modifier.padding(start = LkSpacing.Space5, top = LkSpacing.Space2)
+                )
+            }
+        }
+    ) {
         Column(modifier = Modifier.fillMaxSize()) {
             if (actionError != null) {
                 Text(
@@ -82,13 +108,6 @@ fun WorkspacesScreen(
                                 contentPadding = PaddingValues(LkSpacing.Space4),
                                 verticalArrangement = Arrangement.spacedBy(LkSpacing.Space4)
                             ) {
-                                item {
-                                    LkButton(
-                                        text = "Yeni İşletme",
-                                        onClick = { showCreateDialog = true },
-                                        modifier = Modifier.fillMaxWidth()
-                                    )
-                                }
                                 /* Tek yukseltilmis yuzey; kart yigini degil. */
                                 item {
                                     LkRowGroup {
@@ -96,7 +115,7 @@ fun WorkspacesScreen(
                                             WorkspaceCard(
                                                 workspace = workspace,
                                                 isActive = workspace.id == activeWorkspaceId,
-                                                onOpen = { onOpenWorkspace(workspace.id) },
+                                                onOpen = { onOpenWorkspace(workspace.id, workspace.name) },
                                                 onDelete = {
                                                     viewModel.deleteWorkspace(workspace.id) { success ->
                                                         actionError = if (success) null else "İşletme silinemedi."
@@ -106,6 +125,13 @@ fun WorkspacesScreen(
                                             if (i != state.workspaces.lastIndex) LkHairline()
                                         }
                                     }
+                                }
+                                item {
+                                    LkButton(
+                                        text = "Yeni işletme ekle",
+                                        onClick = { showCreateDialog = true },
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
                                 }
                             }
                         }
@@ -128,7 +154,7 @@ fun WorkspacesScreen(
                     city = city,
                     onSuccess = { workspaceId ->
                         showCreateDialog = false
-                        onOpenWorkspace(workspaceId)
+                        onOpenWorkspace(workspaceId, name)
                     },
                     onError = { actionError = it }
                 )

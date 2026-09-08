@@ -23,6 +23,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.localkarar.app.auth.AuthViewModel
 import com.localkarar.app.ui.components.LkButton
+import com.localkarar.app.ui.components.LkButtonVariant
 import com.localkarar.app.ui.components.LkPasswordTextField
 import com.localkarar.app.ui.components.LkTextField
 import com.localkarar.app.ui.theme.*
@@ -86,7 +87,7 @@ fun LoginScreen(
                         bottom = LkSpacing.Space10
                     )
             ) {
-                LkBrandMark(size = 58.dp)
+                LkBrandMark(size = 58.dp, hareketli = true)
 
                 Spacer(modifier = Modifier.height(LkSpacing.Space4))
 
@@ -158,7 +159,7 @@ fun LoginScreen(
                 LkPasswordTextField(
                     value = password,
                     onValueChange = { password = it },
-                    label = "Şifre",
+                    label = "Parola",
                     placeholder = "••••••••"
                 )
 
@@ -167,7 +168,7 @@ fun LoginScreen(
                     horizontalArrangement = Arrangement.End
                 ) {
                     Text(
-                        text = "Şifremi unuttum",
+                        text = "Parolamı unuttum",
                         style = LkTypography.getMicro(),
                         color = LkPrimary,
                         modifier = Modifier
@@ -184,6 +185,15 @@ fun LoginScreen(
                     enabled = email.isNotBlank() && password.isNotBlank() && !isLoading,
                     modifier = Modifier.fillMaxWidth()
                 )
+
+                Spacer(modifier = Modifier.height(LkSpacing.Space4))
+                Text("veya", style = LkTypography.getMicro(), color = LkTextMuted)
+                Spacer(modifier = Modifier.height(LkSpacing.Space4))
+                LkButton(text = "Google · YAKINDA", onClick = {}, enabled = false,
+                    variant = LkButtonVariant.SECONDARY, modifier = Modifier.fillMaxWidth())
+                Spacer(modifier = Modifier.height(LkSpacing.Space2))
+                LkButton(text = "Apple · YAKINDA", onClick = {}, enabled = false,
+                    variant = LkButtonVariant.SECONDARY, modifier = Modifier.fillMaxWidth())
 
                 Spacer(modifier = Modifier.height(LkSpacing.Space6))
 

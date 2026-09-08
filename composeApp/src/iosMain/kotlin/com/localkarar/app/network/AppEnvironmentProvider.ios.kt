@@ -18,4 +18,17 @@ actual object AppEnvironmentProvider {
     @OptIn(ExperimentalNativeApi::class)
     actual val isRelease: Boolean
         get() = !Platform.isDebugBinary
+
+    /*
+     * iOS surumu `Info.plist`ten okunuyor: CFBundleShortVersionString +
+     * CFBundleVersion. Android`daki VERSION_NAME / VERSION_CODE ciftinin
+     * karsiligi.
+     */
+    actual val versionLabel: String
+        get() {
+            val bundle = platform.Foundation.NSBundle.mainBundle
+            val ad = bundle.objectForInfoDictionaryKey("CFBundleShortVersionString") as? String
+            val kod = bundle.objectForInfoDictionaryKey("CFBundleVersion") as? String
+            return listOfNotNull(ad, kod?.let { "($it)" }).joinToString(" ").ifBlank { "—" }
+        }
 }

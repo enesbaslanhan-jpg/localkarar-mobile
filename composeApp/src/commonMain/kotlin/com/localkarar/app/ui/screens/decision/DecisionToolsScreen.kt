@@ -20,6 +20,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.localkarar.app.decision.DecisionToolsUiState
 import com.localkarar.app.decision.DecisionToolsViewModel
+import com.localkarar.app.ui.components.LkTextField
 import com.localkarar.app.ui.components.LkErrorState
 import com.localkarar.app.ui.components.LkLoadingState
 import com.localkarar.app.ui.components.LkHeroPage
@@ -31,7 +32,7 @@ import com.localkarar.app.network.dto.DecisionCheckListDto
 fun DecisionToolsScreen(
     viewModel: DecisionToolsViewModel,
     onNavigateToSession: (String) -> Unit,
-    onBack: () -> Unit
+    onBack: (() -> Unit)? = null
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var actionError by remember { mutableStateOf<String?>(null) }
@@ -41,7 +42,7 @@ fun DecisionToolsScreen(
         onBack = onBack,
         actions = {
             androidx.compose.material.TextButton(onClick = { viewModel.updateStatusFilter("completed") }) {
-                Text("Geçmiş kararlar", color = LkPrimary, style = LkTypography.getBodySmall())
+                Text("Geçmiş kararlar", color = LkHero.OnHero, style = LkTypography.getBodySmall())
             }
         }
     ) {
@@ -70,50 +71,26 @@ fun DecisionToolsScreen(
                             contentPadding = PaddingValues(LkSpacing.Space4),
                             verticalArrangement = Arrangement.spacedBy(LkSpacing.Space4)
                         ) {
-                            // Hero Panel
                             item {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(16.dp))
-                                        .background(LkSurfaceSignature)
-                                        .padding(24.dp)
-                                ) {
+                                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                                     Text(
-                                        text = "Karar öncesi kontrol",
-                                        style = LkTypography.getMicro(),
-                                        color = LkOnSignatureDim
+                                        "${state.allTools.size} araç · ${state.allTools.count { it.sessionId != null }} kayıtlı oturum",
+                                        style = LkTypography.getBodySmall(), color = LkTextSecondary
                                     )
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Text(
-                                        text = "Karar vermeden önce rakamlara bakın",
-                                        style = LkTypography.getSectionTitle(),
-                                        color = LkOnSignature
-                                    )
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Text(
-                                        text = "Önemli iş kararlarını vermeden önce temel riskleri, maliyetleri ve sonraki adımları hızlıca kontrol edin.",
-                                        style = LkTypography.getBody(),
-                                        color = LkOnSignatureDim
-                                    )
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                    
                                     // Search Bar
-                                    androidx.compose.material.OutlinedTextField(
+                                    /* §0: ham Material alan degil sistem alani. */
+                                    LkTextField(
                                         value = state.searchQuery,
                                         onValueChange = { viewModel.updateSearchQuery(it) },
-                                        placeholder = { Text("Araç ara", color = LkTextMuted) },
-                                        leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null, tint = LkTextMuted) },
-                                        modifier = Modifier.fillMaxWidth(),
-                                        singleLine = true,
-                                        colors = androidx.compose.material.TextFieldDefaults.outlinedTextFieldColors(
-                                            backgroundColor = LkSurfacePanel,
-                                            textColor = LkTextPrimary,
-                                            cursorColor = LkPrimary,
-                                            focusedBorderColor = LkLineStrong,
-                                            unfocusedBorderColor = LkLineSoft
-                                        ),
-                                        shape = RoundedCornerShape(24.dp)
+                                        placeholder = "Araç ara",
+                                        leadingContent = {
+                                            Icon(
+                                                Icons.Outlined.Search,
+                                                contentDescription = null,
+                                                tint = LkTextMuted,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
                                     )
                                 }
                             }
@@ -139,10 +116,11 @@ fun DecisionToolsScreen(
                                         val isActive = state.statusFilter == id
                                         Box(
                                             modifier = Modifier
-                                                .clip(RoundedCornerShape(16.dp))
+                                                .clip(RoundedCornerShape(50))
                                                 .background(if (isActive) LkPrimary else LkSurfacePanel)
                                                 .clickable { viewModel.updateStatusFilter(id) }
-                                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                                                .heightIn(min = 44.dp)
+                                                .padding(horizontal = 16.dp, vertical = 12.dp)
                                         ) {
                                             Row(verticalAlignment = Alignment.CenterVertically) {
                                                 Text(
@@ -173,7 +151,7 @@ fun DecisionToolsScreen(
                             item {
                                 Column(modifier = Modifier.padding(vertical = 8.dp)) {
                                     Text(
-                                        text = "İşinize uygun araçlar",
+                                        text = "Araçlar",
                                         style = LkTypography.getSectionTitle(),
                                         color = LkTextPrimary
                                     )
@@ -185,29 +163,6 @@ fun DecisionToolsScreen(
                                 }
                             }
 
-                            // Recommended Tool
-                            if (state.visibleTools.size > 1 && !filtersActive) {
-                                item {
-                                    val recommended = state.visibleTools[0]
-                                    Column(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clip(RoundedCornerShape(12.dp))
-                                            .background(LkSurfaceRaised)
-                                            .clickable {
-                                                handleToolClick(recommended, viewModel, onNavigateToSession) { actionError = it }
-                                            }
-                                            .padding(16.dp)
-                                    ) {
-                                        Text("Bağlamınıza göre önerilen", style = LkTypography.getMicro(), color = LkPrimary)
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(recommended.title, style = LkTypography.getCardTitle(), color = LkTextPrimary)
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(recommended.description, style = LkTypography.getBodySmall(), color = LkTextSecondary)
-                                    }
-                                }
-                            }
-
                             if (state.visibleTools.isEmpty()) {
                                 item {
                                     Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
@@ -216,19 +171,29 @@ fun DecisionToolsScreen(
                                 }
                             }
 
-                            items(state.visibleTools) { tool ->
-                                LkDecisionToolCard(
-                                    title = tool.title,
-                                    description = tool.description,
-                                    category = tool.category ?: "",
-                                    code = tool.code,
-                                    status = tool.status,
-                                    onClick = {
-                                        handleToolClick(tool, viewModel, onNavigateToSession) { actionError = it }
+                            item {
+                                com.localkarar.app.ui.components.LkRowGroup {
+                                    state.visibleTools.forEachIndexed { index, tool ->
+                                        com.localkarar.app.ui.components.LkListRow(
+                                            baslik = tool.title,
+                                            altBaslik = tool.description,
+                                            onClick = { handleToolClick(tool, viewModel, onNavigateToSession) { actionError = it } },
+                                            ikon = {
+                                                Icon(com.localkarar.app.ui.components.decision.iconForDecisionCheck(tool.code),
+                                                    contentDescription = null, tint = LkPrimary, modifier = Modifier.size(22.dp))
+                                            },
+                                            sag = {
+                                                Box(Modifier.padding(horizontal = 12.dp).width(1.dp).height(28.dp).background(LkLineSoft))
+                                                Icon(Icons.Outlined.ChevronRight, contentDescription = null, tint = LkTextSecondary)
+                                            }
+                                        )
+                                        if (index < state.visibleTools.lastIndex) {
+                                            androidx.compose.material.Divider(color = LkLineSoft, modifier = Modifier.padding(start = 72.dp))
+                                        }
                                     }
-                                )
+                                }
                             }
-                            
+
                             // Recent Sessions
                             val recent = state.allTools.filter { it.sessionId != null }.take(5)
                             if (recent.isNotEmpty()) {

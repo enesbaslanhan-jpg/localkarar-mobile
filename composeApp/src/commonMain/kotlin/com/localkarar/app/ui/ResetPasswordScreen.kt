@@ -93,7 +93,7 @@ fun ResetPasswordScreen(
                 Spacer(modifier = Modifier.height(LkSpacing.Space4))
 
                 Text(
-                    text = "Yeni Şifre Belirleyin",
+                    text = "Yeni Parola Belirleyin",
                     style = LkTypography.getSectionTitle(),
                     color = LkTextPrimary,
                     textAlign = TextAlign.Center
@@ -102,7 +102,7 @@ fun ResetPasswordScreen(
                 Spacer(modifier = Modifier.height(LkSpacing.Space2))
 
                 Text(
-                    text = "E-postanıza iletilen sıfırlama kodunu ve yeni şifrenizi girin.",
+                    text = "E-postanıza iletilen sıfırlama kodunu ve yeni parolanızı girin.",
                     style = LkTypography.getBodySmall(),
                     color = LkTextSecondary,
                     textAlign = TextAlign.Center
@@ -141,7 +141,7 @@ fun ResetPasswordScreen(
                 LkPasswordTextField(
                     value = newPassword,
                     onValueChange = { newPassword = it; localError = null },
-                    label = "Yeni Şifre (En az 8 karakter)",
+                    label = "Yeni Parola (En az 8 karakter)",
                     placeholder = "••••••••"
                 )
 
@@ -150,19 +150,26 @@ fun ResetPasswordScreen(
                 LkPasswordTextField(
                     value = confirmPassword,
                     onValueChange = { confirmPassword = it; localError = null },
-                    label = "Yeni Şifre Tekrar",
+                    label = "Yeni Parola Tekrar",
                     placeholder = "••••••••"
                 )
 
                 Spacer(modifier = Modifier.height(LkSpacing.Space6))
 
                 LkButton(
-                    text = if (isLoading) "Güncelleniyor..." else "Şifreyi Güncelle",
+                    text = if (isLoading) "Güncelleniyor..." else "Parolayı Güncelle",
                     onClick = {
                         if (newPassword != confirmPassword) {
-                            localError = "Girdiğiniz şifreler birbiriyle eşleşmiyor."
-                        } else if (newPassword.length < 8) {
-                            localError = "Yeni şifre en az 8 karakter olmalıdır."
+                            localError = "Girdiğiniz parolalar birbiriyle eşleşmiyor."
+                        /*
+                         * 🔴 ISTEMCI 8, SUNUCU 10 KARAKTER ISTIYORDU
+                         * (`auth.ts` PASSWORD_MIN = 10). Dokuz karakter
+                         * yazan kullanicinin formu geciyor, sunucu
+                         * reddediyordu; hata da alanin degil sunucunun
+                         * hatasi gibi gorunuyordu.
+                         */
+                        } else if (newPassword.length < 10) {
+                            localError = "Yeni parola en az 10 karakter olmalıdır."
                         } else if (token.isBlank()) {
                             localError = "Lütfen sıfırlama kodunu girin."
                         } else {
@@ -175,6 +182,34 @@ fun ResetPasswordScreen(
                 )
 
                 Spacer(modifier = Modifier.height(LkSpacing.Space6))
+
+                /*
+                 * Mockup "Giriş 4"un alt blogu: baglantinin suresi
+                 * doldugunda ne yapilacagini ekran SOYLUYOR. Onceden
+                 * kullanici yalniz "gecersiz kod" hatasini goruyor,
+                 * sebebini ve cozumu bilmiyordu.
+                 */
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(LkSurfacePanel, LkShapes.MD)
+                        .padding(LkSpacing.Space4),
+                    verticalArrangement = Arrangement.spacedBy(LkSpacing.Space1)
+                ) {
+                    Text(
+                        text = "Bağlantının süresi doldu mu?",
+                        style = LkTypography.getBodyStrong(),
+                        color = LkTextPrimary
+                    )
+                    Text(
+                        text = "Sıfırlama bağlantıları 1 saat geçerli ve yalnızca bir kez " +
+                            "kullanılabilir. Süresi dolduysa giriş ekranından yeni bir tane iste.",
+                        style = LkTypography.getBodySmall(),
+                        color = LkTextSecondary
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(LkSpacing.Space5))
 
                 Text(
                     text = "Giriş ekranına dön",

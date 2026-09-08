@@ -21,10 +21,10 @@
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
-        android:icon="@drawable/local_karar_mark"
+        android:icon="@mipmap/ic_launcher"
         android:label="LocalKarar"
         android:networkSecurityConfig="@xml/network_security_config"
-        android:roundIcon="@drawable/local_karar_mark"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.LocalKarar">
         <activity
@@ -56,8 +56,39 @@
                     android:scheme="https"
                     android:host="localkarar.com"
                     android:pathPrefix="/app" />
+                <!--
+                  EKIP DAVETI — `/app/` disindaki TEK yol.
+
+                  🔴 Bu satir olmadan davet baglantisi uygulamaya HIC
+                  ULASMIYORDU: e-posta `https://localkarar.com/davet?token=...`
+                  gonderiyor (`mail-templates.ts:182`), suzgec yalniz `/app`
+                  taniyordu, baglanti tarayiciya dusuyordu.
+
+                  `pathPrefix` DEGIL `path`: yalnizca tam olarak `/davet`
+                  esleniyor. Onek kullanmak `/davetiye-kampanyasi` gibi
+                  ileride acilabilecek her sayfayi da uygulamaya cekerdi.
+                -->
+                <data
+                    android:scheme="https"
+                    android:host="localkarar.com"
+                    android:path="/davet" />
             </intent-filter>
         </activity>
+
+        <!--
+          Kamerayla cekilen belgenin sistem kamerasina verilecegi adres.
+          `grantUriPermissions` ile izin YALNIZ o tek dosya icin ve
+          yalnizca cekim suresince veriliyor.
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
 
 </manifest>

@@ -1,5 +1,9 @@
 package com.localkarar.app.ui.screens.community
 
+import com.localkarar.app.ui.components.LkLoadingDesen
+import com.localkarar.app.ui.components.LkLoadingState
+import com.localkarar.app.ui.components.LkCard
+import com.localkarar.app.ui.components.LkTextField
 import com.localkarar.app.ui.components.LkAvatar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -39,36 +43,31 @@ fun PeopleScreen(
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
-            OutlinedTextField(
+            LkTextField(
                 value = viewModel.searchQuery,
                 onValueChange = { viewModel.onSearchQueryChange(it) },
-                placeholder = { Text("Toplulukta kişi ara...", style = LkTypography.getBodySmall(), color = LkTextMuted) },
-                leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null, tint = LkTextSecondary) },
-                trailingIcon = {
-                    if (viewModel.searchQuery.isNotEmpty()) {
+                placeholder = "Toplulukta kişi ara...",
+                leadingContent = {
+                    Icon(
+                        Icons.Outlined.Search,
+                        contentDescription = null,
+                        tint = LkTextMuted,
+                        modifier = Modifier.size(18.dp)
+                    )
+                },
+                trailingContent = if (viewModel.searchQuery.isNotEmpty()) {
+                    {
                         IconButton(onClick = { viewModel.onSearchQueryChange("") }) {
                             Icon(Icons.Outlined.Clear, contentDescription = "Temizle", tint = LkTextSecondary)
                         }
                     }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                colors = TextFieldDefaults.outlinedTextFieldColors(
-                    backgroundColor = LkSurfacePanel,
-                    textColor = LkTextPrimary,
-                    cursorColor = LkPrimary,
-                    focusedBorderColor = LkPrimary,
-                    unfocusedBorderColor = LkLineSoft
-                ),
-                shape = LkShapes.MD,
-                singleLine = true
+                } else null
             )
         }
 
         when (val s = peopleState) {
             is SocialViewModel.PeopleUiState.Loading -> {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = LkPrimary)
-                }
+                LkLoadingState(desen = LkLoadingDesen.LISTE)
             }
             is SocialViewModel.PeopleUiState.Error -> {
                 Column(
@@ -141,13 +140,10 @@ fun PersonRowItem(
 ) {
     var showMenu by remember { mutableStateOf(false) }
 
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        backgroundColor = LkSurfacePanel,
-        elevation = 0.dp,
-        shape = LkShapes.MD
+    /* §24: kenarlikli Material Card degil yukseltilmis LkCard. */
+    LkCard(
+        modifier = Modifier.clickable(onClick = onClick),
+        padding = 0.dp
     ) {
         Row(
             modifier = Modifier
@@ -282,18 +278,12 @@ fun UserReportDialog(
 
                 if (reason == "other") {
                     Spacer(Modifier.height(6.dp))
-                    OutlinedTextField(
+                    LkTextField(
                         value = details,
                         onValueChange = { details = it },
-                        placeholder = { Text("Açıklama belirtiniz...", style = LkTypography.getBodySmall(), color = LkTextMuted) },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = TextFieldDefaults.outlinedTextFieldColors(
-                            backgroundColor = LkSurfaceSunken,
-                            textColor = LkTextPrimary,
-                            cursorColor = LkPrimary,
-                            focusedBorderColor = LkPrimary,
-                            unfocusedBorderColor = LkLineSoft
-                        )
+                        placeholder = "Açıklama belirtiniz...",
+                        singleLine = false,
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
             }

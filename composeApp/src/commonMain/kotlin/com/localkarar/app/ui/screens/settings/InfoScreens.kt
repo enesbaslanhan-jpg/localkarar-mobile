@@ -12,15 +12,104 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.ui.text.style.TextAlign
+import com.localkarar.app.core.openExternalUrl
+import com.localkarar.app.network.ApiConfig
+import com.localkarar.app.network.AppEnvironmentProvider
+import com.localkarar.app.ui.components.LkBrandMark
 import com.localkarar.app.ui.components.LkButton
+import com.localkarar.app.ui.components.LkHairline
+import com.localkarar.app.ui.components.LkListRow
+import com.localkarar.app.ui.components.LkRowGroup
 import com.localkarar.app.ui.theme.*
-
+/**
+ * Mockup "Ayar 8 — Hakkında".
+ *
+ * 🔴 EKRAN MOCKUP'A HIC BENZEMIYORDU: dort paragraflik bir metin sayfasiydi.
+ * Mockup'ta marka isareti, SURUM ve uc baglanti satiri var (acik kaynak
+ * lisanslari, kullanim kosullari, gizlilik politikasi) — surum hicbir
+ * yerde yazmiyordu, oysa destek talebinde ilk sorulan sey odur.
+ *
+ * ⚠️ Reader-app kurali: fiyat ya da yukseltme baglantisi YOK.
+ */
 @Composable
-fun AboutScreen(onNavigateBack: () -> Unit) = InfoScaffold("LOCALKARAR", "Hakkında", onNavigateBack) {
-    InfoBlock("İşletmen için doğru kararlar", "LocalKarar, küçük ve orta ölçekli işletmeler için bir karar destek uygulaması. Tahmine değil, kendi rakamlarına dayanan kararlar vermene yardım eder.")
-    InfoBlock("Kime göre?", "Mağazası, atölyesi, e-ticaret sitesi ya da hizmet işletmesi olan; rakamlarını takip etmek isteyen işletme sahipleri için tasarlandı.")
-    InfoBlock("Neler var?", "Karar Araçları · İşletme Takibi · AI Mentor · Hesaplamalar · Kurslar · Topluluk")
-    InfoBlock("Neyi yapmaz?", "LocalKarar bir muhasebe programı değildir; hukuk, vergi, muhasebe veya yatırım danışmanlığının yerine geçmez. Karar her zaman kullanıcıya aittir.")
+fun AboutScreen(onNavigateBack: () -> Unit) {
+    LkHeroPage(title = "Hakkında", onBack = onNavigateBack) {
+        Column(
+            Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(LkSpacing.Space4),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(LkSpacing.Space4)
+        ) {
+            Spacer(Modifier.height(LkSpacing.Space4))
+
+            LkBrandMark(size = 64.dp)
+
+            Text(
+                text = "LocalKarar",
+                style = LkTypography.getTitleL(),
+                color = LkTextPrimary
+            )
+            Text(
+                text = "Sürüm ${AppEnvironmentProvider.versionLabel}",
+                style = LkTypography.getMetadata(),
+                color = LkTextSecondary
+            )
+            Text(
+                text = "İşletmenin kararlarını tahmine değil kendi verisine dayandırman için yapıldı.",
+                style = LkTypography.getBody(),
+                color = LkTextSecondary,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = LkSpacing.Space4)
+            )
+
+            Spacer(Modifier.height(LkSpacing.Space2))
+
+            LkRowGroup {
+                BelgeSatiri("Açık kaynak lisansları", "licenses")
+                LkHairline()
+                BelgeSatiri("Kullanım koşulları", "terms")
+                LkHairline()
+                BelgeSatiri("Gizlilik politikası", "privacy")
+            }
+
+            Spacer(Modifier.height(LkSpacing.Space4))
+
+            /*
+             * ⚠️ "Neyi yapmaz" metni KALDIRILMADI, kucultuldu: hukuki
+             * sorumluluk reddi urun icin gerekli, ama ekranin tamamini
+             * kaplamasi gerekmiyordu.
+             */
+            Text(
+                text = "LocalKarar bir muhasebe programı değildir; hukuk, vergi, muhasebe " +
+                    "veya yatırım danışmanlığının yerine geçmez. Karar her zaman kullanıcıya aittir.",
+                style = LkTypography.getMicro(),
+                color = LkTextMuted,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = LkSpacing.Space4)
+            )
+        }
+    }
+}
+
+/** Sunucudaki gercek sayfaya giden satir; metin kopyalanmiyor. */
+@Composable
+private fun BelgeSatiri(baslik: String, yol: String) {
+    LkListRow(
+        baslik = baslik,
+        onClick = { openExternalUrl(ApiConfig.baseUrl + "/" + yol) },
+        sag = {
+            Icon(
+                Icons.Outlined.ChevronRight,
+                contentDescription = null,
+                tint = LkTextMuted,
+                modifier = Modifier.size(18.dp)
+            )
+        }
+    )
 }
 
 @Composable

@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
@@ -12,12 +13,15 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.material.icons.outlined.Construction
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.unit.dp
 import com.localkarar.app.core.LkDateUtils
 import com.localkarar.app.ui.components.LkEmptyState
 import com.localkarar.app.ui.components.LkErrorState
 import com.localkarar.app.ui.components.LkLoadingState
 import com.localkarar.app.ui.components.LkHeroPage
+import com.localkarar.app.ui.components.LkCard
 import com.localkarar.app.ui.theme.*
 import com.localkarar.app.workspaces.ActivityUiState
 import com.localkarar.app.workspaces.ActivityViewModel
@@ -29,7 +33,7 @@ fun ActivityScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    LkHeroPage(title = "Etkinlik", onBack = onBack) {
+    LkHeroPage(title = "Hareket geçmişi", onBack = onBack) {
         when (val state = uiState) {
             is ActivityUiState.Loading -> LkLoadingState()
             is ActivityUiState.Error -> LkErrorState(
@@ -49,11 +53,12 @@ fun ActivityScreen(
                         contentPadding = PaddingValues(LkSpacing.Space4),
                         verticalArrangement = Arrangement.spacedBy(LkSpacing.Space3)
                     ) {
-                        items(state.items, key = { it.id }) { item ->
+                        itemsIndexed(state.items, key = { _, item -> item.id }) { index, item ->
                             ActivityRow(
                                 action = activityLabel(item.action),
                                 detail = activityDetail(item.action, item.entityType),
-                                createdAt = item.createdAt
+                                createdAt = item.createdAt,
+                                isLast = index == state.items.lastIndex
                             )
                         }
                     }
@@ -67,18 +72,19 @@ fun ActivityScreen(
 private fun ActivityRow(
     action: String,
     detail: String,
-    createdAt: String?
+    createdAt: String?,
+    isLast: Boolean
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(LkSurfacePanel, LkShapes.MD)
-            .border(1.dp, LkLineStrong, LkShapes.MD)
-            .padding(LkSpacing.PadPanel)
-    ) {
-        Text(
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Box(Modifier.size(10.dp).background(LkPrimary, CircleShape))
+            if (!isLast) Box(Modifier.width(2.dp).height(58.dp).background(LkLineStrong))
+        }
+        Spacer(Modifier.width(LkSpacing.Space3))
+        Column(Modifier.weight(1f).padding(bottom = LkSpacing.Space3)) {
+          Text(
             text = action,
-            style = LkTypography.getBodySmall(),
+            style = LkTypography.getBodyStrong(),
             color = LkTextPrimary
         )
         if (detail.isNotBlank()) {
@@ -98,6 +104,7 @@ private fun ActivityRow(
             )
         }
     }
+}
 }
 
 fun activityLabel(action: String): String {

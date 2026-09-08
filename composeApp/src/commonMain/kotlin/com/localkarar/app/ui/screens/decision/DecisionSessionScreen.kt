@@ -11,10 +11,13 @@ import com.localkarar.app.decision.DecisionSessionUiState
 import com.localkarar.app.decision.DecisionSessionViewModel
 import com.localkarar.app.ui.components.LkButton
 import com.localkarar.app.ui.components.LkErrorState
+import com.localkarar.app.ui.components.LkLoadingDesen
 import com.localkarar.app.ui.components.LkLoadingState
 import com.localkarar.app.ui.components.LkHeroPage
 import com.localkarar.app.ui.components.decision.LkDecisionInput
 import com.localkarar.app.ui.components.decision.LkDecisionResultPanel
+import com.localkarar.app.ui.components.decision.LkKararMakbuzu
+import com.localkarar.app.ui.components.decision.LkKararTakibi
 import com.localkarar.app.ui.theme.LkSpacing
 import com.localkarar.app.ui.theme.*
 import kotlinx.serialization.json.JsonElement
@@ -22,12 +25,23 @@ import kotlinx.serialization.json.JsonElement
 @Composable
 fun DecisionSessionScreen(
     viewModel: DecisionSessionViewModel,
+    /** Makbuzdaki "Mentora sor" -- baglam metniyle mentor ekranina gider. */
+    onMentoraSor: (String) -> Unit = {},
+    /**
+     * Karar takibi. `null` ise bolum "once isletme secin" diyor --
+     * takip bir isletmenin gorevi olarak aciliyor.
+     */
+    followUpViewModel: com.localkarar.app.decision.DecisionFollowUpViewModel? = null,
+    isletmeSecili: Boolean = false,
     onBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var actionError by remember { mutableStateOf<String?>(null) }
 
-    LkHeroPage(title = "Karar Aracı", onBack = onBack) {
+    LkHeroPage(
+        title = (uiState as? DecisionSessionUiState.Content)?.session?.decisionCheckTitle ?: "Karar Aracı",
+        onBack = onBack
+    ) {
         Column(modifier = Modifier.fillMaxSize()) {
             if (actionError != null) {
                 Text(
@@ -40,35 +54,53 @@ fun DecisionSessionScreen(
 
             Box(modifier = Modifier.weight(1f)) {
                 when (val state = uiState) {
-                    is DecisionSessionUiState.Loading -> LkLoadingState()
+                    is DecisionSessionUiState.Loading -> LkLoadingState(desen = LkLoadingDesen.DETAY)
                     is DecisionSessionUiState.Error -> LkErrorState(
                         message = state.message,
                         onRetry = { viewModel.loadSession() }
                     )
                     is DecisionSessionUiState.Content -> {
                         val session = state.session
+                        var step by androidx.compose.runtime.saveable.rememberSaveable(session.id) { mutableStateOf(0) }
+                        val questions = session.definition
+                        val currentStep = step.coerceIn(0, (questions.size - 1).coerceAtLeast(0))
+                        /** Secenekli soru varsa adim adim; yoksa tek form. */
+                        val adimAdim = questions.any { it.type == "choice" }
+                        LaunchedEffect(state.errors) {
+                            val invalid = questions.indexOfFirst { it.code in state.errors }
+                            if (invalid >= 0) step = invalid
+                        }
                         
+                        Column(Modifier.fillMaxSize().imePadding()) {
                         LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier.weight(1f).fillMaxWidth(),
                             contentPadding = PaddingValues(LkSpacing.Space4),
                             verticalArrangement = Arrangement.spacedBy(LkSpacing.Space4)
                         ) {
-                            item {
-                                Text(
-                                    text = session.decisionCheckTitle,
-                                    style = LkTypography.getPageTitle(),
-                                    color = LkTextPrimary
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = session.decisionCheckDescription,
-                                    style = LkTypography.getBody(),
-                                    color = LkTextSecondary
-                                )
-                                Spacer(modifier = Modifier.height(16.dp))
-                            }
-
                             if (state.result != null) {
+                                /*
+                                 * KARAR MAKBUZU — ayrintili panelin
+                                 * USTUNDE. Webde de fis sonucun yaninda
+                                 * durup onun yerine gecmiyor: makbuz
+                                 * "ne karar verdim"i, panel "nasil
+                                 * hesaplandi"yi anlatiyor. Once karar,
+                                 * sonra hesap.
+                                 */
+                                item {
+                                    LkKararMakbuzu(
+                                        snapshot = state.result.snapshot,
+                                        baslik = session.decisionCheckTitle,
+                                        tamamlanmaZamani = null,
+                                        onMentoraSor = onMentoraSor
+                                    )
+                                }
+                                item {
+                                    LkKararTakibi(
+                                        viewModel = followUpViewModel,
+                                        kararBasligi = session.decisionCheckTitle,
+                                        isletmeSecili = isletmeSecili
+                                    )
+                                }
                                 item {
                                     LkDecisionResultPanel(
                                         snapshot = state.result.snapshot,
@@ -81,7 +113,30 @@ fun DecisionSessionScreen(
                                     )
                                 }
                             } else {
-                                items(session.definition) { question ->
+                                /*
+                                 * 🔴 HER SORU AYRI EKRANDAYDI VE EKRAN BOS DURUYORDU.
+                                 *
+                                 * Mockup'in "tek soru, tek ekran" kurali SECENEKLI
+                                 * sorular icin: uc secenek, her biri dolu zeminli
+                                 * bir kart, ekran doluyor ve karar tek tek
+                                 * agirliklandiriliyor. Sayisal girdilerde ayni
+                                 * desen dort ekran boyunca tek bir kutu gosteriyor;
+                                 * geri kalan yer bos kaliyor ve kullanici sekiz
+                                 * rakami girmek icin sekiz kez "Devam" diyor.
+                                 *
+                                 * Kural: secenekli soru VARSA adim adim (mockup
+                                 * "Karar 2"), yoksa hepsi TEK formda. Karar tipini
+                                 * ekran degil sorunun kendi turu belirliyor.
+                                 */
+                                if (adimAdim) {
+                                    item {
+                                        Text("Adım ${if (questions.isEmpty()) 0 else currentStep + 1} / ${questions.size}",
+                                            style = LkTypography.getBodyStrong(), color = LkPrimary)
+                                    }
+                                }
+                                val gorunenler =
+                                    if (adimAdim) questions.drop(currentStep).take(1) else questions
+                                items(gorunenler, key = { it.code }) { question ->
                                     val currentAnswer = session.answers.find { it.questionCode == question.code }
                                     LkDecisionInput(
                                         question = question,
@@ -96,20 +151,35 @@ fun DecisionSessionScreen(
                                         }
                                     )
                                 }
-                                
-                                item {
-                                    Spacer(modifier = Modifier.height(16.dp))
+                            }
+                        }
+                        if (state.result == null && questions.isNotEmpty()) {
+                            Row(
+                                Modifier.fillMaxWidth().padding(16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                    if (adimAdim && currentStep > 0) {
+                                        LkButton(
+                                            text = "Önceki",
+                                            onClick = { step -= 1 },
+                                            variant = com.localkarar.app.ui.components.LkButtonVariant.SECONDARY,
+                                            enabled = !state.isSubmitting,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                    }
                                     LkButton(
-                                        text = "Sonucu hesapla",
-                                        onClick = { 
+                                        text = if (adimAdim && currentStep < questions.lastIndex) "Devam et"
+                                            else "Sonucu hesapla",
+                                        onClick = {
                                             actionError = null
-                                            viewModel.completeSession(onError = { actionError = it }) 
+                                            if (adimAdim && currentStep < questions.lastIndex) step += 1
+                                            else viewModel.completeSession(onError = { actionError = it })
                                         },
                                         enabled = !state.isSubmitting,
-                                        modifier = Modifier.fillMaxWidth()
+                                        modifier = Modifier.weight(1f)
                                     )
                                 }
-                            }
+                        }
                         }
                     }
                 }
@@ -117,6 +187,3 @@ fun DecisionSessionScreen(
         }
     }
 }
-
-
-

@@ -90,6 +90,15 @@ import com.localkarar.app.ui.screens.workspaces.ContactsScreen
 import com.localkarar.app.ui.screens.workspaces.NotificationsScreen
 import com.localkarar.app.ui.screens.workspaces.ActivityScreen
 import com.localkarar.app.ui.screens.workspaces.WorkspaceSettingsScreen
+import com.localkarar.app.ui.screens.workspaces.InvitationAcceptScreen
+import com.localkarar.app.workspaces.InvitationAcceptViewModel
+import com.localkarar.app.workspaces.RecordImportViewModel
+import com.localkarar.app.onboarding.OnboardingRepository
+import com.localkarar.app.onboarding.OnboardingViewModel
+import com.localkarar.app.onboarding.AssessmentViewModel
+import com.localkarar.app.ui.screens.onboarding.OnboardingScreen
+import com.localkarar.app.ui.screens.onboarding.AssessmentScreen
+import com.localkarar.app.ui.screens.workspaces.RecordImportPanel
 import com.localkarar.app.ui.screens.workspaces.IntegrationsScreen
 import com.localkarar.app.mentor.MentorRepository
 import com.localkarar.app.mentor.MentorViewModel
@@ -109,15 +118,20 @@ import com.localkarar.app.community.CommunityNotificationsViewModel
 import com.localkarar.app.ui.screens.community.CommunityFeedScreen
 import com.localkarar.app.ui.screens.community.CommunityPostDetailScreen
 import com.localkarar.app.ui.screens.community.FollowersScreen
+import com.localkarar.app.ui.screens.community.PeopleScreen
+import com.localkarar.app.ui.components.LkPageLayout
 import com.localkarar.app.ui.screens.community.ThreadDetailScreen
 import com.localkarar.app.ui.screens.community.ProfileScreen as CommunityProfileScreen
-import com.localkarar.app.ui.screens.community.NotificationsScreen as CommunityNotificationsScreen
+import com.localkarar.app.ui.screens.notifications.BildirimlerScreen
 import com.localkarar.app.settings.SettingsRepository
 import com.localkarar.app.settings.SettingsViewModel
 import com.localkarar.app.settings.SupportViewModel
 import com.localkarar.app.settings.AccountNotificationsRepository
+import com.localkarar.app.network.SafeApiClient
+import com.localkarar.app.search.GlobalSearchViewModel
+import com.localkarar.app.ui.screens.search.GlobalSearchScreen
 import com.localkarar.app.settings.AccountNotificationsViewModel
-import com.localkarar.app.ui.screens.settings.AccountNotificationsScreen
+
 import com.localkarar.app.ui.screens.settings.SettingsScreen
 import com.localkarar.app.ui.screens.settings.ProfileScreen
 import com.localkarar.app.ui.screens.settings.PasswordChangeScreen
@@ -159,8 +173,10 @@ fun AppShell(
     newsRepository: NewsRepository,
     communityRepository: CommunityRepository,
     settingsRepository: SettingsRepository,
+    onboardingRepository: OnboardingRepository,
     documentUploadRepository: DocumentUploadRepository,
     accountNotificationsRepository: AccountNotificationsRepository,
+    aramaApi: SafeApiClient,
     onNewSession: (String, UserDto) -> Unit,
     onLogout: () -> Unit
 ) {
@@ -226,7 +242,7 @@ fun AppShell(
     LaunchedEffect(pendingDeepLink) {
         val target = PendingDeepLinkStore.consume()
         if (target != null) {
-            navController.navigateTo(target.toDestination())
+            navController.navigateTo(target.toDestination(activeWorkspaceId))
         }
     }
 
@@ -291,11 +307,47 @@ fun AppShell(
             Scaffold(
                 scaffoldState = scaffoldState,
                 bottomBar = {
-                    if (currentDestination !is Destination.LessonReader) {
+                    /*
+                     * 🔴 YAZMA ALANI OLAN EKRANLARDA DOCK YAZMA ALANINA
+                     * BINIYORDU.
+                     *
+                     * Mentor konusmasi ve topluluk sohbetinde ekranin
+                     * altinda "Mentora sorun…" / "Mesaj yazın…" alani var;
+                     * dock onun hemen altinda duruyor ve klavye acilinca
+                     * ikisi ust uste geliyordu. Bu ekranlarda ekranin alti
+                     * YAZMA alanina ait — okuyucu ekraninda oldugu gibi
+                     * dock gizleniyor. Geri donus ust soldaki okla.
+                     */
+                    val yazmaEkrani = currentDestination is Destination.LessonReader ||
+                        currentDestination is Destination.Conversation ||
+                        currentDestination is Destination.CommunityThreadDetail
+                    if (!yazmaEkrani) {
                         LkBottomNavigation(
                             currentDestination = currentDestination,
                             activeWorkspaceId = activeWorkspaceId,
-                            onNavigate = { navController.navigateTo(it) }
+                            onNavigate = { hedef ->
+                                /*
+                                 * 🔴 BOLUM SECICIYE YALNIZ "GENEL BAKIS"TAN
+                                 * ULASILIYORDU.
+                                 *
+                                 * Siparisler, Urunler, Kisiler gibi bir alt
+                                 * bolumdeyken baska bir bolume gecmenin yolu
+                                 * yoktu: once geri, sonra hap, sonra liste.
+                                 * Artik ZATEN acik oldugun İşletme Takibi
+                                 * sekmesine tekrar dokunmak bolum secicisini
+                                 * aciyor — sekmeye ikinci kez basmak
+                                 * "buradaki bolumleri goster" demek.
+                                 */
+                                val isletmeSekmesi = hedef is Destination.WorkspaceHome ||
+                                    hedef is Destination.Workspaces
+                                val zatenBurada = isTabSelected(currentDestination, hedef)
+                                val wsId = activeWorkspaceId
+                                if (isletmeSekmesi && zatenBurada && wsId != null) {
+                                    openWorkspaceSections(wsId, aktifBolumKodu(currentDestination))
+                                } else {
+                                    navController.navigateTo(hedef)
+                                }
+                            }
                         )
                     }
                 },
@@ -358,8 +410,10 @@ fun AppShell(
                         newsRepository = newsRepository,
                         communityRepository = communityRepository,
                         settingsRepository = settingsRepository,
+                        onboardingRepository = onboardingRepository,
                         documentUploadRepository = documentUploadRepository,
                         accountNotificationsRepository = accountNotificationsRepository,
+                        aramaApi = aramaApi,
                         onOpenProductCenter = { openProductCenter() },
                         onOpenWorkspaceSections = { wsId, secId -> openWorkspaceSections(wsId, secId) },
                         onNewSession = onNewSession,
@@ -389,14 +443,32 @@ private fun ScreenContent(
     newsRepository: NewsRepository,
     communityRepository: CommunityRepository,
     settingsRepository: SettingsRepository,
+    onboardingRepository: OnboardingRepository,
     documentUploadRepository: DocumentUploadRepository,
     accountNotificationsRepository: AccountNotificationsRepository,
+    aramaApi: SafeApiClient,
     onOpenProductCenter: () -> Unit,
     onOpenWorkspaceSections: (String, String) -> Unit,
     onNewSession: (String, UserDto) -> Unit,
     onLogout: () -> Unit
 ) {
     val onBack = { navController.popBackStack(); Unit }
+
+    /*
+     * 🔴 GERI OKU KOK EKRANLARDA DA CIZILIYOR VE CALISMIYORDU.
+     *
+     * `Destination.Calculations`, `Community`, `WorkspaceHome`, `Settings`
+     * ve `Home` birer KOK: `navigateTo` onlara giderken yigini sifirliyor
+     * (`NavController.isPrimaryRoot`). Dolayisiyla bu ekranlarda
+     * `popBackStack()` her zaman `false` donuyor ve sol ustteki ok hicbir
+     * sey yapmiyordu.
+     *
+     * Cozum ok'u gizlemek: yigin bir kayittan uzunsa geri var, degilse yok.
+     * Calismayan bir kontrolu cizmek uygulamayi bozuk gosterir.
+     */
+    val geriYigini by navController.backStack.collectAsState()
+    val geriVarsa: (() -> Unit)? = if (geriYigini.size > 1) onBack else null
+
     val activeWorkspaceId by activeWorkspaceStore.activeWorkspaceId.collectAsState()
     val activeWorkspaceName by activeWorkspaceStore.activeWorkspaceName.collectAsState()
 
@@ -442,14 +514,31 @@ private fun ScreenContent(
                     Destination.RecordEdit(workspaceId, null, presetType = tur, presetDirection = yon)
                 )
             },
-            onOpenProductCenter = onOpenProductCenter
+            onOpenProductCenter = onOpenProductCenter,
+            onOpenSearch = { navController.navigateTo(Destination.Search) }
         )
+        Destination.Search -> {
+            val viewModel = viewModel(key = "global_search") {
+                GlobalSearchViewModel(aramaApi, calculationsRepository)
+            }
+            GlobalSearchScreen(
+                viewModel = viewModel,
+                onBack = onBack,
+                onOpenProfile = { userId -> navController.navigateTo(Destination.CommunityProfile(userId)) },
+                onOpenPost = { postId -> navController.navigateTo(Destination.CommunityPost(postId)) },
+                onOpenCourse = { courseId -> navController.navigateTo(Destination.CourseDetail(courseId)) },
+                onOpenDecisionTool = { code -> navController.navigateTo(Destination.DecisionTool(code)) },
+                onOpenFormula = { formulaId -> navController.navigateTo(Destination.FormulaDetail(formulaId)) },
+                /* Web de tek habere degil HABER LISTESINE goturuyor. */
+                onOpenNews = { navController.navigateTo(Destination.News) }
+            )
+        }
         Destination.Courses -> {
             val viewModel = viewModel(key = "courses_main") { CoursesViewModel(courseRepository, dashboardRepository) }
             CoursesScreen(
                 viewModel = viewModel,
                 onNavigateToCourseDetail = { courseId -> navController.navigateTo(Destination.CourseDetail(courseId)) },
-                onBack = onBack
+                onBack = geriVarsa
             )
         }
         is Destination.CourseDetail -> {
@@ -459,6 +548,11 @@ private fun ScreenContent(
             CourseDetailScreen(
                 viewModel = viewModel,
                 onNavigateToLesson = { cId, lId -> navController.navigateTo(Destination.LessonReader(cId, lId)) },
+                /* Kurs karti dogrudan dersi aciyor; detay yiginda kalmiyor
+                   (bkz. CourseDetailScreen). */
+                onOpenLessonDirect = { cId, lId ->
+                    navController.replaceTop(Destination.LessonReader(cId, lId))
+                },
                 onBack = onBack
             )
         }
@@ -492,7 +586,7 @@ private fun ScreenContent(
             DecisionToolsScreen(
                 viewModel = viewModel,
                 onNavigateToSession = { sessionId -> navController.navigateTo(Destination.DecisionSession(sessionId)) },
-                onBack = onBack
+                onBack = geriVarsa
             )
         }
         is Destination.DecisionTool -> {
@@ -511,8 +605,38 @@ private fun ScreenContent(
             val viewModel = viewModel(key = "decision_session:${destination.sessionId}") {
                 DecisionSessionViewModel(destination.sessionId, decisionRepository)
             }
+            /*
+             * Karar takibi — kararı işletmede bir göreve bağlıyor.
+             * Anahtar hem oturuma hem işletmeye bağlı: aktif işletme
+             * değişirse takip listesi de o işletmeninki olmalı.
+             */
+            val followUpVm = viewModel(
+                key = "decision_followup:${destination.sessionId}:${activeWorkspaceId ?: "-"}"
+            ) {
+                com.localkarar.app.decision.DecisionFollowUpViewModel(
+                    workspaceId = activeWorkspaceId,
+                    sessionId = destination.sessionId,
+                    repository = workspaceRepository
+                )
+            }
             DecisionSessionScreen(
                 viewModel = viewModel,
+                followUpViewModel = followUpVm,
+                isletmeSecili = activeWorkspaceId != null,
+                /*
+                 * Makbuzdaki "Mentora sor". Web mentor adresine
+                 * `?prompt=` ile gidiyor; mobilde baglam
+                 * `MentorPromptStore`a birakiliyor ve acilan sohbetin
+                 * yazma kutusuna dusuyor. Sohbet kendiliginden
+                 * acilmiyor, mesaj kendiliginden gonderilmiyor --
+                 * gerekcesi store'un basinda yazili.
+                 */
+                onMentoraSor = { baglam ->
+                    com.localkarar.app.mentor.MentorPromptStore.koy(
+                        "Şu karar hakkında ne düşünüyorsun: $baglam"
+                    )
+                    navController.navigateTo(Destination.AiMentor)
+                },
                 onBack = onBack
             )
         }
@@ -523,7 +647,7 @@ private fun ScreenContent(
                 viewModel = viewModel,
                 memoryViewModel = memoryViewModel,
                 onOpenConversation = { conversationId -> navController.navigateTo(Destination.Conversation(conversationId)) },
-                onBack = onBack
+                onBack = geriVarsa
             )
         }
         is Destination.Conversation -> {
@@ -554,11 +678,28 @@ private fun ScreenContent(
                         navController.navigateTo(Destination.FinancialModelDetail(item.definition.modelCode!!))
                     }
                 },
-                onNavigateToWorkspace = {
+                /*
+                 * 🔴 UC KISAYOL DA AYNI YERE GIDIYORDU.
+                 *
+                 * "Gelir, gider ve tahsilat", "Fatura ve belgeler" ve
+                 * "Ödeme takvimi" kartlarinin ucu de `WorkspaceHome`'a
+                 * atiyordu; kullanici hangisine basarsa bassin ayni ozet
+                 * ekrani aciliyordu. Alt basliklari ("Kayıt ekle", "Belge
+                 * yükle", "Vadeleri gör") yapmadiklari seyi vaat ediyordu.
+                 */
+                onKayitEkle = {
                     val id = activeWorkspaceId
-                    if (id != null) navController.navigateTo(Destination.WorkspaceHome(id))
+                    if (id != null) navController.navigateTo(Destination.RecordEdit(id, null))
                 },
-                onBack = onBack,
+                onBelgeler = {
+                    val id = activeWorkspaceId
+                    if (id != null) navController.navigateTo(Destination.Documents(id))
+                },
+                onTakvim = {
+                    val id = activeWorkspaceId
+                    if (id != null) navController.navigateTo(Destination.Calendar(id))
+                },
+                onBack = geriVarsa,
                 navController = navController
             )
         }
@@ -569,8 +710,16 @@ private fun ScreenContent(
             FormulaDetailScreen(viewModel = viewModel, onBack = onBack)
         }
         is Destination.FinancialModelDetail -> {
-            val viewModel = viewModel(key = "financial_model:${destination.code}:${activeWorkspaceId ?: "none"}") {
-                FinancialModelViewModel(destination.code, activeWorkspaceId, calculationsRepository)
+            val viewModel = viewModel(
+                key = "financial_model:${destination.code}:${activeWorkspaceId ?: "none"}:${destination.sourceDocumentId ?: "-"}"
+            ) {
+                FinancialModelViewModel(
+                    code = destination.code,
+                    workspaceId = activeWorkspaceId,
+                    repository = calculationsRepository,
+                    sourceDocumentId = destination.sourceDocumentId,
+                    workspaceRepository = workspaceRepository
+                )
             }
             FinancialModelScreen(
                 viewModel = viewModel,
@@ -606,8 +755,25 @@ private fun ScreenContent(
             WorkspacesScreen(
                 viewModel = viewModel,
                 activeWorkspaceId = activeWorkspaceId,
-                onOpenWorkspace = { workspaceId -> navController.navigateTo(Destination.WorkspaceHome(workspaceId)) },
-                onBack = onBack
+                /*
+                 * 🔴 ACILAN ISLETME AKTIF DE OLUYOR.
+                 *
+                 * Once yalnizca geziniliyordu: kullanici listeden baska
+                 * bir isletme aciyor, ekranindaki veriler o isletmenin
+                 * oluyor ama AKTIF isletme eskisi kaliyordu. Sonuc
+                 * olculdu (08.09.2026, emulator): Deniz Tekstil acikken
+                 * ust rozet "Davet Testi Atölyesi" yaziyordu.
+                 *
+                 * Etkisi kozmetik degil: finansal model CALISTIRMA,
+                 * karar takibi ve pazaryeri ipucu hep aktif isletmeyi
+                 * kullaniyor -- yani kullanici baktigi isletmeye
+                 * bakarken BASKA bir isletmede model calistirabilirdi.
+                 */
+                onOpenWorkspace = { workspaceId, workspaceAdi ->
+                    activeWorkspaceStore.setActive(workspaceId, workspaceAdi)
+                    navController.navigateTo(Destination.WorkspaceHome(workspaceId))
+                },
+                onBack = geriVarsa
             )
         }
         is Destination.WorkspaceHome -> {
@@ -629,7 +795,7 @@ private fun ScreenContent(
                 onOpenRecord = { recordId -> navController.navigateTo(Destination.RecordDetail(destination.workspaceId, recordId)) },
                 onAddRecord = { navController.navigateTo(Destination.RecordEdit(destination.workspaceId, null)) },
                 onOpenSectionSelector = { onOpenWorkspaceSections(destination.workspaceId, "overview") },
-                onBack = onBack
+                onBack = geriVarsa
             )
         }
         is Destination.Orders -> {
@@ -656,8 +822,12 @@ private fun ScreenContent(
             val viewModel = viewModel(key = "records:${destination.workspaceId}") {
                 RecordsViewModel(destination.workspaceId, workspaceRepository)
             }
+            val importVm = viewModel(key = "record_import:${destination.workspaceId}") {
+                RecordImportViewModel(destination.workspaceId, workspaceRepository, documentUploadRepository)
+            }
             RecordsScreen(
                 viewModel = viewModel,
+                importViewModel = importVm,
                 onOpenRecord = { recordId -> navController.navigateTo(Destination.RecordDetail(destination.workspaceId, recordId)) },
                 onAddRecord = { navController.navigateTo(Destination.RecordEdit(destination.workspaceId, null)) },
                 onBack = onBack
@@ -700,7 +870,18 @@ private fun ScreenContent(
             val viewModel = viewModel(key = "documents:${destination.workspaceId}") {
                 DocumentsViewModel(destination.workspaceId, workspaceRepository, documentUploadRepository)
             }
-            DocumentsScreen(viewModel = viewModel, onBack = onBack)
+            DocumentsScreen(
+                viewModel = viewModel,
+                /*
+                 * Belge kimligi de tasiniyor: model ekrani girdileri
+                 * belgeden on dolduruyor ve kaynagi "belge" isaretliyor
+                 * (madde 18). Webde `?documentId=` ile ayni sey.
+                 */
+                onOpenModel = { kod, belgeId ->
+                    navController.navigateTo(Destination.FinancialModelDetail(kod, belgeId))
+                },
+                onBack = onBack
+            )
         }
         is Destination.Team -> {
             val viewModel = viewModel(key = "team:${destination.workspaceId}") {
@@ -746,7 +927,7 @@ private fun ScreenContent(
             NewsFeedScreen(
                 viewModel = newsViewModel,
                 onOpenArticle = { articleId -> navController.navigateTo(Destination.NewsDetail(articleId)) },
-                onBack = onBack
+                onBack = geriVarsa
             )
         }
         is Destination.NewsDetail -> {
@@ -762,7 +943,8 @@ private fun ScreenContent(
                 socialViewModel = socialViewModel,
                 threadsViewModel = threadsViewModel,
                 notificationsViewModel = notificationsViewModel,
-                currentUserId = user.id,
+                currentUser = user,
+                onEditProfile = { navController.navigateTo(Destination.Profile) },
                 initialTab = destination.initialTab,
                 onOpenPost = { postId -> navController.navigateTo(Destination.CommunityPost(postId)) },
                 onOpenProfile = { userId -> navController.navigateTo(Destination.CommunityProfile(userId)) },
@@ -785,9 +967,11 @@ private fun ScreenContent(
         is Destination.CommunityProfile -> {
             CommunityProfileScreen(
                 userId = destination.userId,
+                currentUser = user,
                 socialViewModel = socialViewModel,
                 communityViewModel = communityViewModel,
                 onBack = onBack,
+                onEditProfile = { navController.navigateTo(Destination.Profile) },
                 onOpenFollowers = { userId, mode -> navController.navigateTo(Destination.CommunityFollowers(userId, mode)) },
                 onOpenPost = { postId -> navController.navigateTo(Destination.CommunityPost(postId)) },
                 onOpenProfile = { userId -> navController.navigateTo(Destination.CommunityProfile(userId)) }
@@ -811,13 +995,59 @@ private fun ScreenContent(
             )
         }
         Destination.CommunityNotifications -> {
-            CommunityNotificationsScreen(
-                viewModel = notificationsViewModel,
-                onBack = onBack,
-                onOpenPost = { postId -> navController.navigateTo(Destination.CommunityPost(postId)) },
-                onOpenProfile = { userId -> navController.navigateTo(Destination.CommunityProfile(userId)) },
-                onOpenThread = { threadId -> navController.navigateTo(Destination.CommunityThreadDetail(threadId)) }
+            /*
+             * IKI GIRIS, TEK EKRAN. Topluluk sekmesindeki zil ve
+             * Ayarlar'daki "Bildirimler" satiri artik AYNI ekrani
+             * aciyor; derin baglantilar da oyle.
+             */
+            BildirimlerEkrani(
+                aktifCalismaAlaniId = activeWorkspaceId,
+                accountNotificationsRepository = accountNotificationsRepository,
+                toplulukViewModel = notificationsViewModel,
+                navController = navController,
+                onBack = onBack
             )
+        }
+        Destination.CommunityPeople -> {
+            /* Takip ve engelleme — Ayarlar > Hesap altindan aciliyor. */
+            LkPageLayout(title = "Takip ve engelleme", onBack = onBack) {
+                PeopleScreen(
+                    viewModel = socialViewModel,
+                    onOpenProfile = { userId -> navController.navigateTo(Destination.CommunityProfile(userId)) }
+                )
+            }
+        }
+        is Destination.InvitationAccept -> {
+            /*
+             * Ekip daveti — `/davet?token=` baglantisindan geliyor.
+             *
+             * ViewModel anahtari JETONA bagli: ayni oturumda ikinci bir
+             * davet baglantisi acilirsa birincinin durumu (ornegin
+             * "kabul edildi") yeni davete tasinmamali.
+             */
+            val invitationViewModel = viewModel(key = "invitation_${destination.token}") {
+                InvitationAcceptViewModel(destination.token, workspaceRepository)
+            }
+            InvitationAcceptScreen(
+                viewModel = invitationViewModel,
+                onOpenWorkspace = { wsId ->
+                    activeWorkspaceStore.setActive(wsId)
+                    navController.navigateTo(Destination.WorkspaceHome(wsId))
+                },
+                onBack = onBack
+            )
+        }
+        Destination.Onboarding -> {
+            val vm = viewModel(key = "onboarding") { OnboardingViewModel(onboardingRepository) }
+            OnboardingScreen(
+                viewModel = vm,
+                onBitti = { navController.navigateTo(Destination.Home) },
+                onAtla = onBack
+            )
+        }
+        Destination.Assessment -> {
+            val vm = viewModel(key = "assessment") { AssessmentViewModel(onboardingRepository) }
+            AssessmentScreen(viewModel = vm, onBack = onBack)
         }
         Destination.Settings -> {
             SettingsScreen(
@@ -828,7 +1058,10 @@ private fun ScreenContent(
                 activeWorkspaceId = activeWorkspaceId,
                 viewModel = settingsViewModel,
                 onOpenProfile = { navController.navigateTo(Destination.Profile) },
+                onOpenFollowBlock = { navController.navigateTo(Destination.CommunityPeople) },
                 onOpenWorkspaces = { navController.navigateTo(Destination.Workspaces) },
+                onOpenOnboarding = { navController.navigateTo(Destination.Onboarding) },
+                onOpenAssessment = { navController.navigateTo(Destination.Assessment) },
                 onOpenWorkspaceSettings = { wsId -> navController.navigateTo(Destination.WorkspaceSettings(wsId)) },
                 onOpenPassword = { navController.navigateTo(Destination.PasswordChange) },
                 onOpenEmail = { navController.navigateTo(Destination.EmailChange) },
@@ -887,10 +1120,13 @@ private fun ScreenContent(
             onOpenSupport = { navController.navigateTo(Destination.Support) }
         )
         Destination.AccountNotifications -> {
-            val viewModel = viewModel(key = "account_notifications") {
-                AccountNotificationsViewModel(accountNotificationsRepository)
-            }
-            AccountNotificationsScreen(viewModel = viewModel, onNavigateBack = onBack)
+            BildirimlerEkrani(
+                aktifCalismaAlaniId = activeWorkspaceId,
+                accountNotificationsRepository = accountNotificationsRepository,
+                toplulukViewModel = notificationsViewModel,
+                navController = navController,
+                onBack = onBack
+            )
         }
     }
     }
@@ -939,6 +1175,37 @@ private val PRIMARY_NAV_ITEMS = listOf(
  * iceride ve yuvarlak duruyor, cevresinde zemin gorunuyor. Gorsel olarak
  * prototipe yakin, davranis olarak guvenli.
  */
+/**
+ * Bildirim ekraninin iki giris noktasi icin ortak kurulum.
+ *
+ * ⚠️ Hesap gorunum modeli `key = "account_notifications"` ile
+ * paylasiliyor: iki giristen hangisi kullanilirsa kullanilsin AYNI
+ * ornek ve ayni okunmamis sayaci geliyor. Iki ayri ornek, bir yerde
+ * "okundu" isaretlenince digerinin eski sayiyi gostermesi demekti.
+ */
+@Composable
+private fun BildirimlerEkrani(
+    aktifCalismaAlaniId: String?,
+    accountNotificationsRepository: AccountNotificationsRepository,
+    toplulukViewModel: CommunityNotificationsViewModel,
+    navController: NavController,
+    onBack: () -> Unit
+) {
+    val hesapViewModel = viewModel(key = "account_notifications") {
+        AccountNotificationsViewModel(accountNotificationsRepository)
+    }
+    BildirimlerScreen(
+        hesapViewModel = hesapViewModel,
+        toplulukViewModel = toplulukViewModel,
+        onBack = onBack,
+        onOpenPost = { postId -> navController.navigateTo(Destination.CommunityPost(postId)) },
+        onOpenProfile = { userId -> navController.navigateTo(Destination.CommunityProfile(userId)) },
+        onOpenThread = { threadId -> navController.navigateTo(Destination.CommunityThreadDetail(threadId)) },
+        onNavigate = { hedef -> navController.navigateTo(hedef) },
+        aktifCalismaAlaniId = aktifCalismaAlaniId
+    )
+}
+
 @Composable
 private fun LkBottomNavigation(
     currentDestination: Destination,
@@ -981,7 +1248,8 @@ private fun isTabSelected(current: Destination, tabTarget: Destination): Boolean
             current is Destination.Contacts ||
             current is Destination.Notifications ||
             current is Destination.Activity ||
-            current is Destination.WorkspaceSettings
+            current is Destination.WorkspaceSettings ||
+            current is Destination.WorkspaceIntegrations
         }
         is Destination.Community -> {
             current is Destination.Community || current is Destination.CommunityPost
@@ -1002,4 +1270,25 @@ private fun isTabSelected(current: Destination, tabTarget: Destination): Boolean
         }
         else -> false
     }
+}
+
+/**
+ * Acik olan isletme bolumunun kodu.
+ *
+ * Bolum secici hangi satirin secili oldugunu bu koda gore isaretliyor;
+ * alt bolumdeyken secici acildiginda dogru satir dolu daireyle geliyor.
+ */
+private fun aktifBolumKodu(destination: Destination): String = when (destination) {
+    is Destination.Records, is Destination.RecordDetail, is Destination.RecordEdit -> "records"
+    is Destination.Orders -> "orders"
+    is Destination.Products -> "products"
+    is Destination.Documents -> "documents"
+    is Destination.Calendar -> "calendar"
+    is Destination.Notifications -> "notifications"
+    is Destination.Team -> "team"
+    is Destination.Contacts -> "contacts"
+    is Destination.Activity -> "activity"
+    is Destination.WorkspaceIntegrations -> "integrations"
+    is Destination.WorkspaceSettings -> "settings"
+    else -> "overview"
 }

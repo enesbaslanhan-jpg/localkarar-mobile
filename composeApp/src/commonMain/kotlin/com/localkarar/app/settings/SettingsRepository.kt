@@ -56,7 +56,7 @@ data class ProfileUpdateRequest(
 class SettingsRepository(
     private val client: HttpClient
 ) {
-    private val json = Json { ignoreUnknownKeys = true }
+    private val json = Json { ignoreUnknownKeys = true; coerceInputValues = true }
 
     private suspend fun errorMessage(response: HttpResponse): String {
         return try {
@@ -85,11 +85,35 @@ class SettingsRepository(
         }
     }
 
-    suspend fun updateProfile(name: String): Result<ProfileUpdateDto> {
+    /**
+     * Profili gunceller.
+     *
+     * 🔴 YALNIZ `name` GONDERILIYORDU. `ProfileUpdateRequest` dort alan
+     * tasiyor, sunucu (`auth.ts` `profilSemasi`) dordunu de kabul ediyor
+     * ve `ProfileUpdateDto` dordunu de geri donduruyor — ama mobil
+     * biyografi, konum ve site alanlarini hicbir zaman gondermiyordu.
+     * Mockup "Ayar 2"nin alanlari da bunlar.
+     *
+     * ⚠️ Bos metin "temizle", `null` "dokunma" demek — sunucu bu ayrimi
+     * yapiyor (`veri.bio !== undefined`), cagiran taraf da yapmali.
+     */
+    suspend fun updateProfile(
+        name: String? = null,
+        bio: String? = null,
+        location: String? = null,
+        websiteUrl: String? = null
+    ): Result<ProfileUpdateDto> {
         return try {
             val response = client.patch("/auth/profile") {
                 contentType(ContentType.Application.Json)
-                setBody(ProfileUpdateRequest(name = name.trim()))
+                setBody(
+                    ProfileUpdateRequest(
+                        name = name?.trim(),
+                        bio = bio?.trim(),
+                        location = location?.trim(),
+                        websiteUrl = websiteUrl?.trim()
+                    )
+                )
             }
             if (response.status.isSuccess()) {
                 Result.success(json.decodeFromString(ProfileUpdateDto.serializer(), response.bodyAsText()))
@@ -191,6 +215,51 @@ class SettingsRepository(
                 }
                 if (avatarUrl != null) Result.success(avatarUrl)
                 else Result.failure(Exception("avatarUrl alınamadı"))
+            } else {
+                Result.failure(Exception(errorMessage(response)))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Kapak fotografi yukler.
+     *
+     * 🔴 UC AYLARDIR HAZIRDI, MOBIL HIC CAGIRMIYORDU. `POST /auth/cover`
+     * calisiyor, `coverUrl` hem `/auth/me` hem topluluk profili
+     * yanitinda geliyor; mobilde kapagi degistirmenin yolu yoktu.
+     * Mockup "Ayar 2"nin ilk ogesi bu.
+     */
+    suspend fun uploadCover(name: String, bytes: ByteArray): Result<String> {
+        return try {
+            val extension = if (name.endsWith(".png", ignoreCase = true)) "png" else "jpg"
+            val mimeType = if (extension == "png") "image/png" else "image/jpeg"
+            val response = client.post("/auth/cover") {
+                setBody(
+                    MultiPartFormDataContent(
+                        formData {
+                            append(
+                                "cover",
+                                bytes,
+                                Headers.build {
+                                    append(HttpHeaders.ContentType, mimeType)
+                                    append(HttpHeaders.ContentDisposition, "filename=\"cover.$extension\"")
+                                }
+                            )
+                        }
+                    )
+                )
+            }
+            if (response.status.isSuccess()) {
+                val text = response.bodyAsText()
+                val coverUrl = try {
+                    json.parseToJsonElement(text).jsonObject["coverUrl"]?.jsonPrimitive?.content
+                } catch (_: Exception) {
+                    null
+                }
+                if (coverUrl != null) Result.success(coverUrl)
+                else Result.failure(Exception("coverUrl alınamadı"))
             } else {
                 Result.failure(Exception(errorMessage(response)))
             }

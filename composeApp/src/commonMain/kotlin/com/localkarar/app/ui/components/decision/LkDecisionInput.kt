@@ -78,91 +78,34 @@ fun LkDecisionInput(
                 }
             }
             "choice" -> {
-                var expanded by remember { mutableStateOf(false) }
                 val selectedValue = value?.jsonPrimitive?.doubleOrNull?.toFloat()
-                val selectedOption = question.options?.find { it.value == selectedValue }
-
-                Column {
-                    Text(
-                        text = question.label + if (question.required) " *" else "",
-                        style = LkTypography.getSectionTitle(),
-                        color = LkTextPrimary
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = question.description,
-                        style = LkTypography.getBodySmall(),
-                        color = LkTextSecondary
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(44.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(LkSurfaceSunken)
-                            .border(
-                                1.dp,
-                                if (error != null) LkDanger else LkLineStrong,
-                                RoundedCornerShape(8.dp)
-                            )
-                            .clickable(enabled = !isUnknown) { expanded = true }
-                            .padding(horizontal = 16.dp),
-                        contentAlignment = Alignment.CenterStart
-                    ) {
+                Text(question.label + if (question.required) " *" else "",
+                    style = LkTypography.getSectionTitle(), color = LkTextPrimary)
+                Text(question.description, style = LkTypography.getBodySmall(), color = LkTextSecondary)
+                Spacer(Modifier.height(16.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    question.options?.forEach { option ->
+                        val selected = !isUnknown && option.value == selectedValue
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
+                            Modifier.fillMaxWidth()
+                                .clip(RoundedCornerShape(20.dp))
+                                .background(if (selected) LkPrimaryFill else LkSurfaceRaised)
+                                .clickable(enabled = !isUnknown) { onValueChange(JsonPrimitive(option.value)) }
+                                .padding(16.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                text = selectedOption?.label ?: "Seçiniz",
-                                style = LkTypography.getBody(),
-                                color = if (selectedOption != null) LkTextPrimary else LkTextMuted
-                            )
-                            Icon(
-                                imageVector = Icons.Outlined.KeyboardArrowDown,
-                                contentDescription = "Aç",
-                                tint = LkTextMuted,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    }
-                    if (selectedOption?.description != null && !isUnknown) {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = selectedOption.description,
-                            style = LkTypography.getMicro(),
-                            color = LkTextSecondary,
-                            modifier = Modifier.padding(start = 4.dp)
-                        )
-                    }
-                    DropdownMenu(
-                        expanded = expanded,
-                        onDismissRequest = { expanded = false },
-                        modifier = Modifier.background(LkSurfacePanel)
-                    ) {
-                        question.options?.forEach { option ->
-                            DropdownMenuItem(
-                                onClick = {
-                                    onValueChange(JsonPrimitive(option.value))
-                                    expanded = false
+                            Column(Modifier.weight(1f)) {
+                                Text(option.label ?: option.value.toString(),
+                                    style = LkTypography.getBodyStrong(),
+                                    color = if (selected) LkOnPrimary else LkTextPrimary)
+                                option.description?.let {
+                                    Text(it, style = LkTypography.getBodySmall(),
+                                        color = if (selected) LkOnPrimary else LkTextSecondary)
                                 }
-                            ) {
-                                Column {
-                                    Text(
-                                        text = option.label ?: option.value.toString(),
-                                        style = LkTypography.getBody(),
-                                        color = LkTextPrimary
-                                    )
-                                    if (option.description != null) {
-                                        Text(
-                                            text = option.description,
-                                            style = LkTypography.getMicro(),
-                                            color = LkTextSecondary
-                                        )
-                                    }
-                                }
+                            }
+                            if (selected) {
+                                Icon(Icons.Outlined.CheckCircle, contentDescription = "Seçili",
+                                    tint = LkOnPrimary, modifier = Modifier.padding(start = 12.dp).size(20.dp))
                             }
                         }
                     }

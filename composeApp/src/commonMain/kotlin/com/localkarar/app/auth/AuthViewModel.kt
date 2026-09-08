@@ -172,6 +172,61 @@ class AuthViewModel(
         }
     }
 
+    /*
+     * E-POSTA DOGRULAMA.
+     *
+     * 🔴 UCLAR VARDI, EKRAN YOKTU. `AuthRepository.requestEmailVerification`
+     * ve `confirmEmailVerification` yaziliydi ama commonMain'de HICBIR YER
+     * cagirmiyordu; kullanici mobilde adresini hicbir zaman dogrulayamiyordu.
+     *
+     * Sunucu BAGLANTI degil 6 HANELI KOD gonderiyor (`auth.ts`: "Bağlantı
+     * yerine kod: mobil istemcide derin bağlantı kurmaya gerek kalmıyor").
+     * Mockup'taki "bağlantıya dokun" metni bu yuzden koda cevrildi —
+     * bilgi mimarisi sunucudan, gorsel dil mockup'tan.
+     */
+    private val _verifyError = MutableStateFlow<String?>(null)
+    val verifyError: StateFlow<String?> = _verifyError.asStateFlow()
+
+    private val _verifySent = MutableStateFlow(false)
+    val verifySent: StateFlow<Boolean> = _verifySent.asStateFlow()
+
+    private val _verifyDone = MutableStateFlow(false)
+    val verifyDone: StateFlow<Boolean> = _verifyDone.asStateFlow()
+
+    fun sendEmailVerification() {
+        _isLoading.value = true
+        _verifyError.value = null
+        viewModelScope.launch {
+            val result = authRepository.requestEmailVerification()
+            if (result.isSuccess) {
+                _verifySent.value = true
+            } else {
+                _verifyError.value = result.exceptionOrNull()?.message
+                    ?: "Doğrulama kodu gönderilemedi."
+            }
+            _isLoading.value = false
+        }
+    }
+
+    fun confirmEmailVerification(code: String) {
+        val temiz = code.trim()
+        if (temiz.length != 6 || temiz.any { !it.isDigit() }) {
+            _verifyError.value = "Kod 6 haneli olmalı."
+            return
+        }
+        _isLoading.value = true
+        _verifyError.value = null
+        viewModelScope.launch {
+            val result = authRepository.confirmEmailVerification(temiz)
+            if (result.isSuccess) {
+                _verifyDone.value = true
+            } else {
+                _verifyError.value = result.exceptionOrNull()?.message ?: "Kod doğrulanamadı."
+            }
+            _isLoading.value = false
+        }
+    }
+
     fun logout() {
         authRepository.logout()
     }

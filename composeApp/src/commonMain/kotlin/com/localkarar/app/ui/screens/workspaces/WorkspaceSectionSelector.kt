@@ -20,6 +20,12 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.localkarar.app.navigation.Destination
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import com.localkarar.app.ui.components.LkMenuGrubu
+import com.localkarar.app.ui.components.LkMenuOgesi
+import com.localkarar.app.ui.components.LkMenuSheet
 import com.localkarar.app.ui.theme.*
 
 data class WorkspaceSectionItem(
@@ -77,7 +83,13 @@ val WORKSPACE_SECTION_GROUPS = listOf(
         )
     )
 )
-
+/**
+ * ISLETME BOLUMLERI CEKMECESI.
+ *
+ * Ortak `LkMenuSheet` uzerine kuruluyor; acik bolum tepede tam
+ * genislikte "one cikan" blokta duruyor ve izgarada da tik rozetiyle
+ * isaretli.
+ */
 @Composable
 fun WorkspaceSectionSheet(
     workspaceId: String,
@@ -88,158 +100,147 @@ fun WorkspaceSectionSheet(
     onClose: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(LkSurfaceCanvas, shape = LkShapes.LG)
-            .padding(horizontal = LkSpacing.Space6, vertical = LkSpacing.Space6)
-            .verticalScroll(rememberScrollState())
-    ) {
-        // Header
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Text(
-                    text = "İşletme Bölümleri",
-                    style = LkTypography.getSectionTitle(),
-                    color = LkTextPrimary
-                )
-                Text(
-                    text = workspaceName ?: "İşletme Takibi",
-                    style = LkTypography.getMicro(),
-                    color = LkPrimary
-                )
-            }
+    val acikBolum = WORKSPACE_SECTION_GROUPS
+        .flatMap { it.ogeleri() }
+        .firstOrNull { it.id == currentSectionId }
 
-            IconButton(onClick = onClose) {
-                Icon(
-                    imageVector = Icons.Outlined.Close,
-                    contentDescription = "Kapat",
-                    tint = LkTextSecondary
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(LkSpacing.Space4))
-        Divider(color = LkLineSoft)
-        Spacer(modifier = Modifier.height(LkSpacing.Space4))
-
-        // Groups
-        WORKSPACE_SECTION_GROUPS.forEachIndexed { groupIndex, group ->
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    text = group.groupTitle,
-                    style = LkTypography.getMetadata(),
-                    color = LkPrimary,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = LkSpacing.Space2)
-                )
-
-                group.items.forEach { item ->
-                    val isSelected = item.id == currentSectionId
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 3.dp)
-                            .clip(LkShapes.MD)
-                            .background(if (isSelected) LkSurfaceRaised else LkSurfacePanel)
-                            .border(1.dp, if (isSelected) LkPrimary else LkLineSoft, LkShapes.MD)
-                            .clickable {
-                                onNavigate(item.getDestination(workspaceId))
-                                onClose()
-                            }
-                            .padding(horizontal = LkSpacing.Space4, vertical = LkSpacing.Space3),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clip(LkShapes.SM)
-                                .background(if (isSelected) LkPrimary else LkSurfaceSunken),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = item.icon,
-                                contentDescription = item.title,
-                                tint = if (isSelected) LkOnPrimary else LkPrimary,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(LkSpacing.Space3))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = item.title,
-                                style = LkTypography.getBodyStrong(),
-                                color = if (isSelected) LkPrimary else LkTextPrimary
-                            )
-                            Text(
-                                text = item.description,
-                                style = LkTypography.getMicro(),
-                                color = LkTextSecondary
-                            )
-                        }
-                        if (isSelected) {
-                            Icon(
-                                imageVector = Icons.Outlined.Check,
-                                contentDescription = "Seçili",
-                                tint = LkPrimary,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                    }
+    LkMenuSheet(
+        baslik = "İşletme Bölümleri",
+        altBaslik = workspaceName ?: "İşletme Takibi",
+        seciliId = currentSectionId,
+        onClose = onClose,
+        modifier = modifier,
+        gruplar = WORKSPACE_SECTION_GROUPS.map { grup ->
+            LkMenuGrubu(
+                baslik = grup.groupTitle,
+                ogeler = grup.items.map { oge ->
+                    LkMenuOgesi(
+                        id = oge.id,
+                        baslik = oge.title,
+                        aciklama = oge.description,
+                        ikon = oge.icon,
+                        onClick = { onNavigate(oge.getDestination(workspaceId)) }
+                    )
                 }
-            }
-
-            if (groupIndex < WORKSPACE_SECTION_GROUPS.size - 1) {
-                Spacer(modifier = Modifier.height(LkSpacing.Space4))
-            }
-        }
-
-        Spacer(modifier = Modifier.height(LkSpacing.Space5))
-        Divider(color = LkLineSoft)
-        Spacer(modifier = Modifier.height(LkSpacing.Space4))
-
-        // Switch workspace footer button
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(LkShapes.MD)
-                .background(LkSurfaceSunken)
-                .border(1.dp, LkLineSoft, LkShapes.MD)
-                .clickable {
-                    onOpenAllWorkspaces()
-                    onClose()
-                }
-                .padding(LkSpacing.Space4),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Outlined.SwapHoriz,
-                    contentDescription = null,
-                    tint = LkPrimary,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(LkSpacing.Space3))
-                Text(
-                    text = "Tüm İşletmeler / İşletme Değiştir",
-                    style = LkTypography.getBodySmall(),
-                    color = LkTextPrimary
+            )
+        },
+        oneCikan = acikBolum?.let { bolum ->
+            {
+                AcikBolumBlogu(
+                    baslik = bolum.title,
+                    aciklama = bolum.description,
+                    ikon = bolum.icon
                 )
             }
-            Icon(
-                imageVector = Icons.Outlined.ChevronRight,
-                contentDescription = null,
-                tint = LkTextSecondary,
-                modifier = Modifier.size(18.dp)
+        },
+        altEylem = {
+            MenuAltEylem(
+                metin = "Tüm İşletmeler / İşletme değiştir",
+                ikon = Icons.Outlined.SwapHoriz,
+                onClick = onOpenAllWorkspaces
             )
         }
+    )
+}
 
-        Spacer(modifier = Modifier.height(LkSpacing.Space6))
+private fun WorkspaceSectionGroup.ogeleri(): List<WorkspaceSectionItem> = items
+
+/**
+ * Cekmecenin tepesindeki "su an buradasin" blogu.
+ *
+ * Menuyu acan kullanicinin ilk sorusu "neredeyim"; on bir kutucugu
+ * tarayarak cevaplamak yerine ustte yaziyor.
+ */
+@Composable
+private fun AcikBolumBlogu(
+    baslik: String,
+    aciklama: String,
+    ikon: ImageVector
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .lkShadow(LkElevation.MD, LkShapes.MD)
+            .clip(LkShapes.MD)
+            .background(
+                Brush.linearGradient(listOf(LkBrand.B700, LkBrand.B500))
+            )
+            .padding(LkSpacing.Space4),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(LkShapes.SM)
+                .background(Color(0x33FFFFFF)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = ikon,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+        Spacer(Modifier.width(LkSpacing.Space3))
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = "AÇIK BÖLÜM",
+                style = LkTypography.getMicro(),
+                color = Color(0xCCFFFFFF)
+            )
+            Text(
+                text = baslik,
+                style = LkTypography.getBodyStrong(),
+                color = Color.White
+            )
+            Text(
+                text = aciklama,
+                style = LkTypography.getMicro(),
+                color = Color(0xB3FFFFFF),
+                maxLines = 1
+            )
+        }
+    }
+}
+
+/** Cekmecenin en altindaki ikincil eylem satiri. */
+@Composable
+internal fun MenuAltEylem(
+    metin: String,
+    ikon: ImageVector,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(LkShapes.MD)
+            .background(LkSurfaceSunken)
+            .border(1.dp, LkLineSoft, LkShapes.MD)
+            .clickable(onClick = onClick)
+            .heightIn(min = 52.dp)
+            .padding(horizontal = LkSpacing.Space4),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = ikon,
+            contentDescription = null,
+            tint = LkPrimary,
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(Modifier.width(LkSpacing.Space3))
+        Text(
+            text = metin,
+            style = LkTypography.getBodySmall(),
+            color = LkTextPrimary,
+            modifier = Modifier.weight(1f)
+        )
+        Icon(
+            Icons.Outlined.ChevronRight,
+            contentDescription = null,
+            tint = LkTextSecondary,
+            modifier = Modifier.size(18.dp)
+        )
     }
 }
 

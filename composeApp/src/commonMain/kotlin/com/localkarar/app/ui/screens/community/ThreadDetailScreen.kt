@@ -1,5 +1,6 @@
 package com.localkarar.app.ui.screens.community
 
+import com.localkarar.app.ui.components.LkLoadingSpinner
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -21,9 +22,12 @@ import androidx.compose.ui.unit.dp
 import com.localkarar.app.community.ThreadsViewModel
 import com.localkarar.app.core.LkDateUtils
 import com.localkarar.app.network.dto.ThreadMessageDto
+import com.localkarar.app.ui.components.LkLoadingDesen
+import com.localkarar.app.ui.components.LkLoadingState
 import com.localkarar.app.ui.components.LkButton
+import com.localkarar.app.ui.components.LkTextField
 import com.localkarar.app.ui.components.LkButtonVariant
-import com.localkarar.app.ui.components.LkHeroPage
+import com.localkarar.app.ui.components.LkPageLayout
 import com.localkarar.app.ui.theme.*
 
 @Composable
@@ -40,16 +44,14 @@ fun ThreadDetailScreen(
         viewModel.loadMessages(threadId)
     }
 
-    LkHeroPage(
+    LkPageLayout(
         title = "Sohbet",
         onBack = onBack
     ) {
-        Column(Modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize().imePadding()) {
             when (val s = messagesState) {
                 is ThreadsViewModel.MessagesUiState.Loading, ThreadsViewModel.MessagesUiState.Idle -> {
-                    Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = LkPrimary)
-                    }
+                    LkLoadingState(modifier = Modifier.weight(1f), desen = LkLoadingDesen.LISTE)
                 }
                 is ThreadsViewModel.MessagesUiState.Error -> {
                     Column(
@@ -94,7 +96,7 @@ fun ThreadDetailScreen(
             // Sticky Bottom Input Composer
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                color = LkSurfacePanel,
+                color = LkSurfaceCanvas,
                 elevation = 8.dp
             ) {
                 Row(
@@ -103,31 +105,29 @@ fun ThreadDetailScreen(
                         .padding(horizontal = 16.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    OutlinedTextField(
+                    /*
+                     * Yazma alani: sistem alani, hap yaricapli. Mockup
+                     * "Topluluk 5"te yazma alani klavyeye yapisik duruyor —
+                     * kaydirmayla birlikte hareket etmiyor.
+                     */
+                    LkTextField(
                         value = viewModel.messageInput,
                         onValueChange = { viewModel.onMessageInputChange(it) },
-                        placeholder = { Text("Mesaj yazın...", style = LkTypography.getBodySmall(), color = LkTextMuted) },
-                        modifier = Modifier.weight(1f),
-                        colors = TextFieldDefaults.outlinedTextFieldColors(
-                            backgroundColor = LkSurfaceSunken,
-                            textColor = LkTextPrimary,
-                            cursorColor = LkPrimary,
-                            focusedBorderColor = LkPrimary,
-                            unfocusedBorderColor = LkLineSoft
-                        ),
-                        shape = LkShapes.MD,
-                        maxLines = 4
+                        placeholder = "Mesaj yazın...",
+                        modifier = Modifier.weight(1f)
                     )
                     Spacer(Modifier.width(8.dp))
-                    IconButton(
+                    Box(Modifier.size(48.dp).clip(CircleShape).background(LkPrimaryFill), contentAlignment = Alignment.Center) {
+                      IconButton(
                         onClick = { viewModel.sendMessage(threadId) },
                         enabled = viewModel.messageInput.isNotBlank() && !viewModel.isSendingMessage
-                    ) {
+                      ) {
                         if (viewModel.isSendingMessage) {
-                            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp, color = LkPrimary)
+                            LkLoadingSpinner(size = 20.dp, renk = LkOnPrimary)
                         } else {
-                            Icon(Icons.Outlined.Send, contentDescription = "Gönder", tint = if (viewModel.messageInput.isNotBlank()) LkPrimary else LkTextMuted)
+                            Icon(Icons.Outlined.Send, contentDescription = "Gönder", tint = if (viewModel.messageInput.isNotBlank()) LkOnPrimary else LkTextMuted)
                         }
+                      }
                     }
                 }
             }
@@ -164,7 +164,7 @@ private fun MessageBubble(
                         bottomEnd = if (isMe) 4.dp else 16.dp
                     )
                 )
-                .background(if (isMe) LkPrimary else LkSurfacePanel)
+                .background(if (isMe) LkPrimaryFill else LkSurfaceRaised)
                 .padding(horizontal = 14.dp, vertical = 10.dp)
         ) {
             Column {

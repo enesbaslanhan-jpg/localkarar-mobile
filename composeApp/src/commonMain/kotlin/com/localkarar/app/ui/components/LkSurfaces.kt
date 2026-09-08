@@ -1,5 +1,6 @@
 package com.localkarar.app.ui.components
 
+import com.localkarar.app.core.trBuyuk
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
@@ -346,7 +347,7 @@ fun LkPulseBadge(label: String, modifier: Modifier = Modifier) {
         )
         Spacer(Modifier.width(6.dp))
         Text(
-            text = label.uppercase(),
+            text = label.trBuyuk(),
             style = LkTypography.getMicro(),
             color = LkSuccess,
             fontWeight = FontWeight.Bold,

@@ -1,5 +1,10 @@
 package com.localkarar.app.ui.screens.community
 
+import com.localkarar.app.ui.components.LkLoadingSpinner
+import com.localkarar.app.ui.components.LkErrorState
+import com.localkarar.app.ui.components.LkEmptyState
+import com.localkarar.app.ui.components.LkLoadingDesen
+import com.localkarar.app.ui.components.LkLoadingState
 import com.localkarar.app.ui.components.LkHairline
 import com.localkarar.app.ui.components.LkListRow
 import com.localkarar.app.ui.components.LkRowGroup
@@ -37,6 +42,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.localkarar.app.auth.UserDto
 import com.localkarar.app.community.CommunityNotificationsViewModel
 import com.localkarar.app.community.CommunityViewModel
 import com.localkarar.app.community.SocialViewModel
@@ -61,6 +67,16 @@ import com.localkarar.app.ui.theme.*
  */
 enum class CommunityInternalTab(val title: String) {
     FEED("Akış"),
+    /*
+     * 🔴 GUNDEMDE AKISIN TEPESINDEYDI.
+     *
+     * Kart, akisin ILK DORT gonderisini numaralayip gosteriyor. Akisin
+     * basina konunca kullanici ayni dort gonderiyi once liste halinde,
+     * hemen ardindan kart kart bir daha goruyordu — ekranin ilk ekrani
+     * tekrar. Kendi sekmesine alindi: isteyen bakar, akis kendi
+     * basindan baslar.
+     */
+    TRENDING("Trend"),
     PROFILE("Profil"),
     CHATS("Sohbetler");
 
@@ -92,7 +108,15 @@ fun CommunityFeedScreen(
     socialViewModel: SocialViewModel,
     threadsViewModel: ThreadsViewModel,
     notificationsViewModel: CommunityNotificationsViewModel,
-    currentUserId: Int? = null,
+    /**
+     * Oturumdaki kullanici.
+     *
+     * ⚠️ Onceden yalniz `currentUserId` geciyordu; profil sekmesi bu yuzden
+     * kendi adini, kapagini ve avatarini cizemiyordu (webde ayni bilgiler
+     * `user`dan aliniyor, `ProfilePage.jsx`).
+     */
+    currentUser: UserDto,
+    onEditProfile: () -> Unit = {},
     initialTab: String = "feed",
     onOpenPost: (String) -> Unit,
     onOpenProfile: (Int) -> Unit,
@@ -235,10 +259,17 @@ fun CommunityFeedScreen(
                         onOpenProfile = onOpenProfile
                     )
                 }
+                CommunityInternalTab.TRENDING -> {
+                    TrendTabContent(
+                        viewModel = communityViewModel,
+                        onOpenPost = onOpenPost,
+                        onOpenProfile = onOpenProfile
+                    )
+                }
                 CommunityInternalTab.CHATS -> {
                     ThreadsScreen(
                         viewModel = threadsViewModel,
-                        currentUserId = currentUserId,
+                        currentUserId = currentUser.id,
                         onOpenThread = onOpenThread
                     )
                 }
@@ -275,51 +306,26 @@ fun CommunityFeedScreen(
                             )
                         }
                     } else {
-                        Column(Modifier.fillMaxSize()) {
-                            /*
-                             * Profilin icinden "Takip ve engelleme"ye giris.
-                             * Ust sekmeden buraya tasindi; takip ettiklerin ve
-                             * engellediklerin kullanicinin KENDI hesabina ait.
-                             */
-                            LkRowGroup(
-                                modifier = Modifier.padding(
-                                    horizontal = LkSpacing.Space4,
-                                    vertical = LkSpacing.Space2
-                                )
-                            ) {
-                                LkListRow(
-                                    baslik = "Takip ve engelleme",
-                                    altBaslik = "Takip ettiklerin ve engellediklerin",
-                                    onClick = { kisilerAcik = true },
-                                    ikon = {
-                                        Icon(
-                                            Icons.Outlined.PeopleOutline,
-                                            contentDescription = null,
-                                            tint = LkTileInk,
-                                            modifier = Modifier.size(21.dp)
-                                        )
-                                    },
-                                    sag = {
-                                        Icon(
-                                            Icons.Outlined.ChevronRight,
-                                            contentDescription = null,
-                                            tint = LkTextMuted,
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                    }
-                                )
-                            }
-
-                            ProfileScreen(
-                                userId = null, // Own profile
-                                socialViewModel = socialViewModel,
-                                communityViewModel = communityViewModel,
-                                onBack = null,
-                                onOpenFollowers = onOpenFollowers,
-                                onOpenPost = onOpenPost,
-                                onOpenProfile = onOpenProfile
-                            )
-                        }
+                        /*
+                         * ⚠️ "Takip ve engelleme" SATIRI BURADAN KALKTI.
+                         *
+                         * Profilin kimlik blogunun altina sikismis bir ayar
+                         * satiriydi; ait oldugu yer Ayarlar > Hesap
+                         * (`Destination.CommunityPeople`). Buradaki dal
+                         * yalniz DERIN BAGLANTI icin duruyor:
+                         * `community?tab=people` hala listeyi aciyor.
+                         */
+                        ProfileScreen(
+                            userId = null, // Own profile
+                            currentUser = currentUser,
+                            socialViewModel = socialViewModel,
+                            communityViewModel = communityViewModel,
+                            onBack = null,
+                            onOpenFollowers = onOpenFollowers,
+                            onOpenPost = onOpenPost,
+                            onOpenProfile = onOpenProfile,
+                            onEditProfile = onEditProfile
+                        )
                     }
                 }
             }
@@ -354,9 +360,7 @@ private fun FeedTabContent(
 
         when (val s = feedState) {
             is CommunityViewModel.FeedUiState.Loading -> {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = LkPrimary)
-                }
+                LkLoadingState(desen = LkLoadingDesen.LISTE)
             }
             is CommunityViewModel.FeedUiState.Error -> {
                 Column(
@@ -404,15 +408,6 @@ private fun FeedTabContent(
                              * gonderilik bir "gundem" listesi, altindaki akisin
                              * kopyasindan baska bir sey olmazdi.
                              */
-                            if (s.posts.size >= 4) {
-                                item {
-                                    GundemdeKarti(
-                                        posts = s.posts.take(4),
-                                        onOpenPost = onOpenPost
-                                    )
-                                }
-                            }
-
                             items(s.posts, key = { it.id }) { post ->
                                 PostFeedCard(
                                     post = post,
@@ -433,7 +428,7 @@ private fun FeedTabContent(
                                     contentAlignment = Alignment.Center
                                 ) {
                                     if (s.loadingMore) {
-                                        CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp, color = LkPrimary)
+                                        LkLoadingSpinner(size = 24.dp)
                                     } else {
                                         LkButton(
                                             text = "Daha Fazla Yükle",
@@ -489,13 +484,10 @@ fun PostFeedCard(
     onReply: () -> Unit,
     onReport: (() -> Unit)? = null
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        backgroundColor = LkSurfacePanel,
-        shape = LkShapes.MD,
-        elevation = 0.dp
+    /* §24: kenarlikli Material Card degil yukseltilmis LkCard. */
+    LkCard(
+        modifier = Modifier.clickable(onClick = onClick),
+        padding = 0.dp
     ) {
         Column(Modifier.padding(14.dp)) {
             // Author Row
@@ -550,7 +542,7 @@ fun PostFeedCard(
 
             // Post Text
             Text(
-                post.summary,
+                bahsetmeliMetin(post.summary, LkPrimary),
                 style = LkTypography.getBody(),
                 color = LkTextPrimary,
                 maxLines = 6,
@@ -766,6 +758,135 @@ private fun GundemdeKarti(
                 )
             }
             if (i != posts.lastIndex) LkHairline()
+        }
+    }
+}
+
+/**
+ * KATKI SAGLAYANLAR — webin sag seridindeki `contributors` kartinin
+ * karsiligi (`CommunityPage.jsx:298`, `feed.rail.contributors`).
+ *
+ * 🔴 Mobilde YOKTU. Webde sag rayda duruyor; telefonda ray olmadigi
+ * icin Trend sekmesine, gundemin altina konuyor -- webde de ikisi yan
+ * yana duran iki karttir.
+ *
+ * ⚠️ Liste `katkicilariCikar` ile turetiliyor; kural ve gerekcesi
+ * orada. Yani "toplulugun en cok katki vereni" DEGIL, gorulen akista
+ * en cok paylasani.
+ *
+ * ⚠️ Webden tek fark: satir DOKUNULABILIR. Yeni bir veri ya da yeni bir
+ * ekran degil -- profil ekrani zaten var ve akis kartindaki yazar adi da
+ * ayni yere gidiyor. Telefonda bir kisi adina dokunamamak tutarsiz
+ * olurdu.
+ */
+@Composable
+private fun KatkiSaglayanlarKarti(
+    posts: List<CommunityPostDto>,
+    onOpenProfile: (Int) -> Unit
+) {
+    val katkicilar = remember(posts) { katkicilariCikar(posts) }
+
+    if (katkicilar.isEmpty()) return
+
+    LkCard(padding = LkSpacing.Space4) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                Icons.Outlined.Star,
+                contentDescription = null,
+                tint = LkTileInk,
+                modifier = Modifier.size(19.dp)
+            )
+            Spacer(Modifier.width(LkSpacing.Space2))
+            Text("Katkı sağlayanlar", style = LkTypography.getTitleS(), color = LkTextPrimary)
+        }
+        Spacer(Modifier.height(LkSpacing.Space3))
+
+        katkicilar.forEachIndexed { i, kisi ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .then(
+                        if (kisi.id != null) {
+                            Modifier.clickable { onOpenProfile(kisi.id) }
+                        } else {
+                            Modifier
+                        }
+                    )
+                    /* §19: dokunma hedefi en az 44dp. */
+                    .heightIn(min = 44.dp)
+                    .padding(vertical = LkSpacing.Space2),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                LkAvatar(ad = kisi.ad, avatarUrl = kisi.avatarUrl, boyut = 32.dp)
+                Spacer(Modifier.width(LkSpacing.Space3))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = kisi.ad,
+                        style = LkTypography.getBodySmall(),
+                        color = LkTextPrimary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = "${kisi.sayi} paylaşım",
+                        style = LkTypography.getMetadata(),
+                        color = LkTextSecondary
+                    )
+                }
+            }
+            if (i != katkicilar.lastIndex) LkHairline()
+        }
+    }
+}
+
+/**
+ * Trend sekmesi — akisin ilk dort gonderisi, numaralanmis.
+ *
+ * ⚠️ SUNUCUDA POPULERLIK UCU YOK. Web de ayni sekilde davraniyor
+ * (`CommunityPage.jsx:1082` → `posts.slice(0,4)`); uydurma bir siralama
+ * hesaplanmiyor. Dortten az gonderi varsa sekme bos degil, NEDEN bos
+ * oldugunu soyluyor.
+ */
+@Composable
+private fun TrendTabContent(
+    viewModel: CommunityViewModel,
+    onOpenPost: (String) -> Unit,
+    onOpenProfile: (Int) -> Unit
+) {
+    val feedState by viewModel.feedState.collectAsState()
+
+    when (val s = feedState) {
+        is CommunityViewModel.FeedUiState.Loading -> LkLoadingState(desen = LkLoadingDesen.LISTE)
+        is CommunityViewModel.FeedUiState.Error -> LkErrorState(
+            message = s.message,
+            onRetry = { viewModel.refreshFeed() }
+        )
+        is CommunityViewModel.FeedUiState.Content -> {
+            if (s.posts.size < 4) {
+                LkEmptyState(
+                    title = "Gündem henüz oluşmadı",
+                    description = "Toplulukta en az dört paylaşım olunca öne çıkanlar burada listelenir."
+                )
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 88.dp),
+                    verticalArrangement = Arrangement.spacedBy(LkSpacing.Space3)
+                ) {
+                    item {
+                        GundemdeKarti(
+                            posts = s.posts.take(4),
+                            onOpenPost = onOpenPost
+                        )
+                    }
+                    item {
+                        KatkiSaglayanlarKarti(
+                            posts = s.posts,
+                            onOpenProfile = onOpenProfile
+                        )
+                    }
+                }
+            }
         }
     }
 }

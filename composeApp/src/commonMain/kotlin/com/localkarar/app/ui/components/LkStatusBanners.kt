@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
+import androidx.compose.material.TextButton
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material.icons.outlined.Close
@@ -13,6 +14,7 @@ import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.localkarar.app.auth.MembershipDto
@@ -127,6 +129,51 @@ fun LkMembershipBanner(
                     .size(16.dp)
                     .clickable { onKapat() }
             )
+        }
+    }
+}
+
+/**
+ * Islem sonucu bildirimi — "kaydedildi", "gonderilemedi".
+ *
+ * 🔴 AYNI BLOK BES EKRANDA KOPYALANMISTI ve hepsi ham Material `Card`
+ * kullaniyordu: yaricap 4dp (sistemde 12/20), yukseklik Material'in
+ * varsayilani, koyu temada siyah golge. Tek yere alindi.
+ *
+ * Hata ve basari SADECE RENKLE ayrilmiyor: ikon da degisiyor (§19).
+ */
+@Composable
+fun LkNotice(
+    metin: String,
+    hataMi: Boolean,
+    onKapat: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(LkShapes.MD)
+            .background(
+                if (hataMi) LkDanger.copy(alpha = 0.12f) else LkSuccess.copy(alpha = 0.12f)
+            )
+            .padding(start = LkSpacing.Space3, top = LkSpacing.Space2, bottom = LkSpacing.Space2),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = if (hataMi) Icons.Outlined.ErrorOutline else Icons.Outlined.CheckCircle,
+            contentDescription = null,
+            tint = if (hataMi) LkDanger else LkSuccess,
+            modifier = Modifier.size(18.dp)
+        )
+        Spacer(Modifier.width(LkSpacing.Space3))
+        Text(
+            text = metin,
+            style = LkTypography.getBodySmall(),
+            color = if (hataMi) LkDanger else LkSuccess,
+            modifier = Modifier.weight(1f)
+        )
+        TextButton(onClick = onKapat) {
+            Text("Tamam", color = LkTextPrimary, style = LkTypography.getLabel())
         }
     }
 }

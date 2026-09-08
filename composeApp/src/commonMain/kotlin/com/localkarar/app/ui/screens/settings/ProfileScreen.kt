@@ -1,20 +1,12 @@
 package com.localkarar.app.ui.screens.settings
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material.icons.outlined.Check
-import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.Text
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -25,11 +17,31 @@ import com.localkarar.app.auth.UserDto
 import com.localkarar.app.core.rememberFilePicker
 import com.localkarar.app.settings.SettingsViewModel
 import com.localkarar.app.settings.roleLabel
+import com.localkarar.app.ui.components.LkAvatar
 import com.localkarar.app.ui.components.LkButton
 import com.localkarar.app.ui.components.LkButtonVariant
 import com.localkarar.app.ui.components.LkHeroPage
+import com.localkarar.app.ui.components.LkLoadingSpinner
+import com.localkarar.app.ui.components.LkNotice
+import com.localkarar.app.ui.components.LkRemoteImage
+import com.localkarar.app.ui.components.LkTextField
 import com.localkarar.app.ui.theme.*
 
+/**
+ * Mockup "Ayar 2 — Profili düzenle".
+ *
+ * 🔴 EKRAN MOCKUP'IN YARISI KADARDI: yalnizca avatar ve ad vardi. Kapak
+ * fotografi, hakkinda, konum ve site alanlari mockup'ta duruyor, sunucu
+ * dordunu de kabul ediyor (`PATCH /auth/profile`, `POST /auth/cover`) ve
+ * `UserDto` dordunu de tasiyor — mobilde girilecek yer yoktu.
+ *
+ * ⚠️ MOCKUP'TAN TEK EKSIK: "Kullanıcı adı". Sunucuda `username` diye bir
+ * alan YOK; kaydedilmeyecek bir kutu koymak, kullanicinin yazdigini
+ * sessizce yutmak olurdu.
+ *
+ * Kapak ve avatar mockup'taki gibi ust uste: avatar kapagin alt sinirina
+ * biniyor.
+ */
 @Composable
 fun ProfileScreen(
     viewModel: SettingsViewModel,
@@ -38,49 +50,100 @@ fun ProfileScreen(
     onBack: () -> Unit
 ) {
     val currentUser = viewModel.user ?: user
-    var isEditingName by rememberSaveable { mutableStateOf(false) }
 
-    val launchFilePicker = rememberFilePicker { file ->
-        if (file != null) {
-            viewModel.uploadAvatar(file.name, file.bytes, onNewSession)
-        }
+    /* Alanlar ekran acilirken mevcut degerlerle doluyor. */
+    LaunchedEffect(currentUser?.id) { viewModel.profilAlanlariniHazirla() }
+
+    val avatarSec = rememberFilePicker { file ->
+        if (file != null) viewModel.uploadAvatar(file.name, file.bytes, onNewSession)
+    }
+    val kapakSec = rememberFilePicker { file ->
+        if (file != null) viewModel.uploadCover(file.name, file.bytes, onNewSession)
     }
 
-    LkHeroPage(title = "Profil Bilgileri", onBack = onBack) {
+    LkHeroPage(
+        title = "Profili düzenle",
+        onBack = onBack,
+        actions = {
+            LkButton(
+                text = if (viewModel.nameLoading) "..." else "Kaydet",
+                onClick = { viewModel.saveProfile { updated -> onNewSession("", updated) } },
+                enabled = !viewModel.nameLoading,
+                size = com.localkarar.app.ui.components.LkButtonSize.SM,
+                modifier = Modifier.padding(end = LkSpacing.Space2)
+            )
+        }
+    ) {
         Column(
             Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(bottom = LkSpacing.Space8),
+            verticalArrangement = Arrangement.spacedBy(LkSpacing.Space4)
         ) {
             if (currentUser != null) {
-                // Avatar Block
-                Box(
-                    modifier = Modifier
-                        .size(88.dp)
-                        .clip(CircleShape)
-                        .background(LkSurfaceSignature)
-                        .border(2.dp, LkLineStrong, CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = currentUser.name.take(1).uppercase().ifBlank { "U" },
-                        style = LkTypography.getPageTitle(),
-                        color = LkPrimary,
-                        fontWeight = FontWeight.Bold
-                    )
+                /*
+                 * KAPAK + AVATAR. Avatar kapagin ALT SINIRINA biniyor
+                 * (mockup "Ekran 4" ve "Ayar 2"); bu yuzden kapak
+                 * blogunun altinda avatarin yarisi kadar bosluk var.
+                 */
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(140.dp)
+                            .background(LkSurfaceSignature),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        val kapak = currentUser.coverUrl
+                        if (!kapak.isNullOrBlank()) {
+                            LkRemoteImage(
+                                url = kapak,
+                                contentDescription = "Kapak fotoğrafı",
+                                modifier = Modifier.fillMaxSize(),
+                                yedek = {}
+                            )
+                        }
+                        if (viewModel.coverLoading) {
+                            LkLoadingSpinner(size = 24.dp)
+                        } else {
+                            LkButton(
+                                text = "Kapağı değiştir",
+                                variant = LkButtonVariant.SECONDARY,
+                                size = com.localkarar.app.ui.components.LkButtonSize.SM,
+                                onClick = { kapakSec() }
+                            )
+                        }
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .offset(x = LkSpacing.Space5, y = 44.dp)
+                    ) {
+                        LkAvatar(
+                            ad = currentUser.name,
+                            avatarUrl = currentUser.avatarUrl,
+                            boyut = 88.dp
+                        )
+                    }
                 }
 
-                if (viewModel.avatarLoading) {
-                    CircularProgressIndicator(color = LkPrimary, modifier = Modifier.size(24.dp))
-                } else {
-                    Row(horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space3)) {
+                Spacer(Modifier.height(48.dp))
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = LkSpacing.Space4),
+                    horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space3)
+                ) {
+                    if (viewModel.avatarLoading) {
+                        LkLoadingSpinner(size = 24.dp)
+                    } else {
                         LkButton(
-                            text = "Fotoğrafı Değiştir",
+                            text = "Avatarı değiştir",
                             variant = LkButtonVariant.SECONDARY,
-                            onClick = { launchFilePicker() }
+                            onClick = { avatarSec() }
                         )
                         if (!currentUser.avatarUrl.isNullOrBlank()) {
                             LkButton(
@@ -96,135 +159,88 @@ fun ProfileScreen(
                     "Fotoğraf PNG veya JPEG, en fazla 5 MB olabilir.",
                     style = LkTypography.getMicro(),
                     color = LkTextSecondary,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Start,
+                    modifier = Modifier.padding(horizontal = LkSpacing.Space4)
                 )
 
-                // Info Cards
-                Card(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(LkShapes.MD)
-                        .border(1.dp, LkLineSoft, LkShapes.MD),
-                    backgroundColor = LkSurfacePanel,
-                    elevation = 0.dp
+                        .padding(horizontal = LkSpacing.Space4),
+                    verticalArrangement = Arrangement.spacedBy(LkSpacing.Space4)
                 ) {
-                    Column(
-                        Modifier.fillMaxWidth().padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        // Display Name
-                        Column(
-                            modifier = if (!isEditingName) Modifier.clickable { isEditingName = true } else Modifier
-                        ) {
-                            Row(
-                                Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text("Görünen Ad", style = LkTypography.getMicro(), color = LkTextSecondary)
-                                if (!isEditingName) {
-                                    IconButton(
-                                        onClick = { isEditingName = true },
-                                        modifier = Modifier.size(40.dp)
-                                    ) {
-                                        Icon(
-                                            Icons.Outlined.Edit,
-                                            contentDescription = "Düzenle",
-                                            tint = LkPrimary,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    }
-                                }
-                            }
-                            if (isEditingName) {
-                                Spacer(Modifier.height(4.dp))
-                                Row(
-                                    Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    OutlinedTextField(
-                                        value = viewModel.editName,
-                                        onValueChange = { viewModel.onEditNameChange(it) },
-                                        modifier = Modifier.weight(1f),
-                                        singleLine = true,
-                                        textStyle = LkTypography.getBody()
-                                    )
-                                    if (viewModel.nameLoading) {
-                                        CircularProgressIndicator(color = LkPrimary, modifier = Modifier.size(24.dp))
-                                    } else {
-                                        IconButton(
-                                            onClick = {
-                                                viewModel.updateDisplayName { updated ->
-                                                    isEditingName = false
-                                                    onNewSession("", updated)
-                                                }
-                                            }
-                                        ) {
-                                            Icon(Icons.Outlined.Check, contentDescription = "Kaydet", tint = LkSuccess)
-                                        }
-                                    }
-                                }
-                            } else {
-                                Text(currentUser.name, style = LkTypography.getBodyStrong(), color = LkTextPrimary)
-                            }
-                        }
+                    LkTextField(
+                        value = viewModel.editName,
+                        onValueChange = { viewModel.onEditNameChange(it) },
+                        label = "Görünen ad"
+                    )
+                    LkTextField(
+                        value = viewModel.editBio,
+                        onValueChange = { viewModel.onEditBioChange(it) },
+                        label = "Hakkında",
+                        placeholder = "İşletmeni bir iki cümleyle anlat",
+                        singleLine = false
+                    )
+                    Text(
+                        text = "${viewModel.editBio.length}/280",
+                        style = LkTypography.getMicro(),
+                        color = if (viewModel.editBio.length > 280) LkDanger else LkTextMuted
+                    )
+                    LkTextField(
+                        value = viewModel.editLocation,
+                        onValueChange = { viewModel.onEditLocationChange(it) },
+                        label = "Konum",
+                        placeholder = "Bursa"
+                    )
+                    LkTextField(
+                        value = viewModel.editWebsite,
+                        onValueChange = { viewModel.onEditWebsiteChange(it) },
+                        label = "Site",
+                        placeholder = "https://ornek.com"
+                    )
 
-                        Divider(color = LkLineSoft)
-
-                        // Email
-                        Column {
-                            Text("E-posta Adresi", style = LkTypography.getMicro(), color = LkTextSecondary)
-                            Spacer(Modifier.height(2.dp))
-                            Text(currentUser.email, style = LkTypography.getBodyStrong(), color = LkTextPrimary)
-                        }
-
-                        Divider(color = LkLineSoft)
-
-                        // Role
-                        Column {
-                            Text("Hesap Rolü", style = LkTypography.getMicro(), color = LkTextSecondary)
-                            Spacer(Modifier.height(4.dp))
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(4.dp))
-                                    .background(LkPrimary.copy(alpha = 0.15f))
-                                    .padding(horizontal = 8.dp, vertical = 4.dp)
-                            ) {
-                                Text(
-                                    text = roleLabel(currentUser.role),
-                                    style = LkTypography.getMicro(),
-                                    color = LkPrimary,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
-            viewModel.notice?.let {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    backgroundColor = if (viewModel.noticeIsError) LkDanger.copy(alpha = 0.15f) else LkSuccess.copy(alpha = 0.15f),
-                    elevation = 0.dp
-                ) {
-                    Row(
-                        Modifier.fillMaxWidth().padding(12.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                    /* Salt okunur: e-posta ve rol bu ekrandan degismiyor. */
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text("E-POSTA ADRESİ", style = LkTypography.getMicro(), color = LkTextSecondary)
+                        Text(currentUser.email, style = LkTypography.getBodyStrong(), color = LkTextPrimary)
                         Text(
-                            text = it,
-                            style = LkTypography.getBodySmall(),
-                            color = if (viewModel.noticeIsError) LkDanger else LkSuccess,
-                            modifier = Modifier.weight(1f)
+                            "E-posta \"E-posta değiştir\" ekranından, doğrulamayla değişir.",
+                            style = LkTypography.getMicro(),
+                            color = LkTextMuted
                         )
-                        TextButton(onClick = { viewModel.clearNotice() }) {
-                            Text("Tamam", color = LkTextPrimary)
+                    }
+
+                    Column(verticalArrangement = Arrangement.spacedBy(LkSpacing.Space1)) {
+                        Text("HESAP ROLÜ", style = LkTypography.getMicro(), color = LkTextSecondary)
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(LkPrimary.copy(alpha = 0.15f))
+                                .padding(horizontal = LkSpacing.Space2, vertical = LkSpacing.Space1)
+                        ) {
+                            Text(
+                                text = roleLabel(currentUser.role),
+                                style = LkTypography.getMicro(),
+                                color = LkPrimary,
+                                fontWeight = FontWeight.SemiBold
+                            )
                         }
                     }
+
+                    viewModel.notice?.let {
+                        LkNotice(
+                            metin = it,
+                            hataMi = viewModel.noticeIsError,
+                            onKapat = { viewModel.clearNotice() }
+                        )
+                    }
+
+                    LkButton(
+                        text = if (viewModel.nameLoading) "Kaydediliyor..." else "Kaydet",
+                        onClick = { viewModel.saveProfile { updated -> onNewSession("", updated) } },
+                        enabled = !viewModel.nameLoading,
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
             }
         }

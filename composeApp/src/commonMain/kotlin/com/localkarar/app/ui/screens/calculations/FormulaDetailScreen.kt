@@ -3,6 +3,9 @@ package com.localkarar.app.ui.screens.calculations
 import androidx.compose.runtime.Composable
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
@@ -11,7 +14,12 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
+import com.localkarar.app.calculations.FORMULA_EXPRESSIONS
+import com.localkarar.app.calculations.FormulaExpression
 import com.localkarar.app.calculations.FormulaCalculatorUiState
 import com.localkarar.app.calculations.FormulaCalculatorViewModel
 import com.localkarar.app.core.LkFormatting
@@ -20,11 +28,13 @@ import com.localkarar.app.ui.components.LkButton
 import com.localkarar.app.ui.components.LkChip
 import com.localkarar.app.ui.components.LkErrorState
 import com.localkarar.app.ui.components.LkInfoPanel
+import com.localkarar.app.ui.components.LkLoadingDesen
 import com.localkarar.app.ui.components.LkLoadingState
 import com.localkarar.app.ui.components.LkNumericField
 import com.localkarar.app.ui.components.LkHeroPage
 import com.localkarar.app.ui.components.LkResultRow
 import com.localkarar.app.ui.components.LkSectionHeader
+import com.localkarar.app.ui.components.LkSuccessPanel
 import com.localkarar.app.ui.theme.*
 
 internal val FORMULA_RESULT_LABELS = mapOf(
@@ -107,9 +117,26 @@ fun FormulaDetailScreen(
     val uiState by viewModel.uiState.collectAsState()
     var actionError by remember { mutableStateOf<String?>(null) }
 
-    LkHeroPage(title = "Hızlı Hesaplama", onBack = onBack) {
+    /*
+     * BASARI TIKI — §24 animasyon 3.
+     *
+     * Hesaplama sunucuda calisiyor ve `calculations` gecmisine YAZILIYOR
+     * (mockup "Çalıştırmalar" ekrani bu kayitlari listeliyor); yani bu
+     * gercek bir tamamlanma ani. Konfeti YOK — o yalniz karar oturumunun
+     * bitisinde. Her hesaplamada konfeti atsaydik arac oyuncak gorunurdu.
+     */
+    val sonuc = (uiState as? FormulaCalculatorUiState.Content)?.result
+    var basariGoster by remember { mutableStateOf(false) }
+    LaunchedEffect(sonuc) {
+        if (sonuc != null) basariGoster = true
+    }
+
+    LkHeroPage(
+        title = (uiState as? FormulaCalculatorUiState.Content)?.formula?.name ?: "Hesaplama",
+        onBack = onBack
+    ) {
         when (val state = uiState) {
-            is FormulaCalculatorUiState.Loading -> LkLoadingState()
+            is FormulaCalculatorUiState.Loading -> LkLoadingState(desen = LkLoadingDesen.DETAY)
             is FormulaCalculatorUiState.Error -> LkErrorState(
                 message = state.message,
                 onRetry = null
@@ -137,6 +164,21 @@ fun FormulaDetailScreen(
                         )
                         Spacer(modifier = Modifier.height(LkSpacing.Space2))
                         LkChip(text = formulaCategoryLabel(formula.category))
+                    }
+
+                    /*
+                     * FORMUL BLOGU — mockup "Hesap 2".
+                     *
+                     * Ekran bugune kadar girdi kutularini ve sonucu
+                     * gosteriyordu ama HESABIN KENDISINI hicbir yerde
+                     * yazmiyordu. Kullanici cikan rakama neden guvenecegini
+                     * bilmiyordu; finans aracinda bu kabul edilemez.
+                     *
+                     * Blok kendi icinde YATAY kayiyor: uzun formul sayfayi
+                     * yana kaydirsaydi butun ekran bozulurdu.
+                     */
+                    FORMULA_EXPRESSIONS[formula.id]?.let { ifade ->
+                        item { FormulBlogu(ifade) }
                     }
 
                     if (!formula.warning.isNullOrBlank()) {
@@ -220,6 +262,16 @@ fun FormulaDetailScreen(
                         )
                     }
 
+                    if (state.result != null && basariGoster) {
+                        item {
+                            LkSuccessPanel(
+                                baslik = "Hesaplama tamamlandı",
+                                altBaslik = formula.name + " · çalıştırmalara kaydedildi",
+                                onKapat = { basariGoster = false }
+                            )
+                        }
+                    }
+
                     if (state.result != null) {
                         item {
                             LkInfoPanel(title = "Sonuç") {
@@ -263,6 +315,53 @@ fun FormulaDetailScreen(
                     }
                 }
             }
+        }
+    }
+}
+
+/**
+ * Tek genislikli formul blogu.
+ *
+ * Yazi tipi monospace: hizalanan `=` isaretleri satirlari birbirine
+ * baglar, orantili yazi tipinde bu hizalama dagilir.
+ */
+@Composable
+private fun FormulBlogu(ifade: FormulaExpression) {
+    Column(verticalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
+        Text(
+            text = "FORMÜL",
+            style = LkTypography.getMicro(),
+            color = LkTextSecondary
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(LkShapes.MD)
+                .background(LkSurfaceSunken)
+                .horizontalScroll(rememberScrollState())
+                .padding(LkSpacing.Space4)
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                ifade.satirlar.forEach { satir ->
+                    Text(
+                        text = satir,
+                        style = LkTypography.getBodySmall().copy(
+                            fontFamily = FontFamily.Monospace,
+                            lineHeight = 20.sp
+                        ),
+                        color = LkTextPrimary,
+                        maxLines = 1,
+                        softWrap = false
+                    )
+                }
+            }
+        }
+        if (ifade.not != null) {
+            Text(
+                text = ifade.not,
+                style = LkTypography.getMetadata(),
+                color = LkTextSecondary
+            )
         }
     }
 }
