@@ -82,6 +82,16 @@ jobs:
 
       - name: Toolchain & System Discovery
         run: |
+          # 🔴 KOSU KENDINI TANITIYOR.
+          #
+          # Once bir ayar degisikligi yapildi ama sonraki log AYNI hatayi
+          # verdi ve log'dan o degisikligin runner'a ULASIP ULASMADIGI
+          # anlasilamadi -- "eski kosunun log'u mu, yeni mi" sorusu
+          # cevapsiz kaldi. Bir daha kalmasin.
+          echo "=== Kosulan commit ==="
+          git log -1 --oneline
+          echo "=== Kotlin/Native onbellek ayari ==="
+          grep -n "cacheKind" gradle.properties || echo "(cacheKind satiri YOK)"
           echo "=== System Information ==="
           uname -a
           uname -m
@@ -130,13 +140,6 @@ jobs:
           echo "=== Compiling Kotlin iosSimulatorArm64 ==="
           mkdir -p artifacts
           ./gradlew :composeApp:compileKotlinIosSimulatorArm64 --stacktrace 2>&1 | tee artifacts/gradle_compile.log
-
-      # commonTest testleri burada da kosuyor: iOS hedefine derlenmis halleriyle.
-      # Onceki kurulumda hicbir is `gradle test` calistirmiyordu.
-      - name: Birim testleri (iOS simulator hedefi)
-        run: |
-          set -o pipefail
-          ./gradlew :composeApp:iosSimulatorArm64Test --stacktrace 2>&1 | tee artifacts/gradle_test.log
 
       - name: Link Kotlin iOS Debug Framework
         run: |
@@ -198,6 +201,25 @@ jobs:
           xcrun simctl spawn "$DISCOVERED_SIM_UDID" ps aux | grep -i "localkarar" || true
           
           echo "=== Simulator Lifecycle Verification Complete ==="
+
+      # 🔴 BIRIM TESTLERI EN SONA ALINDI — bilerek.
+      #
+      # Bu isin adi "iOS Platform & Simulator Build": asil isi uygulamanin
+      # derlenip simulatorde acildigini kanitlamak. Birim testleri bonus,
+      # cunku ayni commonTest testleri Android isinde de kosuyor.
+      #
+      # Test ADIMI ortada dururken, onun link hatasi kendinden SONRAKI her
+      # seyi (framework linki, Xcode derlemesi, simulatorde acilis)
+      # kosturmadan bloke ediyordu. Bu dalda o adimlarin hicbiri henuz
+      # kosmadi ve her denemede 12 dakika harcanip tek bir bilgi
+      # aliniyordu. Sona alinca bir kosu HEPSINI birden soyluyor.
+      #
+      # ⚠️ Adim hala isi DUSURUYOR (continue-on-error YOK): dusen bir test
+      # yesil gorunmemeli. Yalnizca sirasi degisti.
+      - name: Birim testleri (iOS simulator hedefi)
+        run: |
+          set -o pipefail
+          ./gradlew :composeApp:iosSimulatorArm64Test --stacktrace 2>&1 | tee artifacts/gradle_test.log
 
       - name: Upload Build Artifacts & Screenshot
         if: always()
