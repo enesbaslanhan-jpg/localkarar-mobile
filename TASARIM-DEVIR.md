@@ -1302,3 +1302,57 @@ kapsıyor.
 
 **AÇIK:** Emülatörde gerçek sunucuyla gezinti yapılmadı — ekran derleniyor ve
 saf mantık testli, ama gerçek veriyle görülmedi.
+
+## §23 — CI aylardır hiç koşmuyordu (9 Eylül 2026)
+
+§22 push edildikten sonra ürün sahibi Actions sekmesinde hiçbir koşu göremedi.
+Sebep, bulunması işin kendisinden uzun süren bir zincirdi.
+
+### Dört ayrı arıza, hepsi "sessizce yok"
+
+| # | Arıza | Belirti |
+|---|---|---|
+| 1 | Her iki iş akışı da yalnız `main`/`feature/**`/`fix/**` dallarında koşuyordu; çalışma dalı `design` | Koşu **hiç** yok. Kırmızı değil, yok. |
+| 2 | `gradlew` git indeksinde `100644` — çalıştırma biti yok | Android işi ilk gradle adımında `exit 126`, tek test bile koşmadan |
+| 3 | Test adımı ortadaydı; link hatası kendinden sonraki her şeyi bloke ediyordu | Framework linki, Xcode derlemesi, simülatörde açılış **hiç** koşmadı |
+| 4 | Xcode seçici kalıbı `Xcode_1[6-9]*.app` — Apple numaralandırmayı 26'ya atladı | Sessizce Xcode 16.4'e düşüyor, iOS 18.5 SDK ile link, `UIViewLayoutRegion` bulunamıyor |
+
+4'ü ben yazdım. Aynı adıma "sabit sürüm yazma, imaj değişince sessizce bozulur"
+diye yorum düşüp, sürüm **aralığı** kullanarak aynı tuzağın başka biçimine
+düştüm. Kalıp kaldırıldı: kurulu tüm Xcode'lar sıralanıp en yenisi seçiliyor.
+
+### Denenip işe YARAMAYANLAR — tekrar denenmesin
+
+İkisi de kodda notlu duruyor, silinmedi:
+
+- **Kotlin/Native önbelleğini kapatma** (`kotlin.native.cacheKind`, hem hedefe
+  özel hem küresel biçim). Bağlayıcı satırında `-cache.a` arşivleri kalmaya
+  devam etti, hata birebir aynı çıktı. Tek etkisi koşuyu 12→19 dakika yapmak.
+- **Test ikilisinin `osVersionMin`ini 18.0'a çekme.** Uygulandığı doğrulandı
+  (log'da `being linked (18.0)`, öncesinde 15.0) ama hatayı çözmedi. Yani
+  dağıtım hedefi sebep değildi; sınıf kullanılan SDK'da hiç yoktu.
+
+⚠️ Uygulamanın dağıtım hedefi **14.1'de bırakıldı**. Copilot 18.0'a çekmeyi
+önerdi; bu hatayı susturur ama uygulamayı yalnız iOS 18+ cihazlarda çalışır
+hale getirir — bir derleme ayarı değil, hangi müşteriye satıldığı kararıdır.
+
+### Şimdi doğrulanan
+
+Her push'ta koşuyor ve yeşil:
+
+- **Android:** `assembleDebug`, `testDebugUnitTest`, `lintDebug`, `assembleRelease`.
+  Birim testleri ilk kez CI'da koşuyor. `assembleRelease` R8 açık — R8'in
+  kotlinx.serialization DTO'larını bozması yalnız orada yakalanır.
+- **iOS:** Kotlin derlemesi, framework linki, Xcode derlemesi, simülatörde
+  kurulum ve açılış, birim testleri.
+
+§9'daki "iOS hiç çalıştırılmadı" maddesi **simülatör tarafında kapandı**.
+Gerçek cihazda hâlâ çalıştırılmadı.
+
+### Hâlâ açık
+
+- Emülatörde/simülatörde **gerçek sunucuyla** elle gezinti yapılmadı; §22'deki
+  ekranlar derleniyor ve saf mantığı testli, ama gerçek veriyle görülmedi.
+- Coil 3.1.0 skiko 0.8.18 istiyor, Compose 1.11.1 ise 0.144.6 — şu an yukarı
+  çözülüyor ve zarar vermiyor. Tuhaf bir çalışma-anı davranışı çıkarsa bakılacak
+  ilk yer burası.
