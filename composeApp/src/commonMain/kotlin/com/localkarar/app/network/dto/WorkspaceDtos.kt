@@ -200,6 +200,13 @@ data class BusinessRecordDto(
     val updatedAt: String? = null,
 
     /*
+     * Gecikme SUNUCUDA hesaplaniyor, burada degil. Ayni karar takip
+     * listesi, takvim ve ana sayfada tekrar edilseydi biri "vadesi
+     * bugun olan gecmis sayilir mi" sorusunu farkli yanitlayabilirdi.
+     */
+    val overdue: Boolean = false,
+
+    /*
      * ⚠️ ASAGIDAKI UCU YALNIZ DETAY UCUNDA DOLU.
      *
      * Liste ucu (`/records`) bunlari getirmiyor; varsayilanlari bos
@@ -470,6 +477,50 @@ data class NotificationRecordRefDto(
     val type: String? = null,
     val dueAt: String? = null,
     val status: String? = null
+)
+
+/**
+ * YONETICI ANALIZI — `GET /workspaces/{ws}/tracker/analysis`.
+ *
+ * 🔴 "KARAR BASARISI" ORANI YOK ve olmayacak. Beklenen ve gerceklesen
+ * sonuc serbest metin; farkini programla olcmenin yolu yok. Sonucu
+ * yazilmis her karari "basarili" saymak yoneticiye uydurma bir sayi
+ * vermek olurdu ve o sayiya bakip karar verirdi.
+ *
+ * Verilen sey OLCULEBILEN: karar takip edilmis mi, gorev zamaninda
+ * bitmis mi. Basari hukmu metinleri okuyana ait.
+ *
+ * ⚠️ Yalniz sahip ve yonetici erisebiliyor; diger roller 403 aliyor ve
+ * panel hic cizilmiyor.
+ */
+@Serializable
+data class TrackerAnaliziDto(
+    val gorevler: AnalizGorevleriDto = AnalizGorevleriDto(),
+    val kararlar: AnalizKararlariDto = AnalizKararlariDto()
+)
+
+@Serializable
+data class AnalizGorevleriDto(
+    val toplam: Int = 0,
+    val atanmamis: Int = 0,
+    val kisiler: List<AnalizKisiDto> = emptyList()
+)
+
+@Serializable
+data class AnalizKisiDto(
+    val userId: Int,
+    val name: String = "—",
+    val toplam: Int = 0,
+    val tamamlanan: Int = 0,
+    val zamaninda: Int = 0,
+    val geciken: Int = 0
+)
+
+@Serializable
+data class AnalizKararlariDto(
+    val toplam: Int = 0,
+    val takipEdilen: Int = 0,
+    val bekleyen: Int = 0
 )
 
 @Serializable

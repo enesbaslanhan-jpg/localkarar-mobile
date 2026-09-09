@@ -68,6 +68,14 @@ sealed interface Destination {
     data class Team(val workspaceId: String) : Destination
     data class Contacts(val workspaceId: String) : Destination
     data class Activity(val workspaceId: String) : Destination
+
+    /**
+     * Karar raporu — hedeflenen ile gerceklesenin karsilastirmasi.
+     *
+     * 🔴 Bu hedef YOKTU. Karar araci takipleri ve finansal model karar
+     * gunlugu YAZILIYOR ama hicbir yerde okunmuyordu.
+     */
+    data class KararRaporu(val workspaceId: String) : Destination
     data class WorkspaceSettings(val workspaceId: String) : Destination
 
     /**

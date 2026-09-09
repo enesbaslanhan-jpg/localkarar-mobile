@@ -43,6 +43,7 @@ object DestinationCodec {
             is Destination.Team -> "team:${destination.workspaceId}"
             is Destination.Contacts -> "contacts:${destination.workspaceId}"
             is Destination.Activity -> "activity:${destination.workspaceId}"
+            is Destination.KararRaporu -> "karar_raporu:${destination.workspaceId}"
             is Destination.WorkspaceSettings -> "workspace_settings:${destination.workspaceId}"
             is Destination.WorkspaceIntegrations -> "workspace_integrations:${destination.workspaceId}"
             is Destination.Community -> if (destination.initialTab == "feed") "community" else "community:${destination.initialTab}"
@@ -106,6 +107,7 @@ object DestinationCodec {
                 "team" -> Destination.Team(parts[1])
                 "contacts" -> Destination.Contacts(parts[1])
                 "activity" -> Destination.Activity(parts[1])
+                "karar_raporu" -> Destination.KararRaporu(parts[1])
                 "workspace_settings" -> Destination.WorkspaceSettings(parts[1])
                 "workspace_integrations" -> Destination.WorkspaceIntegrations(parts[1])
                 "community" -> if (parts.size > 1 && parts[1].isNotBlank()) Destination.Community(parts[1]) else Destination.Community("feed")

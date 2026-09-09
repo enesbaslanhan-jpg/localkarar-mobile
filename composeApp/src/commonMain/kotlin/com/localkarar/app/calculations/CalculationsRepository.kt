@@ -10,6 +10,7 @@ import com.localkarar.app.network.dto.FinancialModelRunListResponseDto
 import com.localkarar.app.network.dto.FinancialModelRunResponseDto
 import com.localkarar.app.network.dto.HesaplamaIpucuDto
 import com.localkarar.app.network.dto.KararGunluguDto
+import com.localkarar.app.network.dto.KararGunluguListesiDto
 import com.localkarar.app.network.dto.KararGunluguIstegiDto
 import com.localkarar.app.network.dto.FormulaCalculateRequestDto
 import com.localkarar.app.network.dto.FormulaCalculateResponseDto
@@ -64,6 +65,17 @@ class CalculationsRepository(private val api: SafeApiClient) {
         istek: KararGunluguIstegiDto
     ): Result<KararGunluguDto> {
         return api.post("$base/workspaces/$workspaceId/decision-journal", istek)
+    }
+
+    /*
+     * KARAR GUNLUGUNU GERI OKUMA.
+     *
+     * 🔴 Yalniz yazma vardi. Kullanici kararini ve sonucunu giriyor,
+     * o veriyi bir daha hicbir yerde goremiyordu -- sunucuda okuma
+     * ucu bile yoktu.
+     */
+    suspend fun kararGunlugu(workspaceId: String): Result<KararGunluguListesiDto> {
+        return api.get("$base/workspaces/$workspaceId/decision-journal")
     }
 
     suspend fun runModel(workspaceId: String, code: String, request: ModelRunRequestDto): Result<FinancialModelRunResponseDto> {

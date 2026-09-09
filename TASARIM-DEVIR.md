@@ -1242,3 +1242,63 @@ gönderiyordu — biri bu tuzağa daha önce düşmüş ve orada çözmüş.)*
 
 Koparma ucu **plana ek**: madde 11 "bağlama" diyordu, ama geri alınamayan bir bağ
 kullanıcıya kötü bir takas sunardı. Ekleme ile kaldırma birlikte çıkıyor.
+
+## §22 — Karar–görev döngüsü (9 Eylül 2026)
+
+Ürün sahibi beş madde sordu: görev atanınca bildirim, yaklaşan/geciken
+hatırlatma, ana sayfada "kararlardan gelen görevler", hedeflenen–gerçekleşen
+raporu, yönetici analizi. Beşi de webde eksikti; önce web tamamlandı, sonra
+mobil.
+
+### Mobilde kod GEREKTİRMEYEN iki madde
+
+**Atama bildirimi ve gecikme hatırlatması sunucu tarafı.** Bildirim ekranı
+(`NotificationsScreen.kt`) sunucunun verdiği başlık ve gövdeyi olduğu gibi
+çiziyor, `type` alanına göre dallanmıyor. Sunucu `record_assigned` ve
+`record_overdue` üretmeye başladığı an mobil ikisini de gösteriyor.
+
+Bu bilerek böyle bırakıldı: tipe göre dallanan bir ekran, sunucu yeni bir
+bildirim tipi eklediğinde sessizce "bilinmeyen tip" satırı çizerdi.
+
+### Mobilde yapılanlar
+
+| Ne | Nerede |
+|---|---|
+| Karar günlüğünü geri okuma | `CalculationsRepository.kararGunlugu()` |
+| Karar görevi süzgeci | `WorkspaceRepository.getRecords(kararKaynakli = true)` |
+| Yönetici analizi | `WorkspaceRepository.getTrackerAnalysis()` |
+| Birleştirme mantığı (saf) | `decision/KararRaporu.kt` |
+| Ekran | `ui/screens/workspaces/KararRaporuScreen.kt` |
+| Ana sayfa bölümü | `WorkspaceHomeScreen.kt` + `WorkspaceHomeViewModel.kt` |
+
+### Web ile bilerek FARKLI olan üç şey
+
+1. **Hedeflenen/gerçekleşen yan yana DEĞİL, alt alta.** Web iki sütun
+   kullanıyor çünkü orada 700px var; 360dp'de iki sütun okunmuyor.
+   Karşılaştırmayı kuran şey sütun değil, iki metnin aynı kartta ve aynı
+   etiket dilinde durması.
+2. **Yönetici analizi tablo DEĞİL, satırlar.** Beş sütunlu bir tablo dar
+   ekranda ya yana kayar ya okunmaz. Her kişi kendi satırında, sayılar
+   etiketli.
+3. **Ana sayfada "Rapor ›" bağlantısı var, web'de bölüm başlığında.** Aynı
+   iş, mobil kabuğun kendi deseni.
+
+### 🔴 Uydurulmayan iki sayı
+
+- **Sapma yüzdesi yok.** Karar aracı tarafında sapma alanı hiç yok; finansal
+  model tarafında kullanıcı yazdıysa gösteriliyor, sunucu hesaplamıyor.
+- **Karar başarısı oranı yok.** Hedeflenen ve gerçekleşen serbest metin;
+  farkını programla ölçmenin yolu yok. Sonucu yazılmış her kararı "başarılı"
+  saymak yöneticiye uydurma bir sayı vermek olurdu. Ekranda bunu söyleyen bir
+  not var — çünkü "%73 başarı" bekleyen biri sayının olmamasını eksiklik
+  sanabilir.
+
+### Doğrulama
+
+`:composeApp:testDebugUnitTest` yeşil; `KararRaporuTest` 9 test (birleştirme,
+sıralama, özetin süzgeçten bağımsızlığı, ana sayfa kuralları, takip verisi
+olmayan kayıtta çökmeme), `DestinationCodecTest` yeni hedefin gidiş-dönüşünü
+kapsıyor.
+
+**AÇIK:** Emülatörde gerçek sunucuyla gezinti yapılmadı — ekran derleniyor ve
+saf mantık testli, ama gerçek veriyle görülmedi.

@@ -73,11 +73,13 @@ fun WorkspaceHomeScreen(
     onOpenRecord: (String) -> Unit,
     onAddRecord: () -> Unit,
     onOpenSectionSelector: () -> Unit,
+    onOpenKararRaporu: () -> Unit,
     onBack: (() -> Unit)? = null
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val orders by viewModel.orders.collectAsState()
     val sayilar by viewModel.sayilar.collectAsState()
+    val kararGorevleri by viewModel.kararGorevleri.collectAsState()
     val sheetState = rememberLkSheetState()
     var seciliDurum by remember { mutableStateOf<String?>(null) }
     val ordersLoaded by viewModel.ordersLoaded.collectAsState()
@@ -384,6 +386,60 @@ fun WorkspaceHomeScreen(
                         }
                     }
 
+
+                    /*
+                     * KARARLARDAN GELEN GOREVLER.
+                     *
+                     * 🔴 Bu bolum YOKTU. Karar araci karari bir goreve
+                     * bagliyordu; o ekrandan cikinca gorev siradan bir
+                     * kayda donusuyor, hangi karardan dogdugu ve ne
+                     * beklendigi bir daha gorunmuyordu.
+                     *
+                     * Hic karar gorevi yoksa bolum CIZILMIYOR: bos bir
+                     * kutu ana sayfada yer kaplamaktan baska bir sey
+                     * yapmaz.
+                     */
+                    if (kararGorevleri.isNotEmpty()) {
+                        item {
+                            Column(verticalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    LkSectionHeader(
+                                        title = "KARARLARDAN GELEN GÖREVLER",
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    Text(
+                                        text = "Rapor ›",
+                                        style = LkTypography.getLabel(),
+                                        color = LkPrimary,
+                                        modifier = Modifier
+                                            .clickable(onClick = onOpenKararRaporu)
+                                            .padding(vertical = LkSpacing.Space2)
+                                    )
+                                }
+                                LkRowGroup {
+                                    kararGorevleri.forEachIndexed { i, satir ->
+                                        LkListRow(
+                                            baslik = satir.baslik,
+                                            /* Beklenen sonuc yoksa UYDURULMUYOR;
+                                               satir alt yazisiz kaliyor. */
+                                            altBaslik = satir.beklenen,
+                                            kategori = if (satir.sonucBekliyor) "Sonucu bekliyor" else null,
+                                            onClick = satir.kayitId?.let { id -> { onOpenRecord(id) } },
+                                            ikon = {
+                                                Icon(
+                                                    Icons.Outlined.Gavel,
+                                                    contentDescription = null,
+                                                    tint = LkPrimary,
+                                                    modifier = Modifier.size(21.dp)
+                                                )
+                                            }
+                                        )
+                                        if (i != kararGorevleri.lastIndex) LkHairline()
+                                    }
+                                }
+                            }
+                        }
+                    }
 
                     item {
                         LkButton(

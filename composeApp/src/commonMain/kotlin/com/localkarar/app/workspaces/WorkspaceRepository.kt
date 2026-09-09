@@ -146,15 +146,22 @@ class WorkspaceRepository(private val api: SafeApiClient) {
         return api.get("$base/workspaces/$workspaceId/tracker/calendar?from=$from&to=$to")
     }
 
+    /**
+     * @param kararKaynakli yalnizca bir karara bagli gorevler. Suzgec
+     *   SUNUCUDA: istemcide suzulseydi liste 100 kayitla sinirli
+     *   oldugu icin 101. siradaki karar gorevi sessizce kaybolurdu.
+     */
     suspend fun getRecords(
         workspaceId: String,
         status: String? = null,
         type: String? = null,
         direction: String? = null,
+        kararKaynakli: Boolean = false,
         limit: Int = 100,
         offset: Int = 0
     ): Result<RecordListResponseDto> {
         val params = mutableListOf<String>()
+        if (kararKaynakli) params.add("kararKaynakli=true")
         if (!status.isNullOrBlank()) params.add("status=$status")
         if (!type.isNullOrBlank()) params.add("type=$type")
         if (!direction.isNullOrBlank()) params.add("direction=$direction")
@@ -162,6 +169,16 @@ class WorkspaceRepository(private val api: SafeApiClient) {
         params.add("offset=$offset")
         val query = if (params.isEmpty()) "" else "?" + params.joinToString("&")
         return api.get("$base/workspaces/$workspaceId/records$query")
+    }
+
+    /**
+     * Yonetici analizi. Sahip/yonetici disindaki roller 403 alir;
+     * cagiran taraf bunu SESSIZCE yutar ve paneli hic cizmez —
+     * erisemeyecegi bir seyi hatirlatan uyari kullaniciya bir sey
+     * kazandirmaz.
+     */
+    suspend fun getTrackerAnalysis(workspaceId: String): Result<TrackerAnaliziDto> {
+        return api.get("$base/workspaces/$workspaceId/tracker/analysis")
     }
 
     suspend fun getRecord(workspaceId: String, recordId: String): Result<BusinessRecordDto> {

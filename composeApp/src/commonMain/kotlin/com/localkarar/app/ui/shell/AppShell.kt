@@ -38,6 +38,7 @@ import com.localkarar.app.decision.DecisionRepository
 import com.localkarar.app.decision.DecisionToolsViewModel
 import com.localkarar.app.decision.DecisionToolViewModel
 import com.localkarar.app.decision.DecisionSessionViewModel
+import com.localkarar.app.decision.KararRaporuViewModel
 import com.localkarar.app.ui.screens.decision.DecisionToolsScreen
 import com.localkarar.app.ui.screens.decision.DecisionToolScreen
 import com.localkarar.app.ui.screens.decision.DecisionSessionScreen
@@ -75,6 +76,7 @@ import com.localkarar.app.workspaces.NotificationsViewModel
 import com.localkarar.app.workspaces.ActivityViewModel
 import com.localkarar.app.workspaces.WorkspaceSettingsViewModel
 import com.localkarar.app.workspaces.IntegrationsViewModel
+import com.localkarar.app.ui.screens.workspaces.KararRaporuScreen
 import com.localkarar.app.ui.screens.workspaces.WorkspacesScreen
 import com.localkarar.app.ui.screens.workspaces.WorkspaceHomeScreen
 import com.localkarar.app.ui.screens.workspaces.WorkspaceSectionSheet
@@ -795,6 +797,7 @@ private fun ScreenContent(
                 onOpenRecord = { recordId -> navController.navigateTo(Destination.RecordDetail(destination.workspaceId, recordId)) },
                 onAddRecord = { navController.navigateTo(Destination.RecordEdit(destination.workspaceId, null)) },
                 onOpenSectionSelector = { onOpenWorkspaceSections(destination.workspaceId, "overview") },
+                onOpenKararRaporu = { navController.navigateTo(Destination.KararRaporu(destination.workspaceId)) },
                 onBack = geriVarsa
             )
         }
@@ -906,6 +909,18 @@ private fun ScreenContent(
                 ActivityViewModel(destination.workspaceId, workspaceRepository)
             }
             ActivityScreen(viewModel = viewModel, onBack = onBack)
+        }
+        is Destination.KararRaporu -> {
+            val viewModel = viewModel(key = "karar_raporu:${destination.workspaceId}") {
+                KararRaporuViewModel(destination.workspaceId, workspaceRepository, calculationsRepository)
+            }
+            KararRaporuScreen(
+                viewModel = viewModel,
+                onBack = onBack,
+                onGorevAc = { kayitId ->
+                    navController.navigateTo(Destination.RecordDetail(destination.workspaceId, kayitId))
+                }
+            )
         }
         is Destination.WorkspaceSettings -> {
             val viewModel = viewModel(key = "workspace_settings:${destination.workspaceId}") {
@@ -1248,6 +1263,7 @@ private fun isTabSelected(current: Destination, tabTarget: Destination): Boolean
             current is Destination.Contacts ||
             current is Destination.Notifications ||
             current is Destination.Activity ||
+            current is Destination.KararRaporu ||
             current is Destination.WorkspaceSettings ||
             current is Destination.WorkspaceIntegrations
         }
@@ -1288,6 +1304,7 @@ private fun aktifBolumKodu(destination: Destination): String = when (destination
     is Destination.Team -> "team"
     is Destination.Contacts -> "contacts"
     is Destination.Activity -> "activity"
+    is Destination.KararRaporu -> "decisions"
     is Destination.WorkspaceIntegrations -> "integrations"
     is Destination.WorkspaceSettings -> "settings"
     else -> "overview"

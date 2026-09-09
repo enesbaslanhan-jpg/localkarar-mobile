@@ -4,6 +4,8 @@ import com.localkarar.app.network.dto.OrderDto
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.localkarar.app.network.dto.TrackerSummaryDto
+import com.localkarar.app.decision.KararSatiri
+import com.localkarar.app.decision.anaSayfaKararGorevleri
 import com.localkarar.app.network.dto.WorkspaceDetailDto
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -65,6 +67,23 @@ class WorkspaceHomeViewModel(
 
     private val _sayilar = MutableStateFlow(BolumSayilari())
     val sayilar: StateFlow<BolumSayilari> = _sayilar.asStateFlow()
+
+    /*
+     * KARARDAN DOGAN GOREVLER.
+     *
+     * 🔴 Bu bolum YOKTU. Karar araci bir karari goreve bagliyordu ama o
+     * ekrandan cikinca gorev siradan bir kayda donusuyordu: hangi
+     * karardan dogdugu ve ne beklendigi bir daha hicbir yerde
+     * gorunmuyordu.
+     *
+     * `uiState`in ICINDE DEGIL, ayri akista: bu istek ozetten bagimsiz
+     * basarisiz olabilir ve ayni duruma konsaydi tum ekran hataya
+     * duserdi. Bos liste ile "yuklenemedi" burada AYNI sonucu veriyor
+     * (bolum cizilmiyor) -- bos bir kutu ana sayfada yer kaplamaktan
+     * baska bir sey yapmaz.
+     */
+    private val _kararGorevleri = MutableStateFlow<List<KararSatiri>>(emptyList())
+    val kararGorevleri: StateFlow<List<KararSatiri>> = _kararGorevleri.asStateFlow()
 
     init {
         load()
@@ -129,6 +148,14 @@ class WorkspaceHomeViewModel(
         viewModelScope.launch {
             repository.getNotifications(workspaceId).onSuccess { yanit ->
                 _sayilar.value = _sayilar.value.copy(okunmamisBildirim = yanit.unreadCount)
+            }
+        }
+        viewModelScope.launch {
+            /* Suzgec SUNUCUDA: istemcide suzulseydi genel liste 100
+               kayitla sinirli oldugu icin 101. siradaki karar gorevi
+               sessizce kaybolurdu. */
+            repository.getRecords(workspaceId, kararKaynakli = true).onSuccess { yanit ->
+                _kararGorevleri.value = anaSayfaKararGorevleri(yanit.records)
             }
         }
     }

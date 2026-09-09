@@ -61,7 +61,9 @@ val WORKSPACE_SECTION_GROUPS = listOf(
         items = listOf(
             WorkspaceSectionItem("documents", "Belgeler", "Sözleşme ve dökümanlar", Icons.Outlined.AttachFile) { wsId -> Destination.Documents(wsId) },
             WorkspaceSectionItem("calendar", "Takvim", "Vade ve operasyon takvimi", Icons.Outlined.CalendarMonth) { wsId -> Destination.Calendar(wsId) },
-            WorkspaceSectionItem("notifications", "Bildirimler", "Sistem ve süreç uyarıları", Icons.Outlined.Notifications) { wsId -> Destination.Notifications(wsId) }
+            WorkspaceSectionItem("notifications", "Bildirimler", "Sistem ve süreç uyarıları", Icons.Outlined.Notifications) { wsId -> Destination.Notifications(wsId) },
+            // Takvimin yaninda: ikisi de "geriye donup bak" ekrani.
+            WorkspaceSectionItem("decisions", "Karar Raporu", "Hedeflenen ve gerçekleşen sonuç", Icons.Outlined.Gavel) { wsId -> Destination.KararRaporu(wsId) }
         )
     ),
     WorkspaceSectionGroup(

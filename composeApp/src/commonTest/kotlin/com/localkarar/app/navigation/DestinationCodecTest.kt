@@ -42,6 +42,7 @@ class DestinationCodecTest {
             Destination.Team(workspaceId = "ws_alpha"),
             Destination.Contacts(workspaceId = "ws_alpha"),
             Destination.Activity(workspaceId = "ws_alpha"),
+            Destination.KararRaporu(workspaceId = "ws_alpha"),
             Destination.WorkspaceSettings(workspaceId = "ws_alpha"),
             Destination.Community("feed"),
             Destination.Community("people"),

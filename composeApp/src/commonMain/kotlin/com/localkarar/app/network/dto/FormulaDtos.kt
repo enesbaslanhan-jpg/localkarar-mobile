@@ -271,10 +271,54 @@ data class KararGunluguIstegiDto(
     val expectedOutcome: String
 )
 
+/**
+ * Karar gunlugu kaydi — hem yazma yanitinda hem LISTEDE kullaniliyor.
+ *
+ * 🔴 Alanlarin cogu YOKTU: mobil yalnizca karar YAZIYORDU, hicbir
+ * yerde okumuyordu. Sunucuda okuma ucu bile yoktu (09.09.2026'da
+ * eklendi). Gerceklesen sonuc, sapma ve cikarilan ders yaziliyor ama
+ * kullanici bir daha goremiyordu.
+ *
+ * ⚠️ `variance` SUNUCUDA HESAPLANMIYOR, kullanici yaziyor. Beklenen ve
+ * gerceklesen serbest metin; farkini sayiyla ifade etmek mumkun degil.
+ */
 @Serializable
 data class KararGunluguDto(
     val id: String? = null,
     val decision: String? = null,
     val expectedOutcome: String? = null,
-    val createdAt: String? = null
+    val actualOutcome: String? = null,
+    val variance: String? = null,
+    val lessonLearned: String? = null,
+    val createdAt: String? = null,
+    val reviewedAt: String? = null,
+    val modelRun: KararModelCalismasiDto? = null
+)
+
+/** Karara dayanak olan model calismasinin ozeti. */
+@Serializable
+data class KararModelCalismasiDto(
+    val id: String? = null,
+    val scenarioName: String? = null,
+    val createdAt: String? = null,
+    val model: FinancialModelSummaryDto? = null
+)
+
+/**
+ * `GET /workspaces/{ws}/decision-journal`.
+ *
+ * `ozet` SUNUCUDAN geliyor ve SUZGECTEN BAGIMSIZ: "8 karardan 3'u
+ * degerlendirildi" cumlesi, suzgec uygulandiginda da dogru kalsin.
+ */
+@Serializable
+data class KararGunluguListesiDto(
+    val entries: List<KararGunluguDto> = emptyList(),
+    val ozet: KararGunluguOzetiDto? = null
+)
+
+@Serializable
+data class KararGunluguOzetiDto(
+    val toplam: Int = 0,
+    val degerlendirilen: Int = 0,
+    val bekleyen: Int = 0
 )
