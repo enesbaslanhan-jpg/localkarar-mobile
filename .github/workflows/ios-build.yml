@@ -8,6 +8,8 @@ on:
   push:
     branches:
       - main
+      # Calisma dali; listede yoktu ve is hic kosmuyordu.
+      - design
       - 'feature/**'
       - 'fix/**'
   pull_request:

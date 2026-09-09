@@ -13,7 +13,11 @@ name: Android Build & Test
 
 on:
   push:
-    branches: [ main, 'feature/**', 'fix/**' ]
+    # 🔴 'design' EKLENDI. Bu depoda calisma dali 'design' ve listede yoktu:
+    # aylardir itilen hicbir commit icin bu is HIC KOSMADI. Basarisiz
+    # olmuyordu, sadece yoktu -- ios-build.yml'in yorumunun uyardigi tuzagin
+    # aynisi, bu sefer dalin kendisinde.
+    branches: [ main, design, 'feature/**', 'fix/**' ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:
