@@ -25,6 +25,41 @@ kotlin {
             baseName = "ComposeApp"
             isStatic = true
         }
+
+        /*
+         * 🔴 YALNIZ TEST IKILISI icin daha yuksek bir baglayici hedefi.
+         *
+         * Belirti: test calistirilabiliri linklenemiyordu.
+         *   Undefined symbols for architecture arm64:
+         *     "_OBJC_CLASS_$_UIViewLayoutRegion", referenced from:
+         *        in liborg.jetbrains.compose.ui:ui-uikit-cache.a
+         *
+         * Sebep ayni log'daki su uyarida yaziyor:
+         *   ...skiko-cache.a was built for newer 'iOS-simulator'
+         *   version (18.5) than being linked (15.0)
+         *
+         * Onbellekler mevcut SDK'ya (18.5) gore uretiliyor ve iOS 18 ile
+         * gelen `UIViewLayoutRegion`a SERT referans tasiyor; baglayici ise
+         * 15.0 ile calisip o simgeyi cozemiyor. Onbellegi kapatmak
+         * denendi (`kotlin.native.cacheKind=none`), arsivler baglayici
+         * satirinda KALMAYA devam etti.
+         *
+         * ⚠️ UYGULAMANIN DESTEKLEDIGI iOS SURUMU DEGISMIYOR. Bu ayar
+         * yalniz TEST calistirilabilirine bakiyor; o ikili sadece CI
+         * simulatorunde kosuyor, kullanicinin telefonuna hic gitmiyor.
+         * Uygulamanin dagitim hedefi Xcode projesinde 14.1 olarak
+         * duruyor ve buradan etkilenmiyor -- "hatayi susturmak icin eski
+         * iPhone'lari desteklemekten vazgecmek" YAPILMADI.
+         *
+         * ⚠️ Framework ikilisine DOKUNULMUYOR: o zaten sorunsuz
+         * linkleniyor ve uygulamaya giren ikili o.
+         */
+        iosTarget.binaries.withType<org.jetbrains.kotlin.gradle.plugin.mpp.TestExecutable>()
+            .configureEach {
+                freeCompilerArgs += listOf(
+                    "-Xoverride-konan-properties=osVersionMin.ios_simulator_arm64=18.0"
+                )
+            }
     }
     
     sourceSets {
