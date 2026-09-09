@@ -24,6 +24,9 @@ import kotlinx.serialization.json.jsonPrimitive
 
 enum class KararKaynagi { KARAR_ARACI, FINANSAL_MODEL }
 
+/** Uzerinde calisma bitmis sayilan kayit durumlari. */
+private val BITMIS_DURUMLAR = setOf("completed", "cancelled")
+
 /**
  * Iki farkli kaynagin tek satir bicimi.
  *
@@ -43,9 +46,33 @@ data class KararSatiri(
     val ders: String?,
     val tarih: String?,
     val degerlendirmeTarihi: String?,
-    val kayitId: String?
+    val kayitId: String?,
+    /** Gorev tamamlandi ya da iptal edildi mi. Gunluk kayitlarinda `true`. */
+    val gorevBitti: Boolean = true,
+    val gecikti: Boolean = false
 ) {
+    /**
+     * Gerceklesen sonuc YAZILMAMIS.
+     *
+     * Rapor bunu kullaniyor: ozet sayilari ve suzgec "sonucu yazildi mi"
+     * sorusunu soruyor, gorevin bitip bitmedigini degil.
+     */
     val sonucBekliyor: Boolean get() = gerceklesen.isNullOrBlank()
+
+    /**
+     * 🔴 SONUCU YAZILMASI GEREKEN durum — `sonucBekliyor` ile AYNI SEY DEGIL.
+     *
+     * Emulator gezintisinde yakalandi (09.09.2026): ana sayfa daha
+     * BASLAMAMIS bir goreve "Sonucu bekliyor" yaziyordu. Yanlis, cunku
+     * is bitmedi ki sonucu yazilsin -- kullaniciya yapacak bir sey
+     * varmis gibi gorunuyordu.
+     *
+     * Ayrim: rapor "sonuc yazildi mi" diye sorar (bitmemis gorevler de
+     * sayilir, cunku o karar hala takipte); ana sayfa ise "simdi benden
+     * bir sey bekleniyor mu" diye sorar ve cevap yalnizca gorev bitmis
+     * ama sonuc yazilmamissa evettir.
+     */
+    val sonucuYazilmali: Boolean get() = gorevBitti && sonucBekliyor
 }
 
 data class KararRaporuOzeti(
@@ -76,7 +103,10 @@ fun takipSatiri(kayit: BusinessRecordDto): KararSatiri {
         ders = takip.metin("lessonLearned"),
         tarih = kayit.createdAt,
         degerlendirmeTarihi = takip.metin("reviewedAt"),
-        kayitId = kayit.id
+        kayitId = kayit.id,
+        gorevBitti = kayit.status in BITMIS_DURUMLAR,
+        /* Gecikme SUNUCUDA hesaplaniyor; burada tekrar edilmiyor. */
+        gecikti = kayit.overdue
     )
 }
 
@@ -143,15 +173,10 @@ fun kararSuz(satirlar: List<KararSatiri>, suzgec: KararSuzgeci): List<KararSatir
 fun anaSayfaKararGorevleri(
     takipler: List<BusinessRecordDto>,
     enFazla: Int = 5
-): List<KararSatiri> {
-    val bitmisDurumlar = setOf("completed", "cancelled")
-    return takipler
-        .map { kayit -> kayit to takipSatiri(kayit) }
-        .filterNot { (kayit, satir) -> kayit.status in bitmisDurumlar && !satir.sonucBekliyor }
-        .sortedBy { (kayit, satir) ->
-            /* Sonucu bekleyen bitmis gorevler once. */
-            if (kayit.status in bitmisDurumlar && satir.sonucBekliyor) 0 else 1
-        }
+): List<KararSatiri> =
+    takipler.map(::takipSatiri)
+        /* Bitmis VE sonucu yazilmis karar ana sayfada yer kaplamiyor. */
+        .filterNot { it.gorevBitti && !it.sonucBekliyor }
+        /* Sonucu yazilmayi bekleyenler basa. */
+        .sortedBy { if (it.sonucuYazilmali) 0 else 1 }
         .take(enFazla)
-        .map { it.second }
-}

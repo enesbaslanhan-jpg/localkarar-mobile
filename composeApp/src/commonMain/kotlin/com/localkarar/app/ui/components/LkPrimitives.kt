@@ -276,13 +276,24 @@ fun LkListRow(
                 color = LkTextSecondary,
                 maxLines = 1
             )
-            Box(
-                Modifier
-                    .padding(start = LkSpacing.Space3)
-                    .width(1.dp)
-                    .height(28.dp)
-                    .background(LkLineSoft)
-            )
+            /*
+             * ⚠️ ARKADAKI CIZGI, ARKADA BIR SEY VARSA.
+             *
+             * Once kosulsuz ciziliyordu: tutar ve sag icerik yoksa satirin
+             * sonunda hicbir seyi ayirmayan bir cizgi kaliyordu -- boslugu
+             * boluyor gibi gorunuyor. Emulator gezintisinde goruldu
+             * (09.09.2026), "Kararlardan gelen gorevler" satirlarinda
+             * kategori var ama tutar yok.
+             */
+            if (tutar != null || sag != null) {
+                Box(
+                    Modifier
+                        .padding(start = LkSpacing.Space3)
+                        .width(1.dp)
+                        .height(28.dp)
+                        .background(LkLineSoft)
+                )
+            }
         }
 
         if (tutar != null) {

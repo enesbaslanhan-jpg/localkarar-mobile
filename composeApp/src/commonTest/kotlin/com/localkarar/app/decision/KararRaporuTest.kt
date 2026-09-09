@@ -8,6 +8,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -149,6 +150,39 @@ class KararRaporuTest {
         )
         assertEquals("Sonucu bekleyen", gorevler[0].baslik)
         assertTrue(gorevler.all { it.sonucBekliyor })
+    }
+
+    /*
+     * 🔴 EMULATOR GEZINTISINDE YAKALANDI (09.09.2026).
+     *
+     * Ana sayfa daha BASLAMAMIS bir goreve "Sonucu bekliyor" yaziyordu.
+     * Yanlis: is bitmedi ki sonucu yazilsin. Rapor ile ana sayfa ayni
+     * bayragi paylasiyordu; ayrildi.
+     */
+    @Test
+    fun baslamamis_gorevden_sonuc_beklenmiyor() {
+        val acik = takipSatiri(kayit("rec-a", "Acik is", takip = mapOf("expectedOutcome" to "A")))
+        /* Raporda "sonucu yazilmamis" sayiliyor -- karar hala takipte. */
+        assertTrue(acik.sonucBekliyor)
+        /* Ama kullanicidan simdi bir sey BEKLENMIYOR. */
+        assertFalse(acik.sonucuYazilmali)
+    }
+
+    @Test
+    fun bitmis_ama_sonucu_yazilmamis_gorevden_sonuc_bekleniyor() {
+        val bitmis = takipSatiri(
+            kayit("rec-b", "Biten is", durum = "completed", takip = mapOf("expectedOutcome" to "A"))
+        )
+        assertTrue(bitmis.sonucuYazilmali)
+    }
+
+    @Test
+    fun iptal_edilen_gorev_de_bitmis_sayiliyor() {
+        /* Iptal, "uzerinde calisma bitti" demek; sonucu yazilabilir. */
+        val iptal = takipSatiri(
+            kayit("rec-c", "Iptal", durum = "cancelled", takip = mapOf("expectedOutcome" to "A"))
+        )
+        assertTrue(iptal.sonucuYazilmali)
     }
 
     @Test

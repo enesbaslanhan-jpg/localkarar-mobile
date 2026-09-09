@@ -423,7 +423,15 @@ fun WorkspaceHomeScreen(
                                             /* Beklenen sonuc yoksa UYDURULMUYOR;
                                                satir alt yazisiz kaliyor. */
                                             altBaslik = satir.beklenen,
-                                            kategori = if (satir.sonucBekliyor) "Sonucu bekliyor" else null,
+                                            /* ⚠️ `sonucBekliyor` DEGIL `sonucuYazilmali`:
+                                               daha baslamamis bir goreve "Sonucu bekliyor"
+                                               demek, is bitmeden sonuc bekleniyormus gibi
+                                               gorunuyordu (emulatorde yakalandi). */
+                                            kategori = when {
+                                                satir.sonucuYazilmali -> "Sonucu bekliyor"
+                                                satir.gecikti -> "Gecikti"
+                                                else -> null
+                                            },
                                             onClick = satir.kayitId?.let { id -> { onOpenRecord(id) } },
                                             ikon = {
                                                 Icon(
