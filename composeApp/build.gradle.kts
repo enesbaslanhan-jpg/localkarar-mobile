@@ -27,6 +27,19 @@ kotlin {
         }
 
         /*
+         * ⚠️ BU DENENDI VE COZMEDI — tekrar denenmesin diye duruyor.
+         *
+         * Baglayici hedefi 15.0'dan 18.0'a cekildi; log'da "being linked
+         * (18.0)" gorunerek ayarin UYGULANDIGI dogrulandi ama ayni
+         * "UIViewLayoutRegion bulunamadi" hatasi surdu. Yani dagitim
+         * hedefi sebep DEGILDI; sinif kullanilan SDK'da hic yoktu.
+         * Gercek sebep, is akisinin yanlis kalip yuzunden eski bir
+         * Xcode'a dusmesiydi (bkz. ios-build.yml, "Xcode 16+ sec").
+         *
+         * Asagidaki blok bilerek YORUMA ALINDI, silinmedi: ayni belirti
+         * geri gelirse bunun zaten denendigi ve ise yaramadigi bilinsin.
+         *
+         * ESKI ACIKLAMA:
          * 🔴 YALNIZ TEST IKILISI icin daha yuksek bir baglayici hedefi.
          *
          * Belirti: test calistirilabiliri linklenemiyordu.
@@ -54,12 +67,12 @@ kotlin {
          * ⚠️ Framework ikilisine DOKUNULMUYOR: o zaten sorunsuz
          * linkleniyor ve uygulamaya giren ikili o.
          */
-        iosTarget.binaries.withType<org.jetbrains.kotlin.gradle.plugin.mpp.TestExecutable>()
-            .configureEach {
-                freeCompilerArgs += listOf(
-                    "-Xoverride-konan-properties=osVersionMin.ios_simulator_arm64=18.0"
-                )
-            }
+        // iosTarget.binaries.withType<org.jetbrains.kotlin.gradle.plugin.mpp.TestExecutable>()
+        //     .configureEach {
+        //         freeCompilerArgs += listOf(
+        //             "-Xoverride-konan-properties=osVersionMin.ios_simulator_arm64=18.0"
+        //         )
+        //     }
     }
     
     sourceSets {

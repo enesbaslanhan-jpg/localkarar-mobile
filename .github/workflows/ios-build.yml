@@ -62,17 +62,21 @@ jobs:
           echo "=== Kurulu Xcode surumleri ==="
           ls -d /Applications/Xcode*.app || true
 
-          # Yama surumu SABIT YAZILMIYOR (16.4 gibi): GitHub imaji
-          # guncellendiginde o dizin kaybolur ve is "dizin yok" diye
-          # anlasilmaz bicimde duser. Bunun yerine kurulu 16+ surumlerin
-          # en yenisi seciliyor.
-          SECILEN=$(ls -d /Applications/Xcode_1[6-9]*.app 2>/dev/null | sort -V | tail -n 1)
+          # 🔴 SURUM ARALIGI KULLANILMIYOR — bu bir kez zaten yanlis gitti.
+          #
+          # Onceki hali `Xcode_1[6-9]*.app` kalibiyla ariyordu. Apple
+          # surum numaralandirmasini 26'ya ATLADI (yil ile esleseacek
+          # sekilde), yani makinedeki `Xcode_26.x.app` bu kalibi HIC
+          # tutmuyor ve is sessizce 16.4'e dusuyordu. Sonuc: iOS 18.5
+          # SDK'siyla link ve "UIViewLayoutRegion bulunamadi" hatasi.
+          #
+          # Artik kalip yok: kurulu TUM Xcode'lar surume gore siralanip
+          # EN YENISI seciliyor. Apple bir daha numaralandirmayi
+          # degistirse de bu satirin duzeltilmesi gerekmiyor.
+          SECILEN=$(ls -d /Applications/Xcode*.app 2>/dev/null | sort -V | tail -n 1)
 
           if [ -z "$SECILEN" ]; then
-            # SESSIZCE ESKI XCODE'A DUSULMUYOR. Duserse ariza, anlasilmaz
-            # bir "Undefined symbols" olarak link adiminda cikardi.
-            echo "HATA: Xcode 16+ bulunamadi. Compose 1.11.1 iOS 18 SDK istiyor"
-            echo "(ui-uikit, iOS 18 ile gelen UIViewLayoutRegion sinifini cagiriyor)."
+            echo "HATA: Hic Xcode bulunamadi."
             exit 1
           fi
 
