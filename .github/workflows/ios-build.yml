@@ -19,7 +19,25 @@ on:
 jobs:
   ios-build-and-verify:
     name: macOS iOS Build & Simulator Verification
-    runs-on: macos-14
+    # 🔴 macos-14 DEGIL macos-15: arac zinciri Compose icin FAZLA ESKIYDI.
+    #
+    # macos-14 Xcode 15.4 tasiyor, yani iOS 17.5 SDK. Compose Multiplatform
+    # 1.11.1'in `ui-uikit` katmani UIKit'in `UIViewLayoutRegion` sinifini
+    # cagiriyor ve o sinif iOS 18 ile geldi. Baglayici (ld) simgeyi
+    # bulamayinca test ikilisi linklenemiyor:
+    #
+    #   Undefined symbols for architecture arm64:
+    #     "_OBJC_CLASS_$_UIViewLayoutRegion", referenced from:
+    #        in liborg.jetbrains.compose.ui:ui-uikit-cache.a
+    #
+    # ⚠️ NEDEN BU ARIZA DAHA ONCE GORUNMEDI: is akisi eskiden yalniz
+    # FRAMEWORK linkliyordu (`linkDebugFrameworkIosSimulatorArm64`). Statik
+    # framework'te disaridan gelen ObjC simgeleri COZULMEDEN kalabilir --
+    # onlar uygulama Xcode'da linklenirken cozulur. Birim testi adimi
+    # eklenince ilk kez bir CALISTIRILABILIR linklendi ve calistirilabilir
+    # her simgenin cozulmesini SART kosuyor. Yani ariza yeni degil, yeni
+    # gorunur oldu; 2 Eylul'deki yesil kosu bu adimi hic icermiyordu.
+    runs-on: macos-15
     timeout-minutes: 45
 
     steps:
@@ -34,6 +52,33 @@ jobs:
 
       - name: Make gradlew executable
         run: chmod +x ./gradlew
+
+      # Surum ACIKCA secildi. Varsayilana birakilirsa GitHub imaji
+      # guncellendiginde Xcode sessizce degisir ve ayni ariza geri doner --
+      # ustelik bu sefer "dun calisiyordu" diye.
+      - name: Xcode 16+ seç
+        run: |
+          set -euo pipefail
+          echo "=== Kurulu Xcode surumleri ==="
+          ls -d /Applications/Xcode*.app || true
+
+          # Yama surumu SABIT YAZILMIYOR (16.4 gibi): GitHub imaji
+          # guncellendiginde o dizin kaybolur ve is "dizin yok" diye
+          # anlasilmaz bicimde duser. Bunun yerine kurulu 16+ surumlerin
+          # en yenisi seciliyor.
+          SECILEN=$(ls -d /Applications/Xcode_1[6-9]*.app 2>/dev/null | sort -V | tail -n 1)
+
+          if [ -z "$SECILEN" ]; then
+            # SESSIZCE ESKI XCODE'A DUSULMUYOR. Duserse ariza, anlasilmaz
+            # bir "Undefined symbols" olarak link adiminda cikardi.
+            echo "HATA: Xcode 16+ bulunamadi. Compose 1.11.1 iOS 18 SDK istiyor"
+            echo "(ui-uikit, iOS 18 ile gelen UIViewLayoutRegion sinifini cagiriyor)."
+            exit 1
+          fi
+
+          echo "Secilen: $SECILEN"
+          sudo xcode-select -s "$SECILEN/Contents/Developer"
+          xcodebuild -version
 
       - name: Toolchain & System Discovery
         run: |
