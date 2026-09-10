@@ -145,7 +145,74 @@ data class BusinessContactDto(
     val address: String? = null,
     val notes: String? = null,
     val createdAt: String? = null,
-    val updatedAt: String? = null
+    val updatedAt: String? = null,
+    /*
+     * CARİ BAKİYE — listede tek satır.
+     *
+     * Sunucu her kişi için para birimi başına bakiye hesaplıyor ama
+     * listede tek sütun var; `birincil` işletmenin para birimindeki
+     * (yoksa en büyük) bakiye. `digerParaBirimleri` GİZLENMİYOR: tek
+     * sayı gösterip başka para biriminde de hesap olduğunu saklamak
+     * kullanıcıya eksik bilgi vermek olurdu.
+     */
+    val birincil: CariBakiyeDto? = null,
+    val digerParaBirimleri: Int = 0
+)
+
+/**
+ * Bir para birimindeki açık hesap.
+ *
+ * ⚠️ Para birimleri TOPLANMIYOR: kur bilgisi sistemde yok ve 5.000 TL
+ * ile 200 USD'yi tek sayıda toplamak uydurma bir rakam üretirdi.
+ */
+@Serializable
+data class CariBakiyeDto(
+    val currency: String = "TRY",
+    /** Bizden alacağı */
+    val alacak: Double = 0.0,
+    /** Ona borcumuz */
+    val borc: Double = 0.0,
+    /** alacak − borç. Pozitifse bizden alacaklı. */
+    val bakiye: Double = 0.0
+)
+
+@Serializable
+data class CariHesapKisiDto(
+    val id: String,
+    val name: String,
+    val type: String = "customer"
+)
+
+/**
+ * Cari hesap dökümü — "Ahmet'e ne kadar borcum var?"
+ *
+ * ⚠️ `hareketler` kapanmış kayıtları DA içeriyor: bakiye bugünü,
+ * ekstre geçmişi anlatır.
+ */
+@Serializable
+data class CariHesapDto(
+    val contact: CariHesapKisiDto,
+    val bakiyeler: List<CariBakiyeDto> = emptyList(),
+    val birincil: CariBakiyeDto? = null,
+    val digerParaBirimleri: Int = 0,
+    val hareketler: List<CariHareketDto> = emptyList(),
+    /** 200'den fazlası varsa arayüz bunu SÖYLÜYOR; sessiz kırpma
+        "hepsi bu" izlenimi verirdi. */
+    val kirpildi: Boolean = false
+)
+
+@Serializable
+data class CariHareketDto(
+    val id: String,
+    val type: String = "payment",
+    val title: String,
+    val direction: String = "neutral",
+    val status: String = "open",
+    val amount: Double? = null,
+    val currency: String = "TRY",
+    val dueAt: String? = null,
+    val completedAt: String? = null,
+    val createdAt: String? = null
 )
 
 @Serializable
@@ -621,7 +688,7 @@ data class DocumentSuggestionDto(
  */
 @Serializable
 data class DocumentSuggestionPayloadDto(
-    /** payment | receivable | promissory_note | purchase | shipment */
+    /** payment | receivable | promissory_note | cheque | purchase | shipment */
     val type: String? = null,
     val title: String? = null,
     val description: String? = null,

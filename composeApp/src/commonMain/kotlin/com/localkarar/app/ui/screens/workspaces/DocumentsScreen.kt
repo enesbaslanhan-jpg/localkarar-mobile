@@ -2,6 +2,7 @@ package com.localkarar.app.ui.screens.workspaces
 
 import com.localkarar.app.ui.components.LkHairline
 import com.localkarar.app.ui.components.LkRowGroup
+import com.localkarar.app.core.rememberFileSharer
 import com.localkarar.app.ui.components.LkListRow
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -58,6 +59,8 @@ fun DocumentsScreen(
     val modelOnerileri by viewModel.modelOnerileri.collectAsState()
     val modelAraniyor by viewModel.modelAraniyor.collectAsState()
     var deleteConfirmId by remember { mutableStateOf<String?>(null) }
+    val paylas = rememberFileSharer()
+    val indirilenBelgeId by viewModel.indirilenBelgeId.collectAsState()
     var notice by remember { mutableStateOf<String?>(null) }
 
     /*
@@ -146,6 +149,8 @@ fun DocumentsScreen(
                                         DocumentCard(
                                             document = document,
                                             onDelete = { deleteConfirmId = document.id },
+                                            onPaylas = paylas?.let { { viewModel.belgePaylas(document, it) } },
+                                            indiriliyor = indirilenBelgeId == document.id,
                                             islenenOneri = islenenOneri,
                                             onOneriKabul = { viewModel.oneriyiKabulEt(it) },
                                             onOneriRet = { viewModel.oneriyiReddet(it) },
@@ -243,6 +248,9 @@ fun DocumentsScreen(
 private fun DocumentCard(
     document: WorkspaceDocumentDto,
     onDelete: () -> Unit,
+    /** Platformda paylasim yoksa null; dugme hic cizilmiyor. */
+    onPaylas: (() -> Unit)? = null,
+    indiriliyor: Boolean = false,
     islenenOneri: String? = null,
     onOneriKabul: (String) -> Unit = {},
     onOneriRet: (String) -> Unit = {},
@@ -304,6 +312,23 @@ private fun DocumentCard(
             )
         },
         sag = {
+            /*
+             * 🔴 BELGE GERI ALINAMIYORDU. Kullanici faturasinin
+             * fotografini yukluyor, disari cikaramiyordu.
+             *
+             * Paylasim yolu olmayan platformda dugme HIC cizilmiyor:
+             * calismayan bir dugme kullaniciyi bosuna dokundurur.
+             */
+            if (onPaylas != null) {
+                IconButton(onClick = onPaylas, enabled = !indiriliyor) {
+                    Icon(
+                        imageVector = Icons.Outlined.IosShare,
+                        contentDescription = "Belgeyi paylaş",
+                        tint = LkTextMuted,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
             IconButton(onClick = onDelete) {
                 Icon(
                     imageVector = Icons.Outlined.Delete,
@@ -532,6 +557,7 @@ private fun kayitTuruEtiketi(tur: String): String = when (tur) {
     "payment" -> "Ödeme"
     "receivable" -> "Tahsilat"
     "promissory_note" -> "Senet"
+    "cheque" -> "Çek"
     "purchase" -> "Alış"
     "shipment" -> "Sevkiyat"
     else -> tur

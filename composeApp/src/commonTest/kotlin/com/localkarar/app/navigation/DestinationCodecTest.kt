@@ -41,6 +41,7 @@ class DestinationCodecTest {
             Destination.Calendar(workspaceId = "ws_alpha"),
             Destination.Team(workspaceId = "ws_alpha"),
             Destination.Contacts(workspaceId = "ws_alpha"),
+            Destination.CariHesap(workspaceId = "ws_alpha", contactId = "kisi_77"),
             Destination.Activity(workspaceId = "ws_alpha"),
             Destination.KararRaporu(workspaceId = "ws_alpha"),
             Destination.WorkspaceSettings(workspaceId = "ws_alpha"),

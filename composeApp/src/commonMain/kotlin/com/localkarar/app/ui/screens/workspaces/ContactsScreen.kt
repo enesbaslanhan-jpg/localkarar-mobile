@@ -25,6 +25,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.localkarar.app.core.LkFormatting
 import com.localkarar.app.network.dto.BusinessContactDto
 import com.localkarar.app.network.dto.ContactInputDto
 import com.localkarar.app.ui.components.LkButton
@@ -39,12 +40,14 @@ import com.localkarar.app.ui.components.LkTextField
 import com.localkarar.app.ui.theme.*
 import com.localkarar.app.workspaces.ContactsUiState
 import com.localkarar.app.workspaces.ContactsViewModel
+import kotlin.math.abs
 
 private val CONTACT_TYPES = listOf("customer", "supplier", "partner", "other")
 
 @Composable
 fun ContactsScreen(
     viewModel: ContactsViewModel,
+    onOpenCariHesap: (String) -> Unit,
     onBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -109,6 +112,7 @@ fun ContactsScreen(
                                         state.contacts.forEachIndexed { i, contact ->
                                             ContactCard(
                                                 contact = contact,
+                                                onOpenHesap = { onOpenCariHesap(contact.id) },
                                                 onEdit = { editing = contact },
                                                 onDelete = {
                                                     actionError = null
@@ -148,6 +152,7 @@ fun ContactsScreen(
 @Composable
 private fun ContactCard(
     contact: BusinessContactDto,
+    onOpenHesap: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
@@ -168,9 +173,34 @@ private fun ContactCard(
                 listOfNotNull(contact.phone, contact.email).joinToString(" · ").ifBlank { null }
             ).joinToString(" · ").ifBlank { null },
             kategori = contactTypeLabel(contact.type),
-            onClick = onEdit,
+            /*
+             * 🔴 BAKIYE SATIRDA. Bir esnafin kisi kartinda aradigi ilk
+             * sey "bu adama ne kadar borcum var". Webde ada tiklayinca
+             * cari hesap aciliyor; mobilde satirin kendisi o kapi.
+             *
+             * ⚠️ Baska para biriminde de hesap varsa SOYLENIYOR: tek
+             * sayi gosterip otekini gizlemek eksik bilgi olurdu.
+             */
+            tutar = contact.birincil?.let { b ->
+                val gosterilen = LkFormatting.formatMoney(abs(b.bakiye), b.currency)
+                val yon = if (b.bakiye >= 0) "alacak" else "borç"
+                val ek = if (contact.digerParaBirimleri > 0) " +" + contact.digerParaBirimleri else ""
+                gosterilen + " " + yon + ek
+            },
+            tutarRengi = if ((contact.birincil?.bakiye ?: 0.0) >= 0) LkSuccess else LkDanger,
+            onClick = onOpenHesap,
             ikon = { LkAvatar(ad = contact.name, boyut = 44.dp) },
             sag = {
+                /* Duzenleme satir dokunusundan tasindi: satira dokunmak
+                   artik cari hesabi aciyor. */
+                IconButton(onClick = onEdit) {
+                    Icon(
+                        imageVector = Icons.Outlined.Edit,
+                        contentDescription = "Düzenle",
+                        tint = LkTextMuted,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
                 IconButton(onClick = { showDeleteConfirm = true }) {
                     Icon(
                         imageVector = Icons.Outlined.Delete,

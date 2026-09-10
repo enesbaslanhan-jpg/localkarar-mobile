@@ -3,6 +3,7 @@ package com.localkarar.app.workspaces
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.localkarar.app.core.AppMessages
+import com.localkarar.app.core.SharedFile
 import com.localkarar.app.network.dto.ModelOnerileriDto
 import com.localkarar.app.network.dto.WorkspaceDocumentDto
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -179,6 +180,50 @@ class DocumentsViewModel(
                 .onFailure { hata ->
                     AppMessages.hata(hata.message ?: "Belge yüklenemedi.")
                     _yukleniyor.value = false
+                }
+        }
+    }
+    // ------------------------------------------------------------------
+    // BELGENIN KENDISINI GERI ALMA
+    //
+    // 🔴 Bu yol YOKTU: kullanici faturasinin fotografini yukluyor, geri
+    // alamiyordu. Belge detayi yalniz OCR metnini donuyordu; veri iceri
+    // girip cikamiyordu. Bu bir guven sorunu ve KVKK'nin veri
+    // tasinabilirligi beklentisiyle de celisiyordu.
+    //
+    // ⚠️ Webde "indir", telefonda PAYLAS: kullanici belgeyi
+    // muhasebecisine gondermek ya da Dosyalar'a kaydetmek istiyor;
+    // sistem paylasim sayfasi ikisini de veriyor.
+    // ------------------------------------------------------------------
+
+    private val _indirilenBelgeId = MutableStateFlow<String?>(null)
+    val indirilenBelgeId: StateFlow<String?> = _indirilenBelgeId.asStateFlow()
+
+    fun belgePaylas(belge: WorkspaceDocumentDto, paylas: (SharedFile) -> Unit) {
+        if (_indirilenBelgeId.value != null) return
+        _indirilenBelgeId.value = belge.id
+        viewModelScope.launch {
+            repository.belgeIndir(workspaceId, belge.id)
+                .onSuccess { veri ->
+                    _indirilenBelgeId.value = null
+                    if (veri.isEmpty()) {
+                        AppMessages.hata("Belge indirilemedi.")
+                        return@onSuccess
+                    }
+                    /* Kullanicinin verdigi ad korunuyor; sunucunun
+                       urettigi uuid adi kullaniciya "9c2a....pdf" olarak
+                       dusurdu. */
+                    paylas(
+                        SharedFile(
+                            name = belge.originalName,
+                            mimeType = belge.mimeType ?: "application/octet-stream",
+                            bytes = veri
+                        )
+                    )
+                }
+                .onFailure { hata ->
+                    _indirilenBelgeId.value = null
+                    AppMessages.hata(hata.message ?: "Belge indirilemedi.")
                 }
         }
     }

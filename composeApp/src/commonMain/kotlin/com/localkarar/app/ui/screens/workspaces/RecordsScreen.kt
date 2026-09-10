@@ -47,6 +47,7 @@ fun recordTypeLabel(type: String): String {
         "payment" -> "Ödeme"
         "receivable" -> "Tahsilat"
         "promissory_note" -> "Senet"
+        "cheque" -> "Çek"
         "purchase" -> "Satın Alma"
         "shipment" -> "Sevkiyat"
         "task" -> "Görev"

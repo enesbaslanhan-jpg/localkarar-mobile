@@ -77,6 +77,17 @@ class WorkspaceRepository(private val api: SafeApiClient) {
         return api.get("$base/workspaces/$workspaceId/contacts")
     }
 
+    /*
+     * CARİ HESAP — bakiye + hareket dökümü.
+     *
+     * 🔴 Bu sorunun cevabı üründe hiçbir yerde yoktu: kayıtlar kişiye
+     * bağlanabiliyordu ama toplanmıyordu. Bir esnafın defterinde ilk
+     * baktığı sayı budur.
+     */
+    suspend fun getCariHesap(workspaceId: String, contactId: String): Result<CariHesapDto> {
+        return api.get("$base/workspaces/$workspaceId/contacts/$contactId/hesap")
+    }
+
     suspend fun createContact(workspaceId: String, body: ContactInputDto): Result<BusinessContactDto> {
         return api.post("$base/workspaces/$workspaceId/contacts", body)
     }
@@ -321,6 +332,28 @@ class WorkspaceRepository(private val api: SafeApiClient) {
             "$base/workspaces/$workspaceId/records/import",
             RecordImportRequestDto(fileId, columnMapping, previewOnly)
         )
+    }
+
+    /*
+     * CARİ EKSTRE PDF'İ.
+     *
+     * 🔴 Cari hesap ekranda görünüyor ama dışarı çıkamıyordu. Esnaf bu
+     * dökümü karşı tarafa ("bak, şu kadar kalmış") ya da muhasebecisine
+     * gönderir; ekran görüntüsü almak kullanıcının işi olmamalı.
+     */
+    suspend fun cariEkstrePdf(workspaceId: String, contactId: String): Result<ByteArray> {
+        return api.getBytes("$base/workspaces/$workspaceId/contacts/$contactId/ekstre.pdf")
+    }
+
+    /*
+     * BELGENİN KENDİSİNİ İNDİR.
+     *
+     * 🔴 Bu yol YOKTU: kullanıcı faturasının fotoğrafını yüklüyor, geri
+     * alamıyordu. Belge detayı yalnız OCR metnini dönüyordu -- veri
+     * içeri girip çıkamıyordu.
+     */
+    suspend fun belgeIndir(workspaceId: String, documentId: String): Result<ByteArray> {
+        return api.getBytes("$base/workspaces/$workspaceId/documents/$documentId/download")
     }
 
     /** Tek bir kaydin PDF dokumu — webde de kayit basina indiriliyor. */

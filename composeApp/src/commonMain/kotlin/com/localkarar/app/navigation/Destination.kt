@@ -70,6 +70,15 @@ sealed interface Destination {
     data class Activity(val workspaceId: String) : Destination
 
     /**
+     * Cari hesap — bir kisiyle olan borc/alacak dokumu.
+     *
+     * Kisi ADI tasinmiyor, yalniz kimligi: rota metni ":" ile
+     * ayriliyor ve isimde ":" gecebilir. Baslik zaten sunucudan
+     * gelen yanittaki adla yaziliyor.
+     */
+    data class CariHesap(val workspaceId: String, val contactId: String) : Destination
+
+    /**
      * Karar raporu — hedeflenen ile gerceklesenin karsilastirmasi.
      *
      * 🔴 Bu hedef YOKTU. Karar araci takipleri ve finansal model karar

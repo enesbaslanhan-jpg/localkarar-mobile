@@ -86,6 +86,7 @@ val PRIORITY_LABEL = mapOf("low" to "Düşük", "medium" to "Orta", "high" to "Y
 
 val RECORD_TYPE_LABEL = mapOf(
     "payment" to "Ödeme", "receivable" to "Tahsilat", "promissory_note" to "Senet",
+    "cheque" to "Çek",
     "purchase" to "Satın alma", "shipment" to "Sevkiyat", "task" to "Görev",
     "deferred" to "Ertelenen", "other" to "Kayıt"
 )

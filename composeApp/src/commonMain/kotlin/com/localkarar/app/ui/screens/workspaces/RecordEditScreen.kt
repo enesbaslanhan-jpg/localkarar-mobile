@@ -26,7 +26,7 @@ import com.localkarar.app.workspaces.RecordEditUiState
 import com.localkarar.app.workspaces.RecordEditViewModel
 
 private val RECORD_TYPES = listOf(
-    "payment", "receivable", "promissory_note", "purchase",
+    "payment", "receivable", "promissory_note", "cheque", "purchase",
     "shipment", "task", "deferred", "other"
 )
 

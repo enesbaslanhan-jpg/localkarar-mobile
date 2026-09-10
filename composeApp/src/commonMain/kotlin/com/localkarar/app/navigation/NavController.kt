@@ -42,6 +42,7 @@ object DestinationCodec {
             is Destination.Calendar -> "calendar:${destination.workspaceId}"
             is Destination.Team -> "team:${destination.workspaceId}"
             is Destination.Contacts -> "contacts:${destination.workspaceId}"
+            is Destination.CariHesap -> "cari_hesap:${destination.workspaceId}:${destination.contactId}"
             is Destination.Activity -> "activity:${destination.workspaceId}"
             is Destination.KararRaporu -> "karar_raporu:${destination.workspaceId}"
             is Destination.WorkspaceSettings -> "workspace_settings:${destination.workspaceId}"
@@ -106,6 +107,7 @@ object DestinationCodec {
                 "calendar" -> Destination.Calendar(parts[1])
                 "team" -> Destination.Team(parts[1])
                 "contacts" -> Destination.Contacts(parts[1])
+                "cari_hesap" -> Destination.CariHesap(parts[1], parts[2])
                 "activity" -> Destination.Activity(parts[1])
                 "karar_raporu" -> Destination.KararRaporu(parts[1])
                 "workspace_settings" -> Destination.WorkspaceSettings(parts[1])

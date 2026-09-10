@@ -71,11 +71,13 @@ import com.localkarar.app.workspaces.CalendarViewModel
 import com.localkarar.app.workspaces.DocumentsViewModel
 import com.localkarar.app.workspaces.DocumentUploadRepository
 import com.localkarar.app.workspaces.TeamViewModel
+import com.localkarar.app.workspaces.CariHesapViewModel
 import com.localkarar.app.workspaces.ContactsViewModel
 import com.localkarar.app.workspaces.NotificationsViewModel
 import com.localkarar.app.workspaces.ActivityViewModel
 import com.localkarar.app.workspaces.WorkspaceSettingsViewModel
 import com.localkarar.app.workspaces.IntegrationsViewModel
+import com.localkarar.app.ui.screens.workspaces.CariHesapScreen
 import com.localkarar.app.ui.screens.workspaces.KararRaporuScreen
 import com.localkarar.app.ui.screens.workspaces.WorkspacesScreen
 import com.localkarar.app.ui.screens.workspaces.WorkspaceHomeScreen
@@ -896,7 +898,19 @@ private fun ScreenContent(
             val viewModel = viewModel(key = "contacts:${destination.workspaceId}") {
                 ContactsViewModel(destination.workspaceId, workspaceRepository)
             }
-            ContactsScreen(viewModel = viewModel, onBack = onBack)
+            ContactsScreen(
+                viewModel = viewModel,
+                onOpenCariHesap = { contactId ->
+                    navController.navigateTo(Destination.CariHesap(destination.workspaceId, contactId))
+                },
+                onBack = onBack
+            )
+        }
+        is Destination.CariHesap -> {
+            val viewModel = viewModel(key = "cari_hesap:${destination.workspaceId}:${destination.contactId}") {
+                CariHesapViewModel(destination.workspaceId, destination.contactId, workspaceRepository)
+            }
+            CariHesapScreen(viewModel = viewModel, onBack = onBack)
         }
         is Destination.Notifications -> {
             val viewModel = viewModel(key = "notifications:${destination.workspaceId}") {
@@ -1261,6 +1275,7 @@ private fun isTabSelected(current: Destination, tabTarget: Destination): Boolean
             current is Destination.Calendar ||
             current is Destination.Team ||
             current is Destination.Contacts ||
+            current is Destination.CariHesap ||
             current is Destination.Notifications ||
             current is Destination.Activity ||
             current is Destination.KararRaporu ||
@@ -1303,6 +1318,8 @@ private fun aktifBolumKodu(destination: Destination): String = when (destination
     is Destination.Notifications -> "notifications"
     is Destination.Team -> "team"
     is Destination.Contacts -> "contacts"
+    /* Cari hesap kisiler listesinden aciliyor; secicide o satir dolu kalsin. */
+    is Destination.CariHesap -> "contacts"
     is Destination.Activity -> "activity"
     is Destination.KararRaporu -> "decisions"
     is Destination.WorkspaceIntegrations -> "integrations"
