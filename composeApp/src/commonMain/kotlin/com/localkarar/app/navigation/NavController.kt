@@ -45,6 +45,7 @@ object DestinationCodec {
             is Destination.CariHesap -> "cari_hesap:${destination.workspaceId}:${destination.contactId}"
             is Destination.Activity -> "activity:${destination.workspaceId}"
             is Destination.KararRaporu -> "karar_raporu:${destination.workspaceId}"
+            is Destination.BusinessFinance -> "business_finance:${destination.workspaceId}:${destination.section}"
             is Destination.WorkspaceSettings -> "workspace_settings:${destination.workspaceId}"
             is Destination.WorkspaceIntegrations -> "workspace_integrations:${destination.workspaceId}"
             is Destination.Community -> if (destination.initialTab == "feed") "community" else "community:${destination.initialTab}"
@@ -110,6 +111,7 @@ object DestinationCodec {
                 "cari_hesap" -> Destination.CariHesap(parts[1], parts[2])
                 "activity" -> Destination.Activity(parts[1])
                 "karar_raporu" -> Destination.KararRaporu(parts[1])
+                "business_finance" -> Destination.BusinessFinance(parts[1], parts[2])
                 "workspace_settings" -> Destination.WorkspaceSettings(parts[1])
                 "workspace_integrations" -> Destination.WorkspaceIntegrations(parts[1])
                 "community" -> if (parts.size > 1 && parts[1].isNotBlank()) Destination.Community(parts[1]) else Destination.Community("feed")

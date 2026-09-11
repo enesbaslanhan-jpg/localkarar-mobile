@@ -242,6 +242,10 @@ data class RecordAssigneeRefDto(
 
 @Serializable
 data class BusinessRecordDto(
+    val accountId: String? = null,
+    val category: String? = null,
+    val settlementAt: String? = null,
+    val loanId: String? = null,
     val id: String,
     val workspaceId: String,
     val type: String,
@@ -417,6 +421,9 @@ data class RecordHistoryDto(
 
 @Serializable
 data class RecordInputDto(
+    val accountId: String? = null,
+    val category: String? = null,
+    val settlementAt: String? = null,
     val type: String,
     val title: String,
     val description: String? = null,
@@ -433,6 +440,9 @@ data class RecordInputDto(
 
 @Serializable
 data class RecordUpdateDto(
+    val accountId: String? = null,
+    val category: String? = null,
+    val settlementAt: String? = null,
     val type: String? = null,
     val title: String? = null,
     val description: String? = null,

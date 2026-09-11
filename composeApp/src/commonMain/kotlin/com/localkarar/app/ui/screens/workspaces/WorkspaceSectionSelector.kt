@@ -60,15 +60,18 @@ val WORKSPACE_SECTION_GROUPS = listOf(
         groupTitle = "OPERASYON",
         items = listOf(
             WorkspaceSectionItem("documents", "Belgeler", "Sözleşme ve dökümanlar", Icons.Outlined.AttachFile) { wsId -> Destination.Documents(wsId) },
-            WorkspaceSectionItem("calendar", "Takvim", "Vade ve operasyon takvimi", Icons.Outlined.CalendarMonth) { wsId -> Destination.Calendar(wsId) },
             WorkspaceSectionItem("notifications", "Bildirimler", "Sistem ve süreç uyarıları", Icons.Outlined.Notifications) { wsId -> Destination.Notifications(wsId) },
+            WorkspaceSectionItem("calendar", "Takvim", "Vade ve operasyon takvimi", Icons.Outlined.CalendarMonth) { wsId -> Destination.Calendar(wsId) },
             // Takvimin yaninda: ikisi de "geriye donup bak" ekrani.
             WorkspaceSectionItem("decisions", "Karar Raporu", "Hedeflenen ve gerçekleşen sonuç", Icons.Outlined.Gavel) { wsId -> Destination.KararRaporu(wsId) }
         )
     ),
     WorkspaceSectionGroup(
-        groupTitle = "İNSANLAR",
+        groupTitle = "FİNANS VE İNSANLAR",
         items = listOf(
+            WorkspaceSectionItem("loans", "Krediler", "Taksit planı ve kalan bakiye", Icons.Outlined.AccountBalance) { wsId -> Destination.BusinessFinance(wsId, "loans") },
+            WorkspaceSectionItem("accounts", "Kasa / Banka", "Hesaplar ve valör bekleyen para", Icons.Outlined.AccountBalanceWallet) { wsId -> Destination.BusinessFinance(wsId, "accounts") },
+            WorkspaceSectionItem("employees", "Personel", "Maaş, SGK ve izin kayıtları", Icons.Outlined.Badge) { wsId -> Destination.BusinessFinance(wsId, "employees") },
             WorkspaceSectionItem("team", "Ekip", "Çalışanlar ve yetkiler", Icons.Outlined.Group) { wsId -> Destination.Team(wsId) },
             WorkspaceSectionItem("contacts", "Kişiler", "Müşteri ve tedarikçiler", Icons.Outlined.Contacts) { wsId -> Destination.Contacts(wsId) }
         )

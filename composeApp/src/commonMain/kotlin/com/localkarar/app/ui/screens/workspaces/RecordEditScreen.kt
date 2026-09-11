@@ -42,6 +42,7 @@ fun RecordEditScreen(
     onBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val financeAccounts by viewModel.financeAccounts.collectAsState()
     var actionError by rememberSaveable { mutableStateOf<String?>(null) }
 
     LkHeroPage(title = if (isEdit) "Kaydı Düzenle" else "Yeni Kayıt", onBack = onBack) {
@@ -65,6 +66,9 @@ fun RecordEditScreen(
                 var contactId by rememberSaveable(initial?.id) { mutableStateOf(initial?.contactId) }
                 var assignedToId by rememberSaveable(initial?.id) { mutableStateOf(initial?.assignedToId) }
                 var recurrence by rememberSaveable(initial?.id) { mutableStateOf(initial?.recurrenceRule) }
+                var accountId by rememberSaveable(initial?.id) { mutableStateOf(initial?.accountId) }
+                var category by rememberSaveable(initial?.id) { mutableStateOf(initial?.category ?: "other") }
+                var settlement by rememberSaveable(initial?.id) { mutableStateOf(initial?.settlementAt?.take(10) ?: "") }
 
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
@@ -209,8 +213,23 @@ fun RecordEditScreen(
                     }
 
                     item {
-                        LkSectionHeader(title = "Tekrar")
+                        LkSectionHeader(title = "Hesap ve kategori")
+                        Text("İşlenecek kasa / banka")
+                        androidx.compose.material.TextButton(onClick = { accountId = null }) { Text(if(accountId == null) "✓ Hesaba işleme" else "Hesaba işleme") }
+                        financeAccounts.filter { it.value("currency") == currency }.forEach { account ->
+                            androidx.compose.material.TextButton(onClick = { accountId = account.value("id") }) { Text((if(accountId == account.value("id")) "✓ " else "") + account.value("name")) }
+                        }
+                        if(direction == "receivable") FinanceTextField("POS valör tarihi (YYYY-AA-GG)", settlement) { settlement = it }
+                        var categoryOpen by remember { mutableStateOf(false) }
+                        val categories = mapOf("sales" to "Satış", "supplies" to "Malzeme", "rent" to "Kira", "utilities" to "Faturalar", "salary" to "Maaş", "sgk" to "SGK", "tax" to "Vergi", "loan_repayment" to "Kredi geri ödemesi", "transfer" to "Transfer", "capital" to "Sermaye", "other" to "Diğer")
+                        Box {
+                            androidx.compose.material.TextButton(onClick = { categoryOpen = true }, enabled = initial?.loanId == null) { Text("Kategori: ${categories[category] ?: "Diğer"}") }
+                            androidx.compose.material.DropdownMenu(expanded = categoryOpen, onDismissRequest = { categoryOpen = false }) {
+                                categories.forEach { (value, label) -> androidx.compose.material.DropdownMenuItem(onClick = { category = value; categoryOpen = false }) { Text(label) } }
+                            }
+                        }
                         Spacer(modifier = Modifier.height(LkSpacing.Space2))
+                        LkSectionHeader(title = "Tekrar")
                         Row(horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
                             RECURRENCE_OPTIONS.forEach { option ->
                                 val label = when (option) {
@@ -252,7 +271,9 @@ fun RecordEditScreen(
                                     actionError = "Geçersiz tutar"
                                     return@LkButton
                                 }
+                                val settlementIso = if (direction == "receivable" && settlement.isNotBlank()) runCatching { financeDate(settlement) }.getOrElse { actionError = "Valör tarihini YYYY-AA-GG olarak girin."; return@LkButton } else null
                                 val input = RecordInputDto(
+                                    accountId = accountId, category = category, settlementAt = settlementIso,
                                     type = type,
                                     title = title.trim(),
                                     description = description.trim().ifBlank { null },

@@ -24,6 +24,12 @@ val DESTEKLENEN_SAGLAYICILAR = listOf("TRENDYOL", "HEPSIBURADA", "N11", "SHOPIFY
 
 class WorkspaceRepository(private val api: SafeApiClient) {
 
+    suspend fun finance(workspaceId: String, path: String): Result<kotlinx.serialization.json.JsonObject> =
+        api.get("$base/workspaces/$workspaceId/$path")
+
+    suspend fun saveFinance(workspaceId: String, path: String, body: kotlinx.serialization.json.JsonObject): Result<kotlinx.serialization.json.JsonObject> =
+        api.post("$base/workspaces/$workspaceId/$path", body)
+
     private val base = ApiConfig.baseUrl
 
     suspend fun listWorkspaces(): Result<WorkspaceListResponseDto> {
@@ -202,6 +208,17 @@ class WorkspaceRepository(private val api: SafeApiClient) {
 
     suspend fun updateRecord(workspaceId: String, recordId: String, body: RecordUpdateDto): Result<BusinessRecordDto> {
         return api.patch("$base/workspaces/$workspaceId/records/$recordId", body)
+    }
+
+    suspend fun updateRecordForm(workspaceId: String, recordId: String, body: RecordUpdateDto): Result<BusinessRecordDto> {
+        // Full-form edits must send explicit nulls for cleared financial fields.
+        // Status-only updates keep using updateRecord and must not clear them.
+        val fields = kotlinx.serialization.json.Json.encodeToJsonElement(RecordUpdateDto.serializer(), body)
+            .let { it as kotlinx.serialization.json.JsonObject }.toMutableMap()
+        fields["accountId"] = body.accountId?.let { kotlinx.serialization.json.JsonPrimitive(it) } ?: kotlinx.serialization.json.JsonNull
+        fields["category"] = body.category?.let { kotlinx.serialization.json.JsonPrimitive(it) } ?: kotlinx.serialization.json.JsonNull
+        fields["settlementAt"] = body.settlementAt?.let { kotlinx.serialization.json.JsonPrimitive(it) } ?: kotlinx.serialization.json.JsonNull
+        return api.patch("$base/workspaces/$workspaceId/records/$recordId", kotlinx.serialization.json.JsonObject(fields))
     }
 
     suspend fun deleteRecord(workspaceId: String, recordId: String): Result<Unit> {

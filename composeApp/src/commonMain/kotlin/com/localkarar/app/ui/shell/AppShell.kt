@@ -800,6 +800,9 @@ private fun ScreenContent(
                 onAddRecord = { navController.navigateTo(Destination.RecordEdit(destination.workspaceId, null)) },
                 onOpenSectionSelector = { onOpenWorkspaceSections(destination.workspaceId, "overview") },
                 onOpenKararRaporu = { navController.navigateTo(Destination.KararRaporu(destination.workspaceId)) },
+                financeContent = { com.localkarar.app.ui.screens.workspaces.FinanceOverviewPanel(destination.workspaceId, workspaceRepository,
+                    onOpenAccounts = { navController.navigateTo(Destination.BusinessFinance(destination.workspaceId, "accounts")) },
+                    onOpenRecord = { navController.navigateTo(Destination.RecordDetail(destination.workspaceId, it)) }) },
                 onBack = geriVarsa
             )
         }
@@ -867,6 +870,7 @@ private fun ScreenContent(
             }
             CalendarScreen(
                 viewModel = viewModel,
+                financeContent = { com.localkarar.app.ui.screens.workspaces.RenewalFinancePanel(destination.workspaceId, workspaceRepository) { viewModel.loadMonth() } },
                 onOpenRecord = { recordId -> navController.navigateTo(Destination.RecordDetail(destination.workspaceId, recordId)) },
                 onBack = onBack
             )
@@ -930,6 +934,7 @@ private fun ScreenContent(
             }
             KararRaporuScreen(
                 viewModel = viewModel,
+                financeContent = { com.localkarar.app.ui.screens.workspaces.MonthlyFinancePanel(destination.workspaceId, workspaceRepository) },
                 onBack = onBack,
                 onGorevAc = { kayitId ->
                     navController.navigateTo(Destination.RecordDetail(destination.workspaceId, kayitId))
@@ -937,10 +942,17 @@ private fun ScreenContent(
             )
         }
         is Destination.WorkspaceSettings -> {
+            
             val viewModel = viewModel(key = "workspace_settings:${destination.workspaceId}") {
                 WorkspaceSettingsViewModel(destination.workspaceId, workspaceRepository)
             }
-            WorkspaceSettingsScreen(viewModel = viewModel, onBack = onBack)
+            WorkspaceSettingsScreen(viewModel = viewModel, onBack = onBack, financeContent = { com.localkarar.app.ui.screens.workspaces.TaxFinancePanel(destination.workspaceId, workspaceRepository) })
+        }
+        is Destination.BusinessFinance -> {
+            com.localkarar.app.ui.screens.workspaces.BusinessFinanceScreen(
+                destination.workspaceId, destination.section, workspaceRepository, onBack,
+                onRecord = { navController.navigateTo(Destination.RecordDetail(destination.workspaceId, it)) }
+            )
         }
         is Destination.WorkspaceIntegrations -> {
             val viewModel = viewModel(key = "workspace_integrations:${destination.workspaceId}") {
@@ -1279,6 +1291,7 @@ private fun isTabSelected(current: Destination, tabTarget: Destination): Boolean
             current is Destination.Notifications ||
             current is Destination.Activity ||
             current is Destination.KararRaporu ||
+            current is Destination.BusinessFinance ||
             current is Destination.WorkspaceSettings ||
             current is Destination.WorkspaceIntegrations
         }
@@ -1322,6 +1335,7 @@ private fun aktifBolumKodu(destination: Destination): String = when (destination
     is Destination.CariHesap -> "contacts"
     is Destination.Activity -> "activity"
     is Destination.KararRaporu -> "decisions"
+    is Destination.BusinessFinance -> destination.section
     is Destination.WorkspaceIntegrations -> "integrations"
     is Destination.WorkspaceSettings -> "settings"
     else -> "overview"

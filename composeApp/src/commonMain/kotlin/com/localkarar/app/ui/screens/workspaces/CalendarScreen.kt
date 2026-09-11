@@ -39,7 +39,8 @@ import kotlinx.datetime.LocalDate
 fun CalendarScreen(
     viewModel: CalendarViewModel,
     onOpenRecord: (String) -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    financeContent: @Composable () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     /*
@@ -69,6 +70,7 @@ fun CalendarScreen(
                     contentPadding = PaddingValues(LkSpacing.Space4),
                     verticalArrangement = Arrangement.spacedBy(LkSpacing.Space4)
                 ) {
+                    item { financeContent() }
                     item {
                         MonthHeader(
                             title = state.month.title,

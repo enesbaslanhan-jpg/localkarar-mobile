@@ -42,7 +42,8 @@ import com.localkarar.app.ui.theme.*
 fun KararRaporuScreen(
     viewModel: KararRaporuViewModel,
     onBack: () -> Unit,
-    onGorevAc: (String) -> Unit
+    onGorevAc: (String) -> Unit,
+    financeContent: @Composable () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val suzgec by viewModel.suzgec.collectAsState()
@@ -61,6 +62,7 @@ fun KararRaporuScreen(
                     contentPadding = PaddingValues(LkSpacing.Space4),
                     verticalArrangement = Arrangement.spacedBy(LkSpacing.Space3)
                 ) {
+                    item { financeContent() }
                     item {
                         Text(
                             "Hedeflediğin sonuçla gerçekleşeni yan yana gör.",

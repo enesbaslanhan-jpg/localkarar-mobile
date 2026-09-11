@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.*
 
 sealed class RecordEditUiState {
     object Loading : RecordEditUiState()
@@ -28,6 +29,7 @@ class RecordEditViewModel(
     private val recordId: String?,
     private val repository: WorkspaceRepository
 ) : ViewModel() {
+    val financeAccounts = MutableStateFlow<List<JsonObject>>(emptyList())
 
     private val _uiState = MutableStateFlow<RecordEditUiState>(RecordEditUiState.Loading)
     val uiState: StateFlow<RecordEditUiState> = _uiState.asStateFlow()
@@ -39,6 +41,9 @@ class RecordEditViewModel(
     fun load() {
         _uiState.value = RecordEditUiState.Loading
         viewModelScope.launch {
+            repository.finance(workspaceId, "accounts").onSuccess { result ->
+                financeAccounts.value = result["accounts"]?.jsonArray?.map { it.jsonObject } ?: emptyList()
+            }
             val contactsResult = repository.getContacts(workspaceId)
             val membersResult = repository.getMembers(workspaceId)
             val contacts = contactsResult.getOrNull() ?: emptyList()
@@ -75,7 +80,8 @@ class RecordEditViewModel(
             val result = if (recordId == null) {
                 repository.createRecord(workspaceId, input)
             } else {
-                repository.updateRecord(workspaceId, recordId, input.toUpdateDto())
+                val update = input.toUpdateDto()
+                repository.updateRecordForm(workspaceId, recordId, if (current.record?.loanId != null) update.copy(amount = null, currency = null, direction = null, recurrenceRule = null) else update)
             }
             if (result.isSuccess) {
                 _uiState.value = current.copy(isSaving = false)
@@ -90,6 +96,7 @@ class RecordEditViewModel(
 
 private fun RecordInputDto.toUpdateDto(): RecordUpdateDto {
     return RecordUpdateDto(
+        accountId = accountId, category = category, settlementAt = settlementAt,
         type = type,
         title = title,
         description = description,

@@ -74,7 +74,8 @@ fun WorkspaceHomeScreen(
     onAddRecord: () -> Unit,
     onOpenSectionSelector: () -> Unit,
     onOpenKararRaporu: () -> Unit,
-    onBack: (() -> Unit)? = null
+    onBack: (() -> Unit)? = null,
+    financeContent: @Composable () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val orders by viewModel.orders.collectAsState()
@@ -268,6 +269,7 @@ fun WorkspaceHomeScreen(
                     verticalArrangement = Arrangement.spacedBy(LkSpacing.Space5)
                 ) {
 
+                    item { financeContent() }
                     // ------------------------------------------- DURUM
                     if (summary != null) {
                         item {

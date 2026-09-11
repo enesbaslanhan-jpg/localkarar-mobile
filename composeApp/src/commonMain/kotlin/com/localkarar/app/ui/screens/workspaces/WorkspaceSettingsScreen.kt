@@ -89,7 +89,8 @@ private val LOCALE_OPTIONS = listOf(
 fun WorkspaceSettingsScreen(
     viewModel: WorkspaceSettingsViewModel,
     onBack: () -> Unit,
-    onDeleted: () -> Unit = onBack
+    onDeleted: () -> Unit = onBack,
+    financeContent: @Composable () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var actionError by remember { mutableStateOf<String?>(null) }
@@ -463,6 +464,7 @@ fun WorkspaceSettingsScreen(
                     }
 
                     // ------------------------------------------- TERCIHLER
+                    item { financeContent() }
                     item {
                         Column(verticalArrangement = Arrangement.spacedBy(LkSpacing.Space3)) {
                             LkSectionHeader(title = "ÇALIŞMA ALANI TERCİHLERİ")
@@ -720,4 +722,3 @@ private fun listeyeCevir(ham: String): List<String> =
 /** Virgullu yazim da kabul ediliyor: Turkce klavyede ondalik ayraci virgul. */
 private fun ondalik(ham: String): Double? =
     ham.trim().replace(',', '.').toDoubleOrNull()
-

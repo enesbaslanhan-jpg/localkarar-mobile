@@ -85,6 +85,7 @@ sealed interface Destination {
      * gunlugu YAZILIYOR ama hicbir yerde okunmuyordu.
      */
     data class KararRaporu(val workspaceId: String) : Destination
+    data class BusinessFinance(val workspaceId: String, val section: String) : Destination
     data class WorkspaceSettings(val workspaceId: String) : Destination
 
     /**
