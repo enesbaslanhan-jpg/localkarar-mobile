@@ -123,6 +123,13 @@ kotlin {
 }
 
 android {
+    // Emülatörde gerçek hesaplarla uçtan uca kontrol gerektiğinde debug
+    // imzasını koruyup yalnız API hedefini production'a çevirmeye izin verir.
+    // Varsayılan davranış değişmez: normal debug hâlâ 10.0.2.2:3000 kullanır.
+    val debugUsesProductionApi = providers.gradleProperty("lkUseProductionApi")
+        .orNull
+        .toBoolean()
+
     namespace = "com.localkarar.app"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
@@ -176,7 +183,7 @@ android {
 
     buildTypes {
         getByName("debug") {
-            buildConfigField("Boolean", "IS_RELEASE", "false")
+            buildConfigField("Boolean", "IS_RELEASE", debugUsesProductionApi.toString())
         }
         getByName("release") {
             /*

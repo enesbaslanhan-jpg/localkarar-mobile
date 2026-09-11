@@ -961,7 +961,44 @@ private fun ScreenContent(
         is Destination.BusinessFinance -> {
             com.localkarar.app.ui.screens.workspaces.BusinessFinanceScreen(
                 destination.workspaceId, destination.section, workspaceRepository, onBack,
-                onRecord = { navController.navigateTo(Destination.RecordDetail(destination.workspaceId, it)) }
+                onRecord = { navController.navigateTo(Destination.RecordDetail(destination.workspaceId, it)) },
+                onAddAccount = { navController.navigateTo(Destination.AccountCreate(destination.workspaceId)) },
+                onAddLoan = { navController.navigateTo(Destination.LoanCreate(destination.workspaceId)) },
+                onAddEmployee = { navController.navigateTo(Destination.EmployeeCreate(destination.workspaceId)) },
+                onAddLeave = { navController.navigateTo(Destination.EmployeeLeave(destination.workspaceId, it)) }
+            )
+        }
+        is Destination.AccountCreate -> {
+            com.localkarar.app.ui.screens.workspaces.AccountCreateScreen(
+                workspaceId = destination.workspaceId,
+                repository = workspaceRepository,
+                onBack = onBack,
+                onSaved = onBack
+            )
+        }
+        is Destination.LoanCreate -> {
+            com.localkarar.app.ui.screens.workspaces.LoanCreateScreen(
+                workspaceId = destination.workspaceId,
+                repository = workspaceRepository,
+                onBack = onBack,
+                onSaved = onBack
+            )
+        }
+        is Destination.EmployeeCreate -> {
+            com.localkarar.app.ui.screens.workspaces.EmployeeCreateScreen(
+                workspaceId = destination.workspaceId,
+                repository = workspaceRepository,
+                onBack = onBack,
+                onSaved = onBack
+            )
+        }
+        is Destination.EmployeeLeave -> {
+            com.localkarar.app.ui.screens.workspaces.EmployeeLeaveScreen(
+                workspaceId = destination.workspaceId,
+                employeeId = destination.employeeId,
+                repository = workspaceRepository,
+                onBack = onBack,
+                onSaved = onBack
             )
         }
         is Destination.WorkspaceIntegrations -> {
@@ -1302,6 +1339,10 @@ private fun isTabSelected(current: Destination, tabTarget: Destination): Boolean
             current is Destination.Activity ||
             current is Destination.KararRaporu ||
             current is Destination.BusinessFinance ||
+            current is Destination.AccountCreate ||
+            current is Destination.LoanCreate ||
+            current is Destination.EmployeeCreate ||
+            current is Destination.EmployeeLeave ||
             current is Destination.WorkspaceSettings ||
             current is Destination.WorkspaceIntegrations
         }
@@ -1346,6 +1387,9 @@ private fun aktifBolumKodu(destination: Destination): String = when (destination
     is Destination.Activity -> "activity"
     is Destination.KararRaporu -> "decisions"
     is Destination.BusinessFinance -> destination.section
+    is Destination.AccountCreate -> "accounts"
+    is Destination.LoanCreate -> "loans"
+    is Destination.EmployeeCreate, is Destination.EmployeeLeave -> "employees"
     is Destination.WorkspaceIntegrations -> "integrations"
     is Destination.WorkspaceSettings -> "settings"
     else -> "overview"

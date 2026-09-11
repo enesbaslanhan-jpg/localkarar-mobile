@@ -7,6 +7,7 @@ import com.localkarar.app.BuildConfig
  *
  * Uses BuildConfig.IS_RELEASE (set in build.gradle.kts per buildType) to select:
  *   - Debug   -> http://10.0.2.2:3000  (Android emulator loopback to host machine)
+ *   - Debug + -PlkUseProductionApi=true -> https://localkarar.com (signed emulator test)
  *   - Release -> https://localkarar.com (production HTTPS, cleartext NOT permitted)
  */
 actual object AppEnvironmentProvider {

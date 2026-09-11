@@ -86,6 +86,10 @@ sealed interface Destination {
      */
     data class KararRaporu(val workspaceId: String) : Destination
     data class BusinessFinance(val workspaceId: String, val section: String) : Destination
+    data class AccountCreate(val workspaceId: String) : Destination
+    data class LoanCreate(val workspaceId: String) : Destination
+    data class EmployeeCreate(val workspaceId: String) : Destination
+    data class EmployeeLeave(val workspaceId: String, val employeeId: String) : Destination
     data class WorkspaceSettings(val workspaceId: String) : Destination
 
     /**
