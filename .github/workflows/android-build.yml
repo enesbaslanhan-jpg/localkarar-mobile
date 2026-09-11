@@ -88,6 +88,18 @@ jobs:
           LK_KEY_PASSWORD: ${{ secrets.LK_KEY_PASSWORD }}
         run: ./gradlew :composeApp:assembleRelease --stacktrace
 
+      # APK ARTIFACT. Onceden yalniz raporlar yukleniyordu; urun sahibi
+      # telefonda denemek icin APK'yi nereden alacagini bulamadi (11.09.2026).
+      # Release derleme canli sunucuya baglanir; debug 10.0.2.2'ye baglanir ve
+      # telefonda ise yaramaz, o yuzden yalniz release yukleniyor.
+      - name: Release APK yukle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: localkarar-release-apk
+          path: composeApp/build/outputs/apk/release/*.apk
+          retention-days: 30
+
       - name: R8 eslesme dosyasini yukle
         if: always()
         uses: actions/upload-artifact@v4
