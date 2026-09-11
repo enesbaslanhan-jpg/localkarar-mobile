@@ -50,6 +50,31 @@ class HomeViewModel(
             .launchIn(viewModelScope)
     }
 
+    /*
+     * OTURUM DEGISTIGINDE SIFIRLA.
+     *
+     * 🔴 Bu ViewModel uygulama kokunde, oturumdan BAGIMSIZ yasiyor ve
+     * kurulusta hemen yukluyor. Iki sonucu vardi (emulator, 11.09.2026):
+     *
+     * 1. Giris oncesi yukleme token bulamiyor, durum Error'a dusuyor;
+     *    kullanici giris yapinca Ana Sayfa o ESKI hatayi gosteriyor
+     *    ("Veriler okunamadı") -- Tekrar Dene'ye basinca duzeliyor.
+     * 2. Cikis yapip baska hesapla girince ONCEKI KULLANICININ
+     *    rakamlari ve adi ekranda kaliyor; uygulama kapatilip acilana
+     *    kadar baska bir hesabin verisi gorunuyor.
+     *
+     * Cozum: oturum degisince durum Loading'e alinip yeniden yukleniyor.
+     * Cagiran App.kt (sessionState gozlemi).
+     */
+    fun oturumDegisti() {
+        _uiState.value = HomeUiState.Loading
+        /* setActive(null) degisiklikse init'teki gozlemci zaten yukler;
+           degilse (ilk giris) elle yukleniyor. Iki kez yuklenmesin. */
+        val tetiklenecek = activeWorkspaceStore.activeWorkspaceId.value != null
+        activeWorkspaceStore.setActive(null)
+        if (!tetiklenecek) loadDashboard()
+    }
+
     fun loadDashboard(isRefresh: Boolean = false) {
         if (isRefresh) {
             _isRefreshing.value = true

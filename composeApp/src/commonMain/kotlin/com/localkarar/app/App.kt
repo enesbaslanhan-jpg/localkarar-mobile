@@ -140,6 +140,17 @@ fun App(secureStorage: SecureStorage, appPreferences: AppPreferences) {
         val sessionState by authViewModel.sessionState.collectAsState()
 
         /*
+         * Oturum degisince Ana Sayfa yeniden yukleniyor; aksi halde giris
+         * oncesi "token yok" hatasi ya da onceki kullanicinin verisi
+         * ekranda kaliyordu. Anahtar kullanici kimligi: ayni kullanici
+         * icin tekrar tetiklenmez, hesap degisince tetiklenir.
+         */
+        val oturumKimligi = (sessionState as? SessionState.Authenticated)?.user?.id
+        LaunchedEffect(oturumKimligi) {
+            if (oturumKimligi != null) homeViewModel.oturumDegisti()
+        }
+
+        /*
          * ACILIS KARESI EN AZ 1,3 SANIYE DURUYOR.
          *
          * 🔴 OTURUM KONTROLU COGU ZAMAN 200ms'DEN KISA SURUYOR: acilis
