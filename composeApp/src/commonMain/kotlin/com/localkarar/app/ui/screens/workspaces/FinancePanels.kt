@@ -7,12 +7,36 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import com.localkarar.app.core.LkDateUtils
+import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AccountBalanceWallet
+import androidx.compose.material.icons.outlined.EventNote
+import androidx.compose.ui.Alignment
+import com.localkarar.app.core.LkFormatting
 import com.localkarar.app.ui.components.LkButton
+import com.localkarar.app.ui.components.LkHairline
+import com.localkarar.app.ui.components.LkListRow
+import com.localkarar.app.ui.components.LkMetricCard
+import com.localkarar.app.ui.components.LkRowGroup
 import com.localkarar.app.ui.theme.*
 import com.localkarar.app.workspaces.WorkspaceRepository
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.*
 
+/*
+ * GENEL BAKIS FINANS SERIDI — iki metrik karti, gerekirse uc satir.
+ *
+ * 🔴 ONCEKI HALI IKI BASLIK + PARAGRAFLARDI. "Bugünkü kasa / banka
+ * durumu" ve "Vergi / SGK — geciken ve 30 gün içinde yaklaşan"
+ * basliklari altinda duz cumleler; hesap yokken bile Genel Bakis'in
+ * ustunu bir ekran boyu metin kapliyordu (urun sahibi, 11.09.2026:
+ * "ustte full yazi olmus, boyle olmaz").
+ *
+ * Simdi ekranin geri kalaniyla ayni dil: `LkMetricCard` ikilisi.
+ * Metin yalniz gerektiginde -- hatirlatma VARSA GIB/SGK teyit notu
+ * (bu not kaldirilamaz, tarihler resmi takvimden okunmuyor), hatirlatma
+ * yoksa hic yazi yok.
+ */
 @Composable
 fun FinanceOverviewPanel(workspaceId: String, repository: WorkspaceRepository, onOpenAccounts: () -> Unit, onOpenRecord: (String) -> Unit) {
     var accounts by remember(workspaceId) { mutableStateOf<JsonObject?>(null) }
@@ -23,24 +47,71 @@ fun FinanceOverviewPanel(workspaceId: String, repository: WorkspaceRepository, o
         repository.finance(workspaceId, "accounts").onSuccess { accounts = it }.onFailure { error = it.message ?: "Hesaplar yüklenemedi." }
         repository.finance(workspaceId, "finance/deadlines").onSuccess { deadlines = it }.onFailure { error = it.message ?: "Hatırlatmalar yüklenemedi." }
     }
-    Column(verticalArrangement = Arrangement.spacedBy(LkSpacing.Space3)) {
-        Text("Bugünkü kasa / banka durumu", style = LkTypography.getTitleS())
-        if (error.isNotBlank()) { Text(error); TextButton(onClick = { revision++ }) { Text("Tekrar dene") } }
-        if (accounts == null && error.isBlank()) Text("Yükleniyor…")
-        val rows = accounts?.get("accounts")?.jsonArray.orEmpty()
-        if (accounts != null && rows.isEmpty()) Text("Canlı bakiyeyi görmek için kasa veya banka hesabı ekleyin.")
-        rows.forEach { row -> val a = row.jsonObject
-            Text("${a.value("name")}: ${a.value("balance")} ${a.value("currency")} · Valör bekleyen: ${a.value("inTransit")} ${a.value("currency")}")
-        }
-        TextButton(onClick = onOpenAccounts) { Text("Kasa / Banka hesaplarını aç") }
-        Text("Vergi / SGK — geciken ve 30 gün içinde yaklaşan", style = LkTypography.getTitleS())
-        deadlines?.let { d ->
-            Text(d.value("notice"))
-            val reminders = d["records"]?.jsonArray.orEmpty()
-            if (reminders.isEmpty()) Text("Bu aralıkta hatırlatma yok. Vergi profilinizi işletme ayarlarından oluşturabilirsiniz.")
-            reminders.forEach { row -> val r = row.jsonObject
-                TextButton(onClick = { onOpenRecord(r.value("id")) }) { Text("${r.value("title")} · ${r.value("dueAt").take(10)}") }
+
+    val hesaplar = accounts?.get("accounts")?.jsonArray.orEmpty()
+    val hatirlatmalar = deadlines?.get("records")?.jsonArray.orEmpty()
+
+    /*
+     * Kasa/banka toplami: para birimleri TOPLANMIYOR (cari hesapla ayni
+     * kural, kur yok). Birden fazla para birimi varsa ilk hesabin birimi
+     * gosterilir ve kart etiketi kac hesap oldugunu soyler.
+     */
+    val ilkBirim = hesaplar.firstOrNull()?.jsonObject?.value("currency")
+    val ayniBirim = hesaplar.all { it.jsonObject.value("currency") == ilkBirim }
+    val toplam = if (ayniBirim) hesaplar.sumOf { it.jsonObject.value("balance").toDoubleOrNull() ?: 0.0 } else null
+    val kasaDegeri = when {
+        accounts == null && error.isBlank() -> "…"
+        hesaplar.isEmpty() -> "—"
+        toplam != null -> LkFormatting.formatMoney(toplam, ilkBirim)
+        else -> "${hesaplar.size} hesap"
+    }
+    val kasaEtiketi = when {
+        hesaplar.isEmpty() -> "Kasa / Banka · hesap ekle"
+        hesaplar.size == 1 -> "Kasa / Banka · ${hesaplar.first().jsonObject.value("name")}"
+        else -> "Kasa / Banka · ${hesaplar.size} hesap"
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
+            Box(Modifier.weight(1f).clickable(onClick = onOpenAccounts)) {
+                LkMetricCard(label = kasaEtiketi, value = kasaDegeri, icon = Icons.Outlined.AccountBalanceWallet)
             }
+            LkMetricCard(
+                /* Etiket tek satir; iki satira sarinca yandaki kartla boyu tutmuyordu. */
+                label = "Vergi / SGK · 30 gün",
+                value = when {
+                    deadlines == null && error.isBlank() -> "…"
+                    hatirlatmalar.isEmpty() -> "—"
+                    else -> hatirlatmalar.size.toString()
+                },
+                icon = Icons.Outlined.EventNote,
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        if (error.isNotBlank()) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(error, style = LkTypography.getMetadata(), color = LkDanger, modifier = Modifier.weight(1f))
+                TextButton(onClick = { revision++ }) { Text("Tekrar dene") }
+            }
+        }
+
+        /* En fazla uc hatirlatma satiri; kalani takvimde. */
+        if (hatirlatmalar.isNotEmpty()) {
+            LkRowGroup {
+                hatirlatmalar.take(3).forEachIndexed { i, row ->
+                    val r = row.jsonObject
+                    LkListRow(
+                        baslik = r.value("title"),
+                        altBaslik = LkDateUtils.formatDate(r.value("dueAt")),
+                        onClick = { onOpenRecord(r.value("id")) }
+                    )
+                    if (i != minOf(hatirlatmalar.size, 3) - 1) LkHairline()
+                }
+            }
+            /* ⚠️ Teyit notu KALDIRILAMAZ: tarihler GIB'den okunmuyor,
+               planlama tahmini. Ama yalniz hatirlatma varken yaziliyor. */
+            Text(deadlines?.value("notice").orEmpty(), style = LkTypography.getMetadata(), color = LkTextSecondary)
         }
     }
 }

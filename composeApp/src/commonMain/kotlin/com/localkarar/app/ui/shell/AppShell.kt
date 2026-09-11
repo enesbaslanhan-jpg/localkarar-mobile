@@ -518,6 +518,16 @@ private fun ScreenContent(
                     Destination.RecordEdit(workspaceId, null, presetType = tur, presetDirection = yon)
                 )
             },
+            /* Ana sayfa kisayollari; kodlar KISAYOLLAR listesiyle birebir. */
+            onKisayol = { workspaceId, kod ->
+                val hedef = when (kod) {
+                    "orders" -> Destination.Orders(workspaceId)
+                    "products" -> Destination.Products(workspaceId)
+                    "notifications" -> Destination.Notifications(workspaceId)
+                    else -> Destination.DecisionTools()
+                }
+                navController.navigateTo(hedef)
+            },
             onOpenProductCenter = onOpenProductCenter,
             onOpenSearch = { navController.navigateTo(Destination.Search) }
         )

@@ -314,9 +314,16 @@ fun LkPillChip(
  * yanlislikla marka rengi kullanilmisti.
  *
  * ⚠️ Rozet canli bir baglantiyi DEGIL, kapsanan donemi anlatir.
+ *
+ * @param koyuZemin Rozet koyu bir kartin (hero) ustundeyse true.
+ *
+ * 🔴 Yesil metin, yesilimsi saydam zemin, onun altinda koyu teal:
+ * ana sayfadaki "SON 30 GÜN" rozeti okunmuyordu (urun sahibi,
+ * 11.09.2026). Nokta yesil kaliyor -- canlilik isareti o -- metin
+ * ve zemin beyaza donuyor.
  */
 @Composable
-fun LkPulseBadge(label: String, modifier: Modifier = Modifier) {
+fun LkPulseBadge(label: String, modifier: Modifier = Modifier, koyuZemin: Boolean = false) {
     // §12: susleme amacli sonsuz animasyon kisitlamada YAVASLATILMAZ,
     // tamamen durur -- hizli oynatmak kisitlamanin amacina aykiri.
     val hareketVar = lkAllowDecorativeMotion()
@@ -334,7 +341,7 @@ fun LkPulseBadge(label: String, modifier: Modifier = Modifier) {
 
     Row(
         modifier = modifier
-            .background(LkSuccess.copy(alpha = 0.14f), LkShapes.FULL)
+            .background(if (koyuZemin) Color(0x24FFFFFF) else LkSuccess.copy(alpha = 0.14f), LkShapes.FULL)
             .padding(horizontal = 9.dp, vertical = 3.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -349,7 +356,7 @@ fun LkPulseBadge(label: String, modifier: Modifier = Modifier) {
         Text(
             text = label.trBuyuk(),
             style = LkTypography.getMicro(),
-            color = LkSuccess,
+            color = if (koyuZemin) LkHero.OnHero else LkSuccess,
             fontWeight = FontWeight.Bold,
             letterSpacing = 0.5.sp
         )

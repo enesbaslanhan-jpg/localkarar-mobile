@@ -125,6 +125,28 @@ val HIZLI_ISLEMLER = listOf(
     HizliIslem("shipment", "neutral", "Yeni Sevkiyat", Icons.Outlined.LocalShipping)
 )
 
+/*
+ * KISAYOLLAR — ikinci satir.
+ *
+ * Urun sahibi istedi (11.09.2026): dort doseme yalniz "kayit ac"
+ * eylemiydi; siparise, urune, bildirime ve karar araclarina ana
+ * sayfadan ulasmak icin once Isletme Takibi'ne, sonra bolum seciciye
+ * girmek gerekiyordu -- iki dokunus fazla.
+ *
+ * ⚠️ AYRI SATIR, AYNI IZGARA. Ustteki dort "Yeni ..." bir sey
+ * OLUSTURUR, bunlar bir yere GIDER. Etiketler bunu soyluyor ("Yeni"
+ * oneki yalniz ustte); tek satira karistirilsa kullanici hangi
+ * dosemenin form acacagini kestiremezdi.
+ */
+data class Kisayol(val kod: String, val etiket: String, val ikon: ImageVector)
+
+val KISAYOLLAR = listOf(
+    Kisayol("orders", "Siparişler", Icons.Outlined.ShoppingBag),
+    Kisayol("products", "Ürünler", Icons.Outlined.Inventory2),
+    Kisayol("notifications", "Bildirimler", Icons.Outlined.Notifications),
+    Kisayol("decisions", "Karar Araçları", Icons.Outlined.Gavel)
+)
+
 /**
  * Kaydin tarihine gore gun basligi.
  *
@@ -153,6 +175,8 @@ fun HomeScreen(
     onNavigateToTracker: (String) -> Unit,
     /** Hizli Islem dosemesi: (isletmeId, kayitTuru, yon) */
     onQuickAction: (String, String, String) -> Unit,
+    /** Kisayol dosemesi: (isletmeId, bolumKodu) -- KISAYOLLAR.kod */
+    onKisayol: (String, String) -> Unit = { _, _ -> },
     onOpenProductCenter: () -> Unit = {},
     onOpenSearch: () -> Unit = {}
 ) {
@@ -185,6 +209,7 @@ fun HomeScreen(
                         onNavigateToWorkspaces = onNavigateToWorkspaces,
                         onNavigateToTracker = onNavigateToTracker,
                         onQuickAction = onQuickAction,
+                        onKisayol = onKisayol,
                         onOpenProductCenter = onOpenProductCenter,
                         onOpenSearch = onOpenSearch
                     )
@@ -210,6 +235,7 @@ private fun DashboardContent(
     onNavigateToTracker: (String) -> Unit,
     /** Hizli Islem dosemesi: (isletmeId, kayitTuru, yon) */
     onQuickAction: (String, String, String) -> Unit,
+    onKisayol: (String, String) -> Unit,
     onOpenProductCenter: () -> Unit,
     onOpenSearch: () -> Unit
 ) {
@@ -306,6 +332,7 @@ private fun DashboardContent(
         QuickActionsCard(
             activeWorkspaceId = state.activeWorkspaceId,
             onQuickAction = onQuickAction,
+            onKisayol = onKisayol,
             onNavigateToWorkspaces = onNavigateToWorkspaces
         )
 
@@ -424,7 +451,7 @@ private fun BusinessPulseCard(tracker: TrackerSummaryDto?, onNavigateToWorkspace
                     style = LkTypography.getMetadata(),
                     color = LkHero.OnHeroSecondary
                 )
-                LkPulseBadge("Son 30 Gün")
+                LkPulseBadge("Son 30 Gün", koyuZemin = true)
             }
             Spacer(Modifier.height(LkSpacing.Space2))
 
@@ -523,7 +550,13 @@ private fun BusinessPulseCard(tracker: TrackerSummaryDto?, onNavigateToWorkspace
 @Composable
 private fun PulseMetric(etiket: String, deger: String, renk: Color, modifier: Modifier = Modifier) {
     Column(modifier = modifier) {
-        Text(etiket, style = LkTypography.getBodySmall(), color = LkTextMuted)
+        /*
+         * 🔴 OKUNMUYORDU. `LkTextMuted` acik temanin gri metni; koyu hero
+         * kartinin ustunde "TAHSİLAT" ve "ÖDEME" neredeyse kayboluyordu
+         * (urun sahibi ekran goruntusuyle bildirdi, 11.09.2026). Kart
+         * her temada koyu; etiket de hero tokenini kullanmali.
+         */
+        Text(etiket, style = LkTypography.getBodySmall(), color = LkHero.OnHeroSecondary)
         // Tabular rakam: prototipte `font-feature-settings: "tnum"`. Uc metrik
         // alt alta hizali dursun diye; orantili rakamla sutunlar kayiyordu.
         Text(
@@ -702,6 +735,7 @@ private fun GorevSatiriGorunumu(satir: GorevSatiri, onClick: () -> Unit) {
 private fun QuickActionsCard(
     activeWorkspaceId: String?,
     onQuickAction: (String, String, String) -> Unit,
+    onKisayol: (String, String) -> Unit,
     onNavigateToWorkspaces: () -> Unit
 ) {
     LkSection(title = "Hızlı İşlemler") {
@@ -731,18 +765,26 @@ private fun QuickActionsCard(
              * durmuyordu (olculdu, oran 1.138 < 1.20). Artik `LkIconTile`
              * ve olculmus `LkSurfaceTile`.
              */
+            /*
+             * 🔴 "YENI ODEME / TAHSILAT / SENET / SEVKIYAT" SATIRI KALDIRILDI
+             * (urun sahibi, 11.09.2026). Kayit acmak Isletme Takibi'nin
+             * isi; ana sayfadan en cok gidilen yerler siparis, urun,
+             * bildirim ve karar araclari. Tur/yon onayarlari
+             * `HIZLI_ISLEMLER` icinde duruyor -- WorkspaceHomeScreen
+             * hizli islemleri hala oradan okuyor.
+             */
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space3)
             ) {
-                HIZLI_ISLEMLER.forEach { islem ->
+                KISAYOLLAR.forEach { kisayol ->
                     LkIconTile(
-                        etiket = islem.etiket,
-                        onClick = { onQuickAction(activeWorkspaceId, islem.tur, islem.yon) },
+                        etiket = kisayol.etiket,
+                        onClick = { onKisayol(activeWorkspaceId, kisayol.kod) },
                         modifier = Modifier.weight(1f),
                         ikon = {
                             Icon(
-                                islem.ikon,
+                                kisayol.ikon,
                                 contentDescription = null,
                                 tint = LkTileInk,
                                 modifier = Modifier.size(24.dp)
