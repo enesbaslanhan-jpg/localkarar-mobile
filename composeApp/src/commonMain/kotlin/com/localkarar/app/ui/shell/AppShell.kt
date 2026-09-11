@@ -810,8 +810,8 @@ private fun ScreenContent(
                 onAddRecord = { navController.navigateTo(Destination.RecordEdit(destination.workspaceId, null)) },
                 onOpenSectionSelector = { onOpenWorkspaceSections(destination.workspaceId, "overview") },
                 onOpenKararRaporu = { navController.navigateTo(Destination.KararRaporu(destination.workspaceId)) },
+                onOpenAccounts = { navController.navigateTo(Destination.BusinessFinance(destination.workspaceId, "accounts")) },
                 financeContent = { com.localkarar.app.ui.screens.workspaces.FinanceOverviewPanel(destination.workspaceId, workspaceRepository,
-                    onOpenAccounts = { navController.navigateTo(Destination.BusinessFinance(destination.workspaceId, "accounts")) },
                     onOpenRecord = { navController.navigateTo(Destination.RecordDetail(destination.workspaceId, it)) }) },
                 onBack = geriVarsa
             )

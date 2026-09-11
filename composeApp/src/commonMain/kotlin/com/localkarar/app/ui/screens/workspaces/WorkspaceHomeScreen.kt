@@ -74,6 +74,8 @@ fun WorkspaceHomeScreen(
     onAddRecord: () -> Unit,
     onOpenSectionSelector: () -> Unit,
     onOpenKararRaporu: () -> Unit,
+    /** Kasada bugun kutusu; kasa/banka ekranina. */
+    onOpenAccounts: () -> Unit = {},
     onBack: (() -> Unit)? = null,
     financeContent: @Composable () -> Unit = {}
 ) {
@@ -269,45 +271,76 @@ fun WorkspaceHomeScreen(
                     verticalArrangement = Arrangement.spacedBy(LkSpacing.Space5)
                 ) {
 
-                    item { financeContent() }
                     // ------------------------------------------- DURUM
                     if (summary != null) {
                         item {
                             Column(verticalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
                                 LkSectionHeader(title = "BUGÜN NE DURUMDAYIM?")
+                                /*
+                                 * 🔴 SAYI DEGIL TUTAR (urun sahibi, 11.09.2026). "3 geciken"
+                                 * karar verdirmez, "₺18.400 gecikmis" verdirir. Webdeki
+                                 * bantla ayni dort kutu, ayni sunucu hesabi.
+                                 *
+                                 * ⚠️ Kasa hesabi yoksa "—", sifir degil. "Yon bekleyen"
+                                 * kutu olmaktan cikti; varsa asagida tek satir uyari.
+                                 */
+                                val hafta = summary.thisWeek
+                                val geciken = summary.overdueTotals
+                                val kasa = summary.cash
                                 Row(horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
                                     DurumKutusu(
-                                        sayi = summary.counts.overdue,
-                                        etiket = "Geciken",
-                                        vurgu = LkDanger,
-                                        onClick = onOpenRecords,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                    DurumKutusu(
-                                        sayi = summary.counts.dueToday,
-                                        etiket = "Bugün",
+                                        deger = LkFormatting.formatMoney(hafta?.payable ?: 0.0, paraBirimi),
+                                        etiket = "Bu hafta ödenecek",
+                                        alt = "${hafta?.payableCount ?: 0} kayıt",
                                         vurgu = LkWarning,
                                         onClick = onOpenCalendar,
                                         modifier = Modifier.weight(1f)
                                     )
                                     DurumKutusu(
-                                        sayi = summary.counts.open,
-                                        etiket = "Açık kayıt",
-                                        vurgu = LkLineStrong,
+                                        deger = LkFormatting.formatMoney(hafta?.receivable ?: 0.0, paraBirimi),
+                                        etiket = "Bu hafta tahsilat",
+                                        alt = "${hafta?.receivableCount ?: 0} kayıt",
+                                        vurgu = LkSuccess,
+                                        onClick = onOpenCalendar,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                                Row(horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
+                                    DurumKutusu(
+                                        deger = LkFormatting.formatMoney(geciken?.amount ?: 0.0, paraBirimi),
+                                        etiket = "Geciken",
+                                        alt = if ((geciken?.count ?: 0) > 0) "${geciken?.count} kayıt" else "Geciken yok",
+                                        vurgu = LkDanger,
                                         onClick = onOpenRecords,
                                         modifier = Modifier.weight(1f)
                                     )
                                     DurumKutusu(
-                                        sayi = summary.counts.awaitingDirection,
-                                        etiket = "Yön bekleyen",
-                                        vurgu = LkSuccess,
-                                        onClick = onOpenRecords,
+                                        deger = when {
+                                            kasa == null -> "—"
+                                            kasa.total == null -> "${kasa.accountCount} hesap"
+                                            else -> LkFormatting.formatMoney(kasa.total, kasa.currency)
+                                        },
+                                        etiket = "Kasada bugün",
+                                        alt = if (kasa == null) "Hesap ekle" else "${kasa.accountCount} hesap",
+                                        vurgu = LkLineStrong,
+                                        onClick = onOpenAccounts,
                                         modifier = Modifier.weight(1f)
+                                    )
+                                }
+                                if (summary.counts.awaitingDirection > 0) {
+                                    Text(
+                                        "${summary.counts.awaitingDirection} kaydın yönü (borç/alacak) belirsiz — Kayıtlar'dan tamamlayın.",
+                                        style = LkTypography.getMetadata(),
+                                        color = LkWarning
                                     )
                                 }
                             }
                         }
                     }
+
+                    /* Vergi/SGK karti durum kutularinin ALTINDA: tepede tek basina
+                       bos bir kart gibi duruyordu (emulator, 11.09.2026). */
+                    item { financeContent() }
 
                     /*
                      * SON HAREKETLER — ekranin GERCEK VERI blogu.
@@ -595,8 +628,9 @@ fun WorkspaceHomeScreen(
  */
 @Composable
 private fun DurumKutusu(
-    sayi: Int,
+    deger: String,
     etiket: String,
+    alt: String? = null,
     vurgu: androidx.compose.ui.graphics.Color,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -620,9 +654,10 @@ private fun DurumKutusu(
                 .background(vurgu)
         )
         Text(
-            text = sayi.toString(),
+            text = deger,
             style = LkTypography.getTitleS().numeric(),
-            color = LkTextPrimary
+            color = LkTextPrimary,
+            maxLines = 1
         )
         Text(
             text = etiket,
@@ -630,6 +665,14 @@ private fun DurumKutusu(
             color = LkTextSecondary,
             maxLines = 1
         )
+        if (alt != null) {
+            Text(
+                text = alt,
+                style = LkTypography.getMicro(),
+                color = LkTextMuted,
+                maxLines = 1
+            )
+        }
     }
 }
 

@@ -476,8 +476,39 @@ data class TrackerSummaryDto(
     val counts: TrackerCountsDto = TrackerCountsDto(),
     val nextThirtyDays: TrackerWindowDto = TrackerWindowDto(),
     val upcoming: List<BusinessRecordDto> = emptyList(),
+    /* ⚠️ Sunucu bu adla HIC liste gondermedi; bos kaliyor. Sunucu tarafi
+       geciken TUTARI icin bilerek `overdueTotals` adini secti, bu alan
+       patlamasin diye. */
     val overdue: List<BusinessRecordDto> = emptyList(),
-    val awaitingDirection: AwaitingDirectionDto? = null
+    val awaitingDirection: AwaitingDirectionDto? = null,
+    /*
+     * 🔴 "BUGUN NE DURUMDAYIM?" KUTULARI SAYI DEGIL TUTAR SOYLUYOR
+     * (urun sahibi, 11.09.2026). Uc alan da sunucuda hesaplaniyor; web
+     * ayni sayilari okuyor.
+     */
+    val thisWeek: TrackerWeekDto? = null,
+    val overdueTotals: TrackerOverdueDto? = null,
+    /** Kasa hesabi yoksa null: arayuz "—" yazar, sifir degil. */
+    val cash: TrackerCashDto? = null
+)
+
+@Serializable
+data class TrackerWeekDto(
+    val payable: Double = 0.0,
+    val payableCount: Int = 0,
+    val receivable: Double = 0.0,
+    val receivableCount: Int = 0
+)
+
+@Serializable
+data class TrackerOverdueDto(val amount: Double = 0.0, val count: Int = 0)
+
+/** Para birimleri farkliysa `total` null, arayuz "N hesap" yazar. */
+@Serializable
+data class TrackerCashDto(
+    val total: Double? = null,
+    val currency: String = "TRY",
+    val accountCount: Int = 0
 )
 
 @Serializable

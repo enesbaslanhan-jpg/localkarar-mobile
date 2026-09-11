@@ -38,56 +38,28 @@ import kotlinx.serialization.json.*
  * yoksa hic yazi yok.
  */
 @Composable
-fun FinanceOverviewPanel(workspaceId: String, repository: WorkspaceRepository, onOpenAccounts: () -> Unit, onOpenRecord: (String) -> Unit) {
-    var accounts by remember(workspaceId) { mutableStateOf<JsonObject?>(null) }
+fun FinanceOverviewPanel(workspaceId: String, repository: WorkspaceRepository, onOpenRecord: (String) -> Unit) {
     var deadlines by remember(workspaceId) { mutableStateOf<JsonObject?>(null) }
     var error by remember { mutableStateOf("") }; var revision by remember { mutableStateOf(0) }
     LaunchedEffect(workspaceId, revision) {
         error = ""
-        repository.finance(workspaceId, "accounts").onSuccess { accounts = it }.onFailure { error = it.message ?: "Hesaplar yüklenemedi." }
         repository.finance(workspaceId, "finance/deadlines").onSuccess { deadlines = it }.onFailure { error = it.message ?: "Hatırlatmalar yüklenemedi." }
     }
 
-    val hesaplar = accounts?.get("accounts")?.jsonArray.orEmpty()
     val hatirlatmalar = deadlines?.get("records")?.jsonArray.orEmpty()
 
-    /*
-     * Kasa/banka toplami: para birimleri TOPLANMIYOR (cari hesapla ayni
-     * kural, kur yok). Birden fazla para birimi varsa ilk hesabin birimi
-     * gosterilir ve kart etiketi kac hesap oldugunu soyler.
-     */
-    val ilkBirim = hesaplar.firstOrNull()?.jsonObject?.value("currency")
-    val ayniBirim = hesaplar.all { it.jsonObject.value("currency") == ilkBirim }
-    val toplam = if (ayniBirim) hesaplar.sumOf { it.jsonObject.value("balance").toDoubleOrNull() ?: 0.0 } else null
-    val kasaDegeri = when {
-        accounts == null && error.isBlank() -> "…"
-        hesaplar.isEmpty() -> "—"
-        toplam != null -> LkFormatting.formatMoney(toplam, ilkBirim)
-        else -> "${hesaplar.size} hesap"
-    }
-    val kasaEtiketi = when {
-        hesaplar.isEmpty() -> "Kasa / Banka · hesap ekle"
-        hesaplar.size == 1 -> "Kasa / Banka · ${hesaplar.first().jsonObject.value("name")}"
-        else -> "Kasa / Banka · ${hesaplar.size} hesap"
-    }
-
     Column(verticalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
-            Box(Modifier.weight(1f).clickable(onClick = onOpenAccounts)) {
-                LkMetricCard(label = kasaEtiketi, value = kasaDegeri, icon = Icons.Outlined.AccountBalanceWallet)
-            }
-            LkMetricCard(
-                /* Etiket tek satir; iki satira sarinca yandaki kartla boyu tutmuyordu. */
-                label = "Vergi / SGK · 30 gün",
-                value = when {
-                    deadlines == null && error.isBlank() -> "…"
-                    hatirlatmalar.isEmpty() -> "—"
-                    else -> hatirlatmalar.size.toString()
-                },
-                icon = Icons.Outlined.EventNote,
-                modifier = Modifier.weight(1f)
-            )
-        }
+        /* Kasa karti burada DEGIL: "Kasada bugun" artik durum kutularinda
+           (tracker/summary.cash). Iki yerde ayni sayi kafa karistirirdi. */
+        LkMetricCard(
+            label = "Vergi / SGK · 30 gün",
+            value = when {
+                deadlines == null && error.isBlank() -> "…"
+                hatirlatmalar.isEmpty() -> "—"
+                else -> hatirlatmalar.size.toString()
+            },
+            icon = Icons.Outlined.EventNote
+        )
 
         if (error.isNotBlank()) {
             Row(verticalAlignment = Alignment.CenterVertically) {
