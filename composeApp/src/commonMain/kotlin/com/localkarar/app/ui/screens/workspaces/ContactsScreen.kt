@@ -168,11 +168,21 @@ private fun ContactCard(
     Column(Modifier.fillMaxWidth()) {
         LkListRow(
             baslik = contact.name,
+            /*
+             * 🔴 AD KAYBOLMUSTU. Bakiye sutunu eklenince satirda
+             * ikon + ad + tur + tutar + iki dugme yan yana kaldi ve
+             * agirlikli ad sutunu 360dp'de SIFIR genislige dustu:
+             * emulatorde kisi adi hic gorunmuyordu (10.09.2026).
+             *
+             * Tur kendi sutunundan alt satira tasindi. Bir kisi
+             * satirinda okunacak ilk sey ADI; 'Tedarikçi' onun yerini
+             * alamaz.
+             */
             altBaslik = listOfNotNull(
+                contactTypeLabel(contact.type),
                 contact.contactPerson?.takeIf { it.isNotBlank() },
                 listOfNotNull(contact.phone, contact.email).joinToString(" · ").ifBlank { null }
             ).joinToString(" · ").ifBlank { null },
-            kategori = contactTypeLabel(contact.type),
             /*
              * 🔴 BAKIYE SATIRDA. Bir esnafin kisi kartinda aradigi ilk
              * sey "bu adama ne kadar borcum var". Webde ada tiklayinca

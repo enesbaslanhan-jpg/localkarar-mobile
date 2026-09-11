@@ -158,6 +158,17 @@ private fun BakiyeKarti(bakiye: CariBakiyeDto) {
             modifier = Modifier.padding(LkSpacing.Space4),
             verticalArrangement = Arrangement.spacedBy(LkSpacing.Space2)
         ) {
+            /*
+             * Kartin hangi para birimine ait oldugu BASLIKTA yaziyor.
+             * Iki kart yan yana durdugunda yalniz sayilardan ayirt
+             * etmek gerekiyordu; emulatorde iki kart neredeyse ayni
+             * gorunuyordu (10.09.2026).
+             */
+            Text(
+                bakiye.currency,
+                style = LkTypography.getMetadata(),
+                color = LkTextSecondary
+            )
             BakiyeSatiri("Alacak", LkFormatting.formatMoney(bakiye.alacak, bakiye.currency))
             BakiyeSatiri("Borç", LkFormatting.formatMoney(bakiye.borc, bakiye.currency))
             LkHairline()

@@ -76,13 +76,22 @@ class CariHesapViewModel(
                         AppMessages.hata("Ekstre oluşturulamadı.")
                         return@onSuccess
                     }
-                    /* Dosya adında kişi kimliği: arka arkaya iki ekstre
-                       paylaşılırsa dosyalar birbirini ezmesin. Kişi adı
-                       kullanılmıyor, içinde dosya adında geçemeyecek
-                       karakterler olabilir. */
+                    /*
+                     * 🔴 DOSYA ADI KULLANICIYA GORUNUYOR.
+                     *
+                     * Once "cari-ekstre-<uuid>.pdf" idi; emulatorde
+                     * paylasim sayfasinda aynen boyle goruldu
+                     * (10.09.2026). Muhasebeciye giden dosyanin adi
+                     * makine kimligi olmamali.
+                     *
+                     * ⚠️ Ad ASCII'ye indirgeniyor: bazi hedef
+                     * uygulamalar Turkce karakterli dosya adini bozuk
+                     * gosteriyor. Ad okunamaz hale gelirse kimlik
+                     * yedege dusuyor.
+                     */
                     paylas(
                         SharedFile(
-                            name = "cari-ekstre-$contactId.pdf",
+                            name = "${dosyaAdiSlug(mevcut.hesap.contact.name, contactId)}-ekstre.pdf",
                             mimeType = "application/pdf",
                             bytes = veri
                         )
@@ -94,6 +103,29 @@ class CariHesapViewModel(
                 }
         }
     }
+}
+
+/**
+ * Dosya adi icin ASCII sadelestirme.
+ *
+ * Sunucu ayni isi `safeFileSlug` ile yapiyor (workspace-exports.ts);
+ * burada tekrarlanmasinin sebebi `getBytes`in yanit basliklarini
+ * disari vermemesi -- sunucunun urettigi adi okuyamiyoruz.
+ */
+internal fun dosyaAdiSlug(ad: String, yedek: String): String {
+    val harita = mapOf(
+        'ç' to "c", 'Ç' to "C", 'ğ' to "g", 'Ğ' to "G", 'ı' to "i", 'İ' to "I",
+        'ö' to "o", 'Ö' to "O", 'ş' to "s", 'Ş' to "S", 'ü' to "u", 'Ü' to "U"
+    )
+    val sade = ad
+        .map { harita[it] ?: it.toString() }
+        .joinToString("")
+        .map { if (it.isLetterOrDigit() && it.code < 128) it else '-' }
+        .joinToString("")
+        .trim('-')
+        .replace(Regex("-+"), "-")
+        .take(40)
+    return if (sade.isBlank()) yedek else sade
 }
 
 /** Kapanmış hareket: bakiyeye girmiyor ama ekstrede duruyor. */
