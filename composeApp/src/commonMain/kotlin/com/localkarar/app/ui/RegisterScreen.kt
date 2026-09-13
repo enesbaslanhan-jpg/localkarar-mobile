@@ -19,6 +19,14 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withLink
+import com.localkarar.app.core.openExternalUrl
+import com.localkarar.app.network.ApiConfig
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -160,8 +168,36 @@ fun RegisterScreen(
                         )
                     )
                     Spacer(modifier = Modifier.width(4.dp))
+                    /*
+                     * 🔴 BELGE ADLARI TIKLANABILIR. Onceden duz metindi; kullanici
+                     * "okudum" kutusunu isaretliyordu ama okuyacak bir yol yoktu
+                     * (urun sahibi, 13.09.2026). Onay, okunabilen bir metne
+                     * verilir; foy "Giris 2" notu da bunu soyluyor: "yasal onay
+                     * kayit aninda ve okunabilir".
+                     *
+                     * Webdeki ayni belgeler aciliyor (/terms, /privacy); mobil
+                     * Hakkinda ekrani da oraya bagli. Tek kaynak, iki kopya yok.
+                     */
+                    val onayMetni = buildAnnotatedString {
+                        withLink(
+                            LinkAnnotation.Url(
+                                url = ApiConfig.baseUrl + "/terms",
+                                styles = TextLinkStyles(SpanStyle(color = LkPrimary, textDecoration = TextDecoration.Underline)),
+                                linkInteractionListener = { openExternalUrl(ApiConfig.baseUrl + "/terms") }
+                            )
+                        ) { append("Kullanım Koşulları") }
+                        append(" ve ")
+                        withLink(
+                            LinkAnnotation.Url(
+                                url = ApiConfig.baseUrl + "/privacy",
+                                styles = TextLinkStyles(SpanStyle(color = LkPrimary, textDecoration = TextDecoration.Underline)),
+                                linkInteractionListener = { openExternalUrl(ApiConfig.baseUrl + "/privacy") }
+                            )
+                        ) { append("Gizlilik Politikası") }
+                        append("'nı okudum, onaylıyorum.")
+                    }
                     Text(
-                        text = "Kullanım Koşulları ve Gizlilik Politikası'nı okudum, onaylıyorum.",
+                        text = onayMetni,
                         style = LkTypography.getMicro(),
                         color = LkTextSecondary
                     )
