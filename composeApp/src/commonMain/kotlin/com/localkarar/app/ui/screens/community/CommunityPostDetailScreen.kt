@@ -1,5 +1,9 @@
 package com.localkarar.app.ui.screens.community
 
+import com.localkarar.app.ui.components.LkCommunityVideo
+import com.localkarar.app.ui.components.LkLoadingSpinner
+import com.localkarar.app.ui.components.LkRemoteImage
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -33,6 +37,7 @@ import com.localkarar.app.ui.components.LkTextField
 import com.localkarar.app.ui.components.LkButtonVariant
 import com.localkarar.app.ui.components.LkHeroPage
 import com.localkarar.app.ui.theme.*
+import kotlinx.coroutines.delay
 
 @Composable
 fun CommunityPostDetailScreen(
@@ -49,6 +54,14 @@ fun CommunityPostDetailScreen(
 
     LaunchedEffect(postId) {
         viewModel.loadPostDetail(postId)
+    }
+    val detailHasProcessingVideo = (detailState as? CommunityViewModel.DetailUiState.Content)
+        ?.post?.media?.status == "processing"
+    LaunchedEffect(detailHasProcessingVideo) {
+        while (detailHasProcessingVideo) {
+            delay(4_000)
+            viewModel.refreshProcessingMedia()
+        }
     }
 
     LkHeroPage(
@@ -296,7 +309,36 @@ private fun MainPostCard(
             // Attached Media
             post.media?.let { media ->
                 Spacer(Modifier.height(10.dp))
-                Box(
+                if (media.kind == "image" && !media.url.isNullOrBlank()) {
+                    LkRemoteImage(
+                        url = media.url,
+                        contentDescription = media.originalName,
+                        modifier = Modifier.fillMaxWidth().aspectRatio(16f / 10f).clip(LkShapes.MD)
+                    ) { Box(Modifier.fillMaxSize().background(LkSurfaceTile)) }
+                } else if (media.kind == "video" && media.status == "processing") {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().clip(LkShapes.MD).background(LkSurfaceSunken).padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        LkLoadingSpinner(size = 22.dp)
+                        Spacer(Modifier.width(10.dp))
+                        Text("Video hazırlanıyor…", style = LkTypography.getBodySmall(), color = LkTextSecondary)
+                    }
+                } else if (media.kind == "video" && media.status == "failed") {
+                    Text(
+                        "Video hazırlanamadı. Gönderi sahibi yeniden yükleyebilir.",
+                        style = LkTypography.getBodySmall(),
+                        color = LkDanger,
+                        modifier = Modifier.fillMaxWidth().clip(LkShapes.MD).background(LkSurfaceSunken).padding(16.dp)
+                    )
+                } else if (media.kind == "video" && !media.url.isNullOrBlank()) {
+                    LkCommunityVideo(
+                        url = media.url,
+                        posterUrl = media.posterUrl,
+                        contentDescription = media.originalName,
+                        modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f)
+                    )
+                } else Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(LkShapes.MD)

@@ -6,6 +6,7 @@ import com.localkarar.app.network.dto.*
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.*
+import io.ktor.client.plugins.onUpload
 import io.ktor.client.request.forms.formData
 import io.ktor.client.request.forms.submitFormWithBinaryData
 import io.ktor.client.statement.HttpResponse
@@ -15,6 +16,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.coroutines.CancellationException
 
 class CommunityRepository(
     private val client: HttpClient,
@@ -171,7 +173,12 @@ class CommunityRepository(
     // 2. MEDIA UPLOAD
     // ==========================================
 
-    suspend fun uploadMedia(fileName: String, bytes: ByteArray, mimeType: String): Result<MediaUploadResponseDto> {
+    suspend fun uploadMedia(
+        fileName: String,
+        bytes: ByteArray,
+        mimeType: String,
+        onProgress: (Float) -> Unit = {}
+    ): Result<MediaUploadResponseDto> {
         return try {
             val response = client.submitFormWithBinaryData(
                 url = "$communityBase/media",
@@ -180,6 +187,11 @@ class CommunityRepository(
                         append(HttpHeaders.ContentType, mimeType)
                         append(HttpHeaders.ContentDisposition, "filename=\"$fileName\"")
                     })
+                },
+                block = {
+                    onUpload { sent, _ ->
+                        onProgress((sent.toFloat() / bytes.size.coerceAtLeast(1)).coerceIn(0f, 1f))
+                    }
                 }
             )
             if (response.status.isSuccess()) {
@@ -187,6 +199,8 @@ class CommunityRepository(
             } else {
                 Result.failure(Exception(errorMessage(response, "Medya yüklenemedi")))
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Result.failure(e)
         }

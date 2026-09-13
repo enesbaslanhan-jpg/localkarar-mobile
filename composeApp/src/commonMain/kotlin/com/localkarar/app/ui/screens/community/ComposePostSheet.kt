@@ -171,7 +171,7 @@ fun ComposePostSheet(
                             }
                         }
                         Text(
-                            if (viewModel.attachedMedia != null) "Medya eklendi" else "Görsel / Belge",
+                            if (viewModel.attachedMedia != null) "Medya eklendi" else "Görsel / Video / Belge",
                             style = LkTypography.getMicro(),
                             color = LkTextSecondary
                         )
@@ -207,6 +207,34 @@ fun ComposePostSheet(
                         style = LkTypography.getMicro(),
                         color = if (viewModel.metinInput.length >= 480) LkDanger else LkTextMuted
                     )
+                }
+
+                if (viewModel.isUploadingMedia) {
+                    Spacer(Modifier.height(6.dp))
+                    Column(
+                        Modifier.fillMaxWidth().clip(LkShapes.SM).background(LkSurfaceSunken).padding(10.dp)
+                    ) {
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                "Yükleniyor · %${(viewModel.mediaUploadProgress * 100).toInt()}",
+                                style = LkTypography.getMicro(),
+                                color = LkTextSecondary
+                            )
+                            TextButton(onClick = { viewModel.cancelMediaUpload() }) {
+                                Text("İptal et", color = LkDanger)
+                            }
+                        }
+                        LinearProgressIndicator(
+                            progress = viewModel.mediaUploadProgress,
+                            modifier = Modifier.fillMaxWidth(),
+                            color = LkPrimary,
+                            backgroundColor = LkLineSoft
+                        )
+                    }
                 }
 
                 /* Etiketlenecek kisiler — dugmenin hemen altinda aciliyor. */

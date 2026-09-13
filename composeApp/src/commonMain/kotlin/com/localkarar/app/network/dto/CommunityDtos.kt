@@ -19,6 +19,9 @@ data class CommunityMediaDto(
     val mimeType: String? = null,
     val sizeBytes: Int? = null,
     val kind: String? = null,
+    val status: String = "ready",
+    val posterUrl: String? = null,
+    val durationSec: Int? = null,
     val url: String? = null
 )
 

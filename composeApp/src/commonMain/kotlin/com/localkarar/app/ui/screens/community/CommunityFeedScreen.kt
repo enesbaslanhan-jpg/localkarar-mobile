@@ -10,6 +10,7 @@ import com.localkarar.app.ui.components.LkListRow
 import com.localkarar.app.ui.components.LkRowGroup
 import com.localkarar.app.ui.components.LkCard
 import com.localkarar.app.ui.components.LkRemoteImage
+import com.localkarar.app.ui.components.LkCommunityVideo
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.horizontalScroll
 import com.localkarar.app.ui.components.LkAvatar
@@ -52,6 +53,7 @@ import com.localkarar.app.network.dto.CommunityPostDto
 import com.localkarar.app.ui.components.LkButton
 import com.localkarar.app.ui.components.LkButtonVariant
 import com.localkarar.app.ui.theme.*
+import kotlinx.coroutines.delay
 
 /**
  * Topluluk alt bolumleri — SIRA VE ADLAR WEBDEKI ILE AYNI.
@@ -136,6 +138,15 @@ fun CommunityFeedScreen(
         mutableStateOf(initialTab.lowercase() in listOf("people", "kisiler", "members"))
     }
     val unreadNotifs = notificationsViewModel.unreadCount
+    val feedStateForVideo by communityViewModel.feedState.collectAsState()
+    val hasProcessingVideo = (feedStateForVideo as? CommunityViewModel.FeedUiState.Content)
+        ?.posts?.any { it.media?.status == "processing" } == true
+    LaunchedEffect(hasProcessingVideo) {
+        while (hasProcessingVideo) {
+            delay(4_000)
+            communityViewModel.refreshProcessingMedia()
+        }
+    }
 
     /* §24.6 — hero baslik blogu + binen yuzey. */
     Column(Modifier.fillMaxSize()) {
@@ -586,6 +597,40 @@ fun PostFeedCard(
                             )
                         }
                     }
+                } else if (media.kind == "video" && media.status == "processing") {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(LkShapes.MD)
+                            .background(LkSurfaceTile)
+                            .padding(16.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            LkLoadingSpinner(size = 22.dp)
+                            Spacer(Modifier.width(10.dp))
+                            Column {
+                                Text("Video hazırlanıyor", style = LkTypography.getBodyStrong(), color = LkTextPrimary)
+                                Text("Hazır olduğunda burada oynatılacak.", style = LkTypography.getMicro(), color = LkTextSecondary)
+                            }
+                        }
+                    }
+                } else if (media.kind == "video" && media.status == "failed") {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(LkShapes.MD)
+                            .background(LkSurfaceTile)
+                            .padding(16.dp)
+                    ) {
+                        Text("Video hazırlanamadı. Gönderi sahibi yeniden yükleyebilir.", style = LkTypography.getBodySmall(), color = LkDanger)
+                    }
+                } else if (media.kind == "video" && !media.url.isNullOrBlank()) {
+                    LkCommunityVideo(
+                        url = media.url,
+                        posterUrl = media.posterUrl,
+                        contentDescription = media.originalName,
+                        modifier = Modifier.aspectRatio(16f / 10f)
+                    )
                 } else {
                     Box(
                         modifier = Modifier

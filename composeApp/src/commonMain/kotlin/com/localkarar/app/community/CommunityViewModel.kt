@@ -11,6 +11,7 @@ import com.localkarar.app.network.dto.QuotedPostDto
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
 
 class CommunityViewModel(
     private val repository: CommunityRepository
@@ -55,6 +56,9 @@ class CommunityViewModel(
         private set
     var isUploadingMedia by mutableStateOf(false)
         private set
+    var mediaUploadProgress by mutableStateOf(0f)
+        private set
+    private var mediaUploadJob: Job? = null
     var replyTargetPost by mutableStateOf<CommunityPostDto?>(null)
         private set
     var quoteTargetPost by mutableStateOf<CommunityPostDto?>(null)
@@ -86,6 +90,27 @@ class CommunityViewModel(
                 _feedState.value = FeedUiState.Content(posts = feed.posts)
             }.onFailure { e ->
                 _feedState.value = FeedUiState.Error(e.message ?: "Gönderiler yüklenemedi")
+            }
+        }
+    }
+
+    /** Bekleyen video varken akisi beyazlatmadan yalniz veriyi tazeler. */
+    fun refreshProcessingMedia() {
+        val current = _feedState.value as? FeedUiState.Content
+        if (current != null && current.posts.any { it.media?.status == "processing" }) {
+            viewModelScope.launch {
+                repository.getFeed(selectedType, null).onSuccess { feed ->
+                    nextCursor = feed.nextCursor
+                    _feedState.value = current.copy(posts = feed.posts)
+                }
+            }
+        }
+        val detail = _detailState.value as? DetailUiState.Content
+        if (detail?.post?.media?.status == "processing") {
+            viewModelScope.launch {
+                repository.getPost(detail.post.id).onSuccess { fresh ->
+                    _detailState.value = DetailUiState.Content(fresh.post, fresh.parent)
+                }
             }
         }
     }
@@ -231,16 +256,30 @@ class CommunityViewModel(
     }
 
     fun onMediaSelected(fileName: String, bytes: ByteArray, mimeType: String) {
-        viewModelScope.launch {
+        mediaUploadJob?.cancel()
+        mediaUploadJob = viewModelScope.launch {
             isUploadingMedia = true
-            repository.uploadMedia(fileName, bytes, mimeType).onSuccess { res ->
+            mediaUploadProgress = 0f
+            repository.uploadMedia(fileName, bytes, mimeType) { progress ->
+                mediaUploadProgress = progress
+            }.onSuccess { res ->
                 attachedMedia = res.media
-                isUploadingMedia = false
             }.onFailure { e ->
                 isUploadingMedia = false
                 notice = e.message ?: "Görsel yüklenemedi"
             }
+            isUploadingMedia = false
+            mediaUploadProgress = 0f
+            mediaUploadJob = null
         }
+    }
+
+    fun cancelMediaUpload() {
+        mediaUploadJob?.cancel()
+        mediaUploadJob = null
+        isUploadingMedia = false
+        mediaUploadProgress = 0f
+        notice = "Yükleme iptal edildi"
     }
 
     fun removeAttachedMedia() {
@@ -254,6 +293,7 @@ class CommunityViewModel(
     }
 
     fun dismissCompose() {
+        if (isUploadingMedia) cancelMediaUpload()
         if (attachedMedia != null) {
             removeAttachedMedia()
         }
