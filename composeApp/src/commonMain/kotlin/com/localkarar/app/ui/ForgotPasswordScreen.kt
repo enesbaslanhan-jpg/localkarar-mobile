@@ -89,7 +89,9 @@ fun ForgotPasswordScreen(
                 Spacer(modifier = Modifier.height(LkSpacing.Space4))
 
                 Text(
-                    text = if (resetSuccess) "E-postanızı Kontrol Edin" else "Parolanızı Sıfırlayın",
+                    /* Foy "Giris 3" (13.09.2026). Hesabin var olup olmadigini SOYLEMIYOR:
+                       hesap sayimi sizdirmamak icin. */
+                    text = if (resetSuccess) "Gelen kutunu kontrol et" else "Parolamı unuttum",
                     style = LkTypography.getSectionTitle(),
                     color = LkTextPrimary,
                     textAlign = TextAlign.Center
@@ -101,7 +103,7 @@ fun ForgotPasswordScreen(
                     text = if (resetSuccess) {
                         "$email adresi sistemde kayıtlıysa parola sıfırlama bağlantısı gönderildi. Bağlantı 1 saat geçerlidir."
                     } else {
-                        "Hesabınızın e-posta adresini girin; sıfırlama bağlantısını iletelim."
+                        "E-posta adresini yaz; kayıtlı bir hesap varsa sıfırlama bağlantısı göndereceğiz."
                     },
                     style = LkTypography.getBodySmall(),
                     color = LkTextSecondary,
@@ -133,14 +135,14 @@ fun ForgotPasswordScreen(
                     LkTextField(
                         value = email,
                         onValueChange = { email = it },
-                        label = "Kayıtlı E-posta Adresi",
-                        placeholder = "adiniz@sirketiniz.com"
+                        label = "E-posta",
+                        placeholder = "ornek@sirket.com"
                     )
 
                     Spacer(modifier = Modifier.height(LkSpacing.Space6))
 
                     LkButton(
-                        text = if (isLoading) "Gönderiliyor..." else "Sıfırlama Bağlantısı Gönder",
+                        text = if (isLoading) "Gönderiliyor…" else "Bağlantı gönder",
                         onClick = { viewModel.requestPasswordReset(email) },
                         enabled = email.isNotBlank() && !isLoading,
                         modifier = Modifier.fillMaxWidth()
@@ -166,7 +168,7 @@ fun ForgotPasswordScreen(
                     Spacer(modifier = Modifier.height(LkSpacing.Space4))
 
                     LkButton(
-                        text = "Giriş Ekranına Dön",
+                        text = "Girişe dön",
                         variant = LkButtonVariant.SECONDARY,
                         onClick = onNavigateToLogin,
                         modifier = Modifier.fillMaxWidth()

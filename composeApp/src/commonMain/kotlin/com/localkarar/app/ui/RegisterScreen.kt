@@ -77,7 +77,9 @@ fun RegisterScreen(
                 Spacer(modifier = Modifier.height(LkSpacing.Space4))
 
                 Text(
-                    text = "LocalKarar Hesabı Oluştur",
+                    /* Metinler foy "Giris 2" ile birebir (13.09.2026): kisa baslik, pazarlama
+                       cumlesi yok, "Kurumsal" sifati yok -- esnafin sirket e-postasi olmayabilir. */
+                    text = "Hesap oluştur",
                     style = LkTypography.getSectionTitle(),
                     color = LkTextPrimary,
                     textAlign = TextAlign.Center
@@ -86,7 +88,7 @@ fun RegisterScreen(
                 Spacer(modifier = Modifier.height(LkSpacing.Space2))
 
                 Text(
-                    text = "Girişiminiz ve işletmeniz için profesyonel karar ekosistemi.",
+                    text = "Kendi verinden çıkan sayılarla karar ver.",
                     style = LkTypography.getBodySmall(),
                     color = LkTextSecondary,
                     textAlign = TextAlign.Center
@@ -125,8 +127,8 @@ fun RegisterScreen(
                 LkTextField(
                     value = email,
                     onValueChange = { email = it },
-                    label = "Kurumsal E-posta",
-                    placeholder = "adiniz@sirketiniz.com"
+                    label = "E-posta",
+                    placeholder = "ornek@sirket.com"
                 )
 
                 Spacer(modifier = Modifier.height(LkSpacing.Space4))
@@ -168,7 +170,7 @@ fun RegisterScreen(
                 Spacer(modifier = Modifier.height(LkSpacing.Space6))
 
                 LkButton(
-                    text = if (isLoading) "Hesap Oluşturuluyor..." else "Kayıt Ol",
+                    text = if (isLoading) "Hesap oluşturuluyor…" else "Hesabı oluştur",
                     onClick = { viewModel.register(name, email, password, legalAccepted, onRegistered) },
                     enabled = name.isNotBlank() && email.isNotBlank() && password.length >= 10 && legalAccepted && !isLoading,
                     modifier = Modifier.fillMaxWidth()

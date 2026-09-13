@@ -46,64 +46,80 @@ fun AuthWelcomeScreen(
     onCreateAccount: () -> Unit,
     onLogin: () -> Unit
 ) {
+    /*
+     * FOY "GIRIS 1" DUZENI (13.09.2026).
+     *
+     * Onceki hal: hero 280dp sabit, baslik ve alt metin ASAGIDAKI
+     * yuzeyde, dugmeler en altta -- arada bir ekran boyu bosluk
+     * kaliyordu. Foyde baslik ve alt metin HERO ICINDE (gradyan ustunde,
+     * beyaz), alt yuzey yalniz iki dugmeyi tasiyor ve kisa. Hero kalan
+     * yuksekligi aliyor; bosluk kompozisyonun icinde eriyor.
+     */
     Column(modifier = Modifier.fillMaxSize()) {
 
-        LkHeroBlock(tone = LkHeroTone.Auth) {
-            Box(
+        LkHeroBlock(modifier = Modifier.weight(1f), tone = LkHeroTone.Auth) {
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(280.dp),
-                contentAlignment = Alignment.Center
+                    .fillMaxSize()
+                    .padding(horizontal = LkSpacing.Space6, vertical = LkSpacing.Space6),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                /* Kadran ve isaret acilis ekraniyla AYNI kompozisyon:
-                   uygulama acilistan karsilamaya tek bir kareyle akiyor. */
-                LkPusulaKadrani(Modifier.size(260.dp))
                 Box(
-                    modifier = Modifier
-                        .size(96.dp)
-                        .clip(RoundedCornerShape(24.dp))
-                        .background(androidx.compose.ui.graphics.Color(0x33061018))
-                        .border(
-                            1.dp,
-                            androidx.compose.ui.graphics.Color(0x33FFFFFF),
-                            RoundedCornerShape(24.dp)
-                        ),
+                    modifier = Modifier.size(280.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    LkBrandMark(size = 68.dp, hareketli = true)
+                    /* Kadran ve isaret acilis ekraniyla AYNI kompozisyon:
+                       uygulama acilistan karsilamaya tek bir kareyle akiyor. */
+                    LkPusulaKadrani(Modifier.size(260.dp))
+                    Box(
+                        modifier = Modifier
+                            .size(96.dp)
+                            .clip(RoundedCornerShape(24.dp))
+                            .background(androidx.compose.ui.graphics.Color(0x33061018))
+                            .border(
+                                1.dp,
+                                androidx.compose.ui.graphics.Color(0x33FFFFFF),
+                                RoundedCornerShape(24.dp)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        LkBrandMark(size = 68.dp, hareketli = true)
+                    }
                 }
+
+                Spacer(Modifier.height(LkSpacing.Space6))
+
+                Text(
+                    text = "Kararlarını tahmine bırakma",
+                    style = LkTypography.getTitleL(),
+                    color = LkHero.OnHero,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(Modifier.height(LkSpacing.Space3))
+
+                Text(
+                    text = "Kendi verinden çıkan sayılarla fiyat koy, tedarikçi seç, " +
+                        "yatırım kararı ver.",
+                    style = LkTypography.getBody(),
+                    color = LkHero.OnHeroSecondary,
+                    textAlign = TextAlign.Center
+                )
             }
         }
 
+        /* Alt yuzey: yalniz dugmeler. Ust kose yuvarlagi hero'nun ustune
+           biniyor (-22dp), oteki ekranlarla ayni kural. */
         Column(
             modifier = Modifier
-                .weight(1f)
                 .fillMaxWidth()
                 .offset(y = (-22).dp)
                 .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
                 .background(LkSurfaceCanvas)
-                .padding(horizontal = LkSpacing.Space6, vertical = LkSpacing.Space8),
+                .padding(horizontal = LkSpacing.Space6, vertical = LkSpacing.Space6),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = "Kararlarını tahmine bırakma",
-                style = LkTypography.getTitleL(),
-                color = LkTextPrimary,
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(Modifier.height(LkSpacing.Space3))
-
-            Text(
-                text = "Kendi verinden çıkan sayılarla fiyat koy, tedarikçi seç, " +
-                    "yatırım kararı ver.",
-                style = LkTypography.getBody(),
-                color = LkTextSecondary,
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(Modifier.weight(1f))
-
             LkButton(
                 text = "Hesap oluştur",
                 onClick = onCreateAccount,
@@ -119,7 +135,7 @@ fun AuthWelcomeScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(Modifier.height(LkSpacing.Space4))
+            Spacer(Modifier.height(LkSpacing.Space2))
         }
     }
 }
