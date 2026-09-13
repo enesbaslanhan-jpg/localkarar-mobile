@@ -186,14 +186,15 @@ fun LoginScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                Spacer(modifier = Modifier.height(LkSpacing.Space4))
-                Text("veya", style = LkTypography.getMicro(), color = LkTextMuted)
-                Spacer(modifier = Modifier.height(LkSpacing.Space4))
-                LkButton(text = "Google · YAKINDA", onClick = {}, enabled = false,
-                    variant = LkButtonVariant.SECONDARY, modifier = Modifier.fillMaxWidth())
-                Spacer(modifier = Modifier.height(LkSpacing.Space2))
-                LkButton(text = "Apple · YAKINDA", onClick = {}, enabled = false,
-                    variant = LkButtonVariant.SECONDARY, modifier = Modifier.fillMaxWidth())
+                /*
+                 * GOOGLE / APPLE DUGMELERI ILK MAGAZA SURUMUNDE YOK (14.09.2026).
+                 *
+                 * "YAKINDA" etiketli, tiklanmayan iki dugme duruyordu. App Store
+                 * incelemesi islevsiz dugmeye takilabiliyor; calismayan bir sey
+                 * gostermektense hic gostermemek secildi. Girisler Apple gelistirici
+                 * hesabi ve OAuth kimlikleri gelince eklenecek; foy "Giris 2" onlari
+                 * bu konumda gosteriyor, geri geldiklerinde yer belli.
+                 */
 
                 Spacer(modifier = Modifier.height(LkSpacing.Space6))
 
