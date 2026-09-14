@@ -1,6 +1,8 @@
 package com.localkarar.app.ui.screens.workspaces
 
 import com.localkarar.app.ui.components.LkLoadingSpinner
+import com.localkarar.app.ui.components.UrunKucukGorsel
+import androidx.compose.ui.text.style.TextOverflow
 import com.localkarar.app.ui.components.LkFilterBar
 import com.localkarar.app.ui.components.LkFilterGrup
 import com.localkarar.app.ui.components.LkFilterSecenek
@@ -335,6 +337,30 @@ private fun MarketplaceOrderCard(
 
             Spacer(modifier = Modifier.height(LkSpacing.Space2))
 
+            /*
+             * URUN ONIZLEMESI (15.09.2026). Kart yalniz numara/musteri/tutar
+             * gosteriyordu; satici hangi urunun siparisi oldugunu goremiyordu
+             * ("siparisler sadece yazi olarak gorunuyor"). Sunucu ilk uc
+             * satiri gorseliyle veriyor; gorsel yoksa notr kutu, sahte gorsel yok.
+             */
+            if (order.previewItems.isNotEmpty()) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    order.previewItems.take(3).forEach { satir ->
+                        UrunKucukGorsel(url = satir.imageUrl, boyut = 44.dp)
+                        Spacer(modifier = Modifier.width(LkSpacing.Space2))
+                    }
+                    Text(
+                        text = order.previewItems.joinToString(" · ") { "${it.quantity}× ${it.title ?: "Ürün"}" },
+                        style = LkTypography.getBodySmall(),
+                        color = LkTextPrimary,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                Spacer(modifier = Modifier.height(LkSpacing.Space2))
+            }
+
             if (!order.customerName.isNullOrBlank()) {
                 Text(
                     text = "Müşteri: ${order.customerName}",
@@ -449,7 +475,10 @@ private fun OrderDetailDialog(
                             .background(LkSurfaceCanvas, LkShapes.SM)
                             .padding(LkSpacing.Space3)
                     ) {
-                        Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            UrunKucukGorsel(url = item.imageUrl, boyut = 56.dp)
+                            Spacer(modifier = Modifier.width(LkSpacing.Space3))
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(text = item.title ?: "Ürün adı yok", style = LkTypography.getBodySmall(), color = LkTextPrimary, fontWeight = FontWeight.SemiBold)
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -458,6 +487,7 @@ private fun OrderDetailDialog(
                                 Text(text = "SKU: ${item.sku ?: "-"} | Adet: ${item.quantity}", style = LkTypography.getMicro(), color = LkTextMuted)
                                 Text(text = "${item.totalPrice?.toInt() ?: 0} ${order.currency ?: "TRY"}", style = LkTypography.getBodySmall(), color = LkTextPrimary)
                             }
+                        }
                         }
                     }
                     Spacer(modifier = Modifier.height(LkSpacing.Space2))

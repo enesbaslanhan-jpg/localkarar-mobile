@@ -27,6 +27,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.localkarar.app.network.dto.ProductDto
+import com.localkarar.app.ui.components.UrunKucukGorsel
 import com.localkarar.app.ui.components.LkButton
 import com.localkarar.app.ui.components.LkCard
 import com.localkarar.app.ui.components.LkButtonVariant
@@ -389,20 +390,29 @@ private fun MarketplaceProductCard(
 
             Spacer(modifier = Modifier.height(LkSpacing.Space2))
 
-            Text(
-                text = product.title,
-                style = LkTypography.getBodyStrong(),
-                color = LkTextPrimary,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(modifier = Modifier.height(2.dp))
-
-            Text(
-                text = "SKU: ${product.sku ?: "—"} ${if (!product.barcode.isNullOrBlank()) "| Barkod: ${product.barcode}" else ""}",
-                style = LkTypography.getMicro(),
-                color = LkTextMuted
-            )
+            /*
+             * URUN GORSELI (15.09.2026). DTO'da imageUrl 28.08'den beri
+             * vardi ama ekranda hic cizilmemisti; web ile "birebir" iddiasi
+             * satir satir kontrol edilmemis. Gorsel yoksa notr kutu.
+             */
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                UrunKucukGorsel(url = product.imageUrl, boyut = 56.dp)
+                Spacer(modifier = Modifier.width(LkSpacing.Space3))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = product.title,
+                        style = LkTypography.getBodyStrong(),
+                        color = LkTextPrimary,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "SKU: ${product.sku ?: "—"} ${if (!product.barcode.isNullOrBlank()) "| Barkod: ${product.barcode}" else ""}",
+                        style = LkTypography.getMicro(),
+                        color = LkTextMuted
+                    )
+                }
+            }
 
             if (!product.internalNote.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(4.dp))

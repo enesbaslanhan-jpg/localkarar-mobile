@@ -847,7 +847,17 @@ data class OrderItemDto(
     val discountAmount: Double? = null,
     val commissionAmount: Double? = null,
     val refundAmount: Double? = null,
-    val netContribution: Double? = null
+    val netContribution: Double? = null,
+    /** Urun katalogundan eslenen gorsel (sunucu: order-images.ts). Eslesme yoksa null. */
+    val imageUrl: String? = null
+)
+
+/** Liste ucunun kart onizlemesi: ilk uc satirin adi, adedi, gorseli. */
+@Serializable
+data class OrderPreviewItemDto(
+    val title: String? = null,
+    val quantity: Int = 1,
+    val imageUrl: String? = null
 )
 
 @Serializable
@@ -870,7 +880,9 @@ data class OrderDto(
     /** Liste ucunda `_count.items`ten gelir; detay ucunda gonderilmez. */
     @SerialName("itemCount") val itemsCount: Int? = null,
     /** Yalniz detay ucunda dolu gelir; listede hic gonderilmez. */
-    val items: List<OrderItemDto> = emptyList()
+    val items: List<OrderItemDto> = emptyList(),
+    /** Liste ucunda ilk uc satir (gorselli). Detayda gonderilmez. */
+    val previewItems: List<OrderPreviewItemDto> = emptyList()
 )
 
 /** GET /marketplace/orders -> `{ orders, total, limit, offset }` */
