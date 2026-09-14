@@ -113,6 +113,21 @@ jobs:
           LK_KEY_PASSWORD: ${{ secrets.LK_KEY_PASSWORD }}
         run: ./gradlew :composeApp:assembleRelease :composeApp:bundleRelease --stacktrace
 
+      # IMZA DOGRULAMASI LOGA YAZILIR. Artifact'i indirip elle bakmak yerine
+      # CI kendisi soyler: imzali mi, hangi sertifikayla. Imzasizsa is
+      # DUSER -- imzasiz AAB Play'e yuklenemez, sessizce gecmemeli.
+      - name: AAB imzasini dogrula
+        run: |
+          AAB=$(ls composeApp/build/outputs/bundle/release/*.aab | head -1)
+          echo "Paket: $AAB"
+          if jarsigner -verify -verbose:summary "$AAB" | tee /tmp/imza.txt | grep -q "jar verified"; then
+            echo "IMZALI: $(keytool -printcert -jarfile "$AAB" | grep -m1 Owner)"
+          else
+            cat /tmp/imza.txt | tail -5
+            echo "::error::AAB imzasiz. LK_KEYSTORE_* secret'lari kontrol et."
+            exit 1
+          fi
+
       # Play Store APK degil AAB ister. Imzali AAB dogrudan Play Console'a
       # yuklenir.
       - name: Release AAB yukle
