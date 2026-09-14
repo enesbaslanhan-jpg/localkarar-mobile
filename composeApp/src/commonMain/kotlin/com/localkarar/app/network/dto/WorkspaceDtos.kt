@@ -894,6 +894,78 @@ data class OrderListWireDto(
     val offset: Int = 0
 )
 
+/*
+ * GET /marketplace/operations -> { summary, actions, highReturnProducts }
+ *
+ * Web Genel Bakis'ta entegrasyon baglaninca beliren pazaryeri seridi
+ * (bugunku siparis, brut satis, kargo bekleyen, dusuk stok, iade) ve
+ * aksiyon satirlari bu uctan geliyor. Mobilde 15.09.2026'ya kadar HIC
+ * cekilmiyordu; ekranda yalnizca alttan acilan siparis listesi vardi
+ * (urun sahibi: "webde entegrasyondan sonra yeni ekran geliyordu, o yok").
+ * Yalniz kullanilan alanlar; gerisi ignoreUnknownKeys ile dusuyor.
+ */
+@Serializable
+data class MarketplaceOpsProviderDto(
+    val provider: String,
+    val displayName: String? = null,
+    val status: String = "",
+    val hasError: Boolean = false
+)
+
+@Serializable
+data class MarketplaceOpsTodayDto(
+    val orderCount: Int = 0,
+    val grossSales: Double = 0.0,
+    val pendingShipmentCount: Int = 0,
+    val returnCount: Int = 0
+)
+
+@Serializable
+data class MarketplaceOpsInventoryDto(
+    val threshold: Int = 0,
+    val lowStockCount: Int = 0,
+    val outOfStockCount: Int = 0
+)
+
+@Serializable
+data class MarketplaceOpsBestSellerDto(val title: String, val unitsSold: Int = 0)
+
+@Serializable
+data class MarketplaceOpsPerformanceDto(val bestSeller: MarketplaceOpsBestSellerDto? = null)
+
+@Serializable
+data class MarketplaceOpsSummaryDto(
+    val connected: Boolean = false,
+    val providers: List<MarketplaceOpsProviderDto> = emptyList(),
+    val today: MarketplaceOpsTodayDto = MarketplaceOpsTodayDto(),
+    val inventory: MarketplaceOpsInventoryDto = MarketplaceOpsInventoryDto(),
+    val performance: MarketplaceOpsPerformanceDto = MarketplaceOpsPerformanceDto()
+)
+
+@Serializable
+data class MarketplaceOpsLinkDto(
+    val page: String,
+    val query: Map<String, String> = emptyMap()
+)
+
+/** Kategori basina TEK satir (orn. "4 sipariş kargoya verilmeyi bekliyor"). */
+@Serializable
+data class MarketplaceOpsActionDto(
+    val type: String,
+    val severity: String = "INFO",
+    val count: Int = 0,
+    val title: String,
+    val detail: String? = null,
+    val category: String = "",
+    val link: MarketplaceOpsLinkDto
+)
+
+@Serializable
+data class MarketplaceOperationsDto(
+    val summary: MarketplaceOpsSummaryDto,
+    val actions: List<MarketplaceOpsActionDto> = emptyList()
+)
+
 /** GET /marketplace/orders/:orderId -> `{ order }` (sarmalayici!) */
 @Serializable
 data class OrderDetailWireDto(

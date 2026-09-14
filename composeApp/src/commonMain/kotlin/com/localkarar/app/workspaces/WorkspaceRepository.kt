@@ -476,6 +476,10 @@ class WorkspaceRepository(private val api: SafeApiClient) {
         )
     }
 
+    /** Pazaryeri operasyon ozeti ve aksiyonlari (web Genel Bakis ile ayni uc). */
+    suspend fun getMarketplaceOperations(workspaceId: String): Result<MarketplaceOperationsDto> =
+        api.get("$base/marketplace/operations?workspaceId=$workspaceId")
+
     suspend fun getOrderDetail(workspaceId: String, orderId: String): Result<OrderDto> {
         val wire: Result<OrderDetailWireDto> =
             api.get("$base/marketplace/orders/$orderId?workspaceId=$workspaceId")

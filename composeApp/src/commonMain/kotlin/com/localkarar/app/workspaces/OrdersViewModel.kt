@@ -109,4 +109,25 @@ class OrdersViewModel(
         _selectedStatus.value = status
         applyClientSideFilters()
     }
+
+    /*
+     * SIPARIS DETAYI AYRI CEKILIR (15.09.2026). Detay penceresi liste
+     * satirini kullaniyordu; liste ucu `items` tasimadigi icin "Siparis
+     * Kalemleri" bolumu HEP bostu (web'de de ayni hata vardi, ayni gun
+     * duzeltildi). Repository'deki getOrderDetail hic cagrilmiyordu.
+     * Once liste satiri gosterilir, detay gelince kalemler dolar.
+     */
+    private val _detail = MutableStateFlow<OrderDto?>(null)
+    val detail: StateFlow<OrderDto?> = _detail.asStateFlow()
+
+    fun openDetail(workspaceId: String, order: OrderDto) {
+        _detail.value = order
+        viewModelScope.launch {
+            repository.getOrderDetail(workspaceId, order.id).onSuccess { tam ->
+                if (_detail.value?.id == order.id) _detail.value = tam
+            }
+        }
+    }
+
+    fun closeDetail() { _detail.value = null }
 }

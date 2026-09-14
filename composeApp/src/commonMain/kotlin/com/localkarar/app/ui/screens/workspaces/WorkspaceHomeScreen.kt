@@ -4,6 +4,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.horizontalScroll
 import com.localkarar.app.ui.screens.home.RECORD_TYPE_LABEL
 import com.localkarar.app.ui.components.LkProgressPill
+import com.localkarar.app.ui.components.LkSection
 import com.localkarar.app.ui.components.rememberLkSayac
 import com.localkarar.app.ui.components.rememberLkSheetState
 import com.localkarar.app.ui.components.LkSheet
@@ -35,6 +36,7 @@ import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.EventNote
 import androidx.compose.material.icons.outlined.Group
 import androidx.compose.material.icons.outlined.Inventory2
+import androidx.compose.material.icons.outlined.LocalShipping
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.ReceiptLong
 import androidx.compose.material.icons.outlined.Settings
@@ -48,6 +50,7 @@ import androidx.compose.ui.unit.dp
 import com.localkarar.app.core.LkDateUtils
 import com.localkarar.app.core.LkFormatting
 import com.localkarar.app.network.dto.BusinessRecordDto
+import com.localkarar.app.network.dto.MarketplaceOperationsDto
 import com.localkarar.app.ui.components.LkErrorState
 import com.localkarar.app.ui.components.LkLoadingDesen
 import com.localkarar.app.ui.components.LkLoadingState
@@ -62,6 +65,10 @@ fun WorkspaceHomeScreen(
     viewModel: WorkspaceHomeViewModel,
     onOpenRecords: () -> Unit,
     onOpenOrders: () -> Unit,
+    /** Alttaki siparis listesinden TEK siparise dokunma (15.09.2026). */
+    onOpenOrder: (siparisId: String) -> Unit = {},
+    /** Pazaryeri aksiyon satiri: siparisler ekranini durum filtresiyle ac. */
+    onOpenOrdersWithStatus: (durum: String) -> Unit = {},
     onOpenProducts: () -> Unit,
     onOpenCalendar: () -> Unit,
     onOpenDocuments: () -> Unit,
@@ -86,6 +93,7 @@ fun WorkspaceHomeScreen(
     val sheetState = rememberLkSheetState()
     var seciliDurum by remember { mutableStateOf<String?>(null) }
     val ordersLoaded by viewModel.ordersLoaded.collectAsState()
+    val operations by viewModel.operations.collectAsState()
 
     val state = uiState
 
@@ -335,6 +343,29 @@ fun WorkspaceHomeScreen(
                                     )
                                 }
                             }
+                        }
+                    }
+
+                    /*
+                     * PAZARYERI SERIDI — yalniz entegrasyon bagliyken.
+                     *
+                     * Web Genel Bakis'ta baglanti kurulunca beliren serit
+                     * (bugunku siparis, brut satis, kargo bekleyen, dusuk stok,
+                     * iade) ve kategori basina aksiyon satirlari. Mobilde
+                     * 15.09.2026'ya kadar yoktu; kullanici siparisleri yalniz
+                     * alttaki cekmeceden goruyordu (urun sahibi bildirdi).
+                     * Sayilar sunucudan (/marketplace/operations), burada
+                     * hesap YOK.
+                     */
+                    operations?.let { ops ->
+                        item {
+                            PazaryeriSeridi(
+                                ops = ops,
+                                paraBirimi = paraBirimi,
+                                onOpenOrders = onOpenOrders,
+                                onOpenOrdersWithStatus = onOpenOrdersWithStatus,
+                                onOpenProducts = onOpenProducts
+                            )
                         }
                     }
 
@@ -601,7 +632,7 @@ fun WorkspaceHomeScreen(
                             tutar = order.grossAmount?.let {
                                 LkFormatting.formatMoney(it, order.currency)
                             },
-                            onClick = onOpenOrders,
+                            onClick = { onOpenOrder(order.id) },
                             ikon = {
                                 Icon(
                                     Icons.Outlined.ShoppingCart,
@@ -626,6 +657,98 @@ fun WorkspaceHomeScreen(
  * Ust kenardaki renk seridi durumu renkle SOYLEMIYOR, yalniz ayirt
  * ediyor; anlam etiketten okunuyor (§19: durum yalniz renge yaslanmaz).
  */
+/*
+ * Pazaryeri seridi: 4 tutar/sayi kutusu + aksiyon satirlari.
+ * Aksiyon baglantisi sunucudan geliyor (page + query); orders sayfasi
+ * status ile, products sayfasi filtresiz acilir (mobil Urunler ekrani
+ * kendi filtre haplarini gosteriyor).
+ */
+@Composable
+private fun PazaryeriSeridi(
+    ops: MarketplaceOperationsDto,
+    paraBirimi: String?,
+    onOpenOrders: () -> Unit,
+    onOpenOrdersWithStatus: (String) -> Unit,
+    onOpenProducts: () -> Unit
+) {
+    val s = ops.summary
+    /* Kargo bekleyen: aksiyon sayisi (TUM bekleyenler). today.pendingShipmentCount yalniz
+       bugun olusanlari sayiyor; web Ana Sayfa'da ayni fark 0/2 gosterdi (15.09.2026). */
+    val kargoBekleyen = ops.actions.firstOrNull { it.type == "PENDING_SHIPMENT" }?.count ?: s.today.pendingShipmentCount
+    val iade = ops.actions.firstOrNull { it.type == "RETURN_PENDING" }?.count ?: s.today.returnCount
+    val saglayicilar = s.providers.filter { it.status != "DISABLED" }
+        .map { it.displayName ?: it.provider.lowercase().replaceFirstChar { c -> c.uppercase() } }
+    LkSection(title = "Pazaryeri", trailing = { Text(if (saglayicilar.isEmpty()) "Bağlı" else saglayicilar.joinToString(" · "), style = LkTypography.getMetadata(), color = LkTextMuted, maxLines = 1) }) {
+        Column(verticalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
+                DurumKutusu(
+                    deger = "${s.today.orderCount}",
+                    etiket = "Bugün sipariş",
+                    alt = LkFormatting.formatMoney(s.today.grossSales, paraBirimi),
+                    vurgu = LkSuccess,
+                    onClick = onOpenOrders,
+                    modifier = Modifier.weight(1f)
+                )
+                DurumKutusu(
+                    deger = "$kargoBekleyen",
+                    etiket = "Kargo bekleyen",
+                    alt = if (kargoBekleyen > 0) "Kargoya ver" else "Bekleyen yok",
+                    vurgu = LkWarning,
+                    onClick = { onOpenOrdersWithStatus("CREATED") },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
+                DurumKutusu(
+                    deger = "${s.inventory.lowStockCount}",
+                    etiket = "Düşük stok",
+                    alt = if (s.inventory.outOfStockCount > 0) "${s.inventory.outOfStockCount} tükendi" else "Eşik ${s.inventory.threshold}",
+                    vurgu = LkDanger,
+                    onClick = onOpenProducts,
+                    modifier = Modifier.weight(1f)
+                )
+                DurumKutusu(
+                    deger = "$iade",
+                    etiket = "İade",
+                    alt = if (iade > 0) "Süreç bekliyor" else "İade yok",
+                    vurgu = LkLineStrong,
+                    onClick = { onOpenOrdersWithStatus("RETURNED") },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            val aksiyonlar = ops.actions.take(3)
+            if (aksiyonlar.isNotEmpty()) {
+                LkRowGroup {
+                    aksiyonlar.forEachIndexed { i, a ->
+                        LkListRow(
+                            baslik = a.title,
+                            altBaslik = a.detail ?: a.category,
+                            kategori = null,
+                            tutar = null,
+                            onClick = {
+                                val durum = a.link.query["status"]
+                                when {
+                                    a.link.page == "products" -> onOpenProducts()
+                                    durum != null -> onOpenOrdersWithStatus(durum)
+                                    else -> onOpenOrders()
+                                }
+                            },
+                            ikon = {
+                                Icon(
+                                    when (a.link.page) { "products" -> Icons.Outlined.Inventory2; else -> Icons.Outlined.LocalShipping },
+                                    contentDescription = null,
+                                    tint = when (a.severity) { "CRITICAL" -> LkDanger; "ATTENTION" -> LkWarning; else -> LkTileInk },
+                                    modifier = Modifier.size(21.dp)
+                                )
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
 @Composable
 private fun DurumKutusu(
     deger: String,

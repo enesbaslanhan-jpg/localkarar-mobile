@@ -60,7 +60,12 @@ sealed interface Destination {
         val presetType: String? = null,
         val presetDirection: String? = null
     ) : Destination
-    data class Orders(val workspaceId: String) : Destination
+    /**
+     * orderId: listeden/ana ekrandan bir siparise dokununca O siparisin
+     * detayi acilir (15.09.2026 — once liste aciliyordu, ürün sahibi bildirdi).
+     * durum: aksiyon satirindan gelen durum filtresi (orn. CREATED).
+     */
+    data class Orders(val workspaceId: String, val orderId: String? = null, val durum: String? = null) : Destination
     data class Products(val workspaceId: String) : Destination
     data class Documents(val workspaceId: String) : Destination
     data class Notifications(val workspaceId: String) : Destination

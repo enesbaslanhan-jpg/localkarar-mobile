@@ -35,7 +35,7 @@ object DestinationCodec {
             is Destination.Records -> "records:${destination.workspaceId}"
             is Destination.RecordDetail -> "record_detail:${destination.workspaceId}:${destination.recordId}"
             is Destination.RecordEdit -> "record_edit:${destination.workspaceId}:${destination.recordId ?: ""}"
-            is Destination.Orders -> "orders:${destination.workspaceId}"
+            is Destination.Orders -> "orders:${destination.workspaceId}:${destination.orderId ?: ""}:${destination.durum ?: ""}"
             is Destination.Products -> "products:${destination.workspaceId}"
             is Destination.Documents -> "documents:${destination.workspaceId}"
             is Destination.Notifications -> "notifications:${destination.workspaceId}"
@@ -105,7 +105,7 @@ object DestinationCodec {
                 "records" -> Destination.Records(parts[1])
                 "record_detail" -> Destination.RecordDetail(parts[1], parts[2])
                 "record_edit" -> Destination.RecordEdit(parts[1], parts.getOrNull(2)?.ifBlank { null })
-                "orders" -> Destination.Orders(parts[1])
+                "orders" -> Destination.Orders(parts[1], parts.getOrNull(2)?.ifBlank { null }, parts.getOrNull(3)?.ifBlank { null })
                 "products" -> Destination.Products(parts[1])
                 "documents" -> Destination.Documents(parts[1])
                 "notifications" -> Destination.Notifications(parts[1])

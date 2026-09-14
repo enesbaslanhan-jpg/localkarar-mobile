@@ -58,7 +58,11 @@ private val STATUS_OPTIONS = listOf(
 fun OrdersScreen(
     workspaceId: String,
     viewModel: OrdersViewModel,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    /** Ana ekrandan bir siparise dokununca o siparis acilir. */
+    acilacakSiparisId: String? = null,
+    /** Aksiyon satirindan gelen durum filtresi (orn. CREATED). */
+    baslangicDurumu: String? = null
 ) {
     val orders by viewModel.orders.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -69,10 +73,22 @@ fun OrdersScreen(
     val selectedStatus by viewModel.selectedStatus.collectAsState()
     // Note: searchQuery not present in canonical Web Orders.jsx (status is a deep-link filter)
 
-    var selectedOrderDetail by remember { mutableStateOf<OrderDto?>(null) }
+    val selectedOrderDetail by viewModel.detail.collectAsState()
 
     LaunchedEffect(workspaceId) {
+        if (baslangicDurumu != null) viewModel.setStatusFilter(baslangicDurumu)
         viewModel.loadOrders(workspaceId)
+    }
+
+    /* Hedef siparis listede belirince detayini ac — bir kez. */
+    var otomatikAcildi by remember(acilacakSiparisId) { mutableStateOf(false) }
+    LaunchedEffect(orders, acilacakSiparisId) {
+        if (acilacakSiparisId != null && !otomatikAcildi) {
+            orders.firstOrNull { it.id == acilacakSiparisId }?.let {
+                viewModel.openDetail(workspaceId, it)
+                otomatikAcildi = true
+            }
+        }
     }
 
     /*
@@ -247,7 +263,7 @@ fun OrdersScreen(
                     items(orders, key = { it.id }) { order ->
                         MarketplaceOrderCard(
                             order = order,
-                            onClick = { selectedOrderDetail = order }
+                            onClick = { viewModel.openDetail(workspaceId, order) }
                         )
                     }
                 }
@@ -255,10 +271,10 @@ fun OrdersScreen(
         }
     }
 
-    if (selectedOrderDetail != null) {
+    selectedOrderDetail?.let { secili ->
         OrderDetailDialog(
-            order = selectedOrderDetail!!,
-            onDismiss = { selectedOrderDetail = null }
+            order = secili,
+            onDismiss = { viewModel.closeDetail() }
         )
     }
 }

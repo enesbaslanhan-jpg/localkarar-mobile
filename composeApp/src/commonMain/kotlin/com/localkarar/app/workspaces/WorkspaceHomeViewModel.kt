@@ -1,5 +1,6 @@
 package com.localkarar.app.workspaces
 
+import com.localkarar.app.network.dto.MarketplaceOperationsDto
 import com.localkarar.app.network.dto.OrderDto
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -46,6 +47,10 @@ class WorkspaceHomeViewModel(
 
     private val _ordersLoaded = MutableStateFlow(false)
     val ordersLoaded: StateFlow<Boolean> = _ordersLoaded.asStateFlow()
+
+    /* Pazaryeri operasyon seridi; bagli degilse null ve ekranda hic yok. */
+    private val _operations = MutableStateFlow<MarketplaceOperationsDto?>(null)
+    val operations: StateFlow<MarketplaceOperationsDto?> = _operations.asStateFlow()
 
     /**
      * GENEL BAKISIN BOLUM SAYILARI.
@@ -106,6 +111,12 @@ class WorkspaceHomeViewModel(
                 summary = summaryResult.getOrNull(),
                 summaryFailed = summaryResult.isFailure
             )
+        }
+
+        viewModelScope.launch {
+            repository.getMarketplaceOperations(workspaceId)
+                .onSuccess { _operations.value = if (it.summary.connected) it else null }
+                .onFailure { _operations.value = null }
         }
 
         /* Siparisler AYRI coroutine: ozetin gelmesini bekletmesin. */

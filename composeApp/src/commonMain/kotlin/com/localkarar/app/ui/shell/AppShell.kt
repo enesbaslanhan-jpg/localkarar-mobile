@@ -798,6 +798,8 @@ private fun ScreenContent(
                 viewModel = viewModel,
                 onOpenRecords = { navController.navigateTo(Destination.Records(destination.workspaceId)) },
                 onOpenOrders = { navController.navigateTo(Destination.Orders(destination.workspaceId)) },
+                onOpenOrder = { siparisId -> navController.navigateTo(Destination.Orders(destination.workspaceId, orderId = siparisId)) },
+                onOpenOrdersWithStatus = { durum -> navController.navigateTo(Destination.Orders(destination.workspaceId, durum = durum)) },
                 onOpenProducts = { navController.navigateTo(Destination.Products(destination.workspaceId)) },
                 onOpenCalendar = { navController.navigateTo(Destination.Calendar(destination.workspaceId)) },
                 onOpenDocuments = { navController.navigateTo(Destination.Documents(destination.workspaceId)) },
@@ -823,7 +825,9 @@ private fun ScreenContent(
             OrdersScreen(
                 workspaceId = destination.workspaceId,
                 viewModel = viewModel,
-                onNavigateBack = onBack
+                onNavigateBack = onBack,
+                acilacakSiparisId = destination.orderId,
+                baslangicDurumu = destination.durum
             )
         }
         is Destination.Products -> {
