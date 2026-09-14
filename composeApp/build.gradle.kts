@@ -143,7 +143,17 @@ android {
         applicationId = "com.localkarar.app"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = libs.versions.app.versionCode.get().toInt()
+        /*
+         * SURUM KODU CI'DA OTOMATIK ARTAR (14.09.2026).
+         *
+         * Play her yuklemede oncekinden BUYUK bir versionCode ister. Ilk iki
+         * AAB'de sayi elle buyutuldu; unutulunca yukleme reddediliyor.
+         * CI, GitHub'in kendi kosum numarasini LK_VERSION_CODE olarak verir;
+         * o varsa kullanilir, yoksa (yerel derleme) toml'daki sabit kalir.
+         * 100 tabani: 20. kosumda 2 olan kodun geriye dusmemesi icin.
+         */
+        versionCode = System.getenv("LK_VERSION_CODE")?.toIntOrNull()
+            ?: libs.versions.app.versionCode.get().toInt()
         versionName = libs.versions.app.versionName.get()
     }
     packaging {

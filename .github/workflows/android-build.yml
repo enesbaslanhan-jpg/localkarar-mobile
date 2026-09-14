@@ -108,6 +108,9 @@ jobs:
 
       - name: Release derleme (R8 acik)
         env:
+          # versionCode = 100 + kosum numarasi; her kosumda artar, Play'in
+          # "oncekinden buyuk olmali" kuralina elle dokunmadan uyar.
+          LK_VERSION_CODE: ${{ 100 + github.run_number }}
           LK_KEYSTORE_PASSWORD: ${{ secrets.LK_KEYSTORE_PASSWORD }}
           LK_KEY_ALIAS: ${{ secrets.LK_KEY_ALIAS }}
           LK_KEY_PASSWORD: ${{ secrets.LK_KEY_PASSWORD }}
