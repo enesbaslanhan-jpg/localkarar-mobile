@@ -92,11 +92,17 @@ jobs:
       # Bu anahtar Play'in "yukleme anahtari"dir; asil imza anahtarini
       # Google tutar (Play App Signing). Kaybolursa Play Console'dan
       # sifirlanabilir.
+      # `if:` icinde `secrets` kullanilamiyor (GitHub bunu "Unrecognized
+      # named-value" diye reddediyor; CI #17 boyle dustu). Kontrol adimin
+      # icinde, kabukta yapiliyor.
       - name: Yukleme anahtarini coz
-        if: ${{ secrets.LK_KEYSTORE_BASE64 != '' }}
         env:
           LK_KEYSTORE_BASE64: ${{ secrets.LK_KEYSTORE_BASE64 }}
         run: |
+          if [ -z "$LK_KEYSTORE_BASE64" ]; then
+            echo "Imza anahtari secret'i yok; cikti imzasiz uretilecek."
+            exit 0
+          fi
           echo "$LK_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/upload.jks"
           echo "LK_KEYSTORE_PATH=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
 

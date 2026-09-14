@@ -8,6 +8,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.UIKitViewController
 import platform.AVFoundation.AVPlayer
 import platform.AVFoundation.AVPlayerItem
+/* Kotlin/Native: AVPlayer'in play/pause/muted/replaceCurrentItem uyeleri
+   Objective-C kategorilerinden geliyor ve UZANTI olarak ice aktariliyor;
+   ayrica import edilmezse "unresolved reference" (CI iOS #16/#17). */
+import platform.AVFoundation.muted
+import platform.AVFoundation.pause
+import platform.AVFoundation.play
+import platform.AVFoundation.replaceCurrentItemWithPlayerItem
 import platform.AVKit.AVPlayerViewController
 import platform.Foundation.NSURL
 
