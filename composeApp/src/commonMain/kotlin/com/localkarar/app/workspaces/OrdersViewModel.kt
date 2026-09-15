@@ -3,6 +3,7 @@ package com.localkarar.app.workspaces
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.localkarar.app.network.dto.OrderDto
+import com.localkarar.app.network.dto.MarketplaceOperationsDto
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -44,10 +45,23 @@ class OrdersViewModel(
     private val _selectedStatus = MutableStateFlow<String?>(null)
     val selectedStatus: StateFlow<String?> = _selectedStatus.asStateFlow()
 
+    /*
+     * GÜNLÜK ŞERİT (15.09.2026): bugünkü sipariş / brüt / kargo bekleyen / iade.
+     * Web Siparişler'deki şeritle aynı uç (/marketplace/operations); bağlı
+     * değilse null kalır ve şerit çizilmez.
+     */
+    private val _ops = MutableStateFlow<MarketplaceOperationsDto?>(null)
+    val ops: StateFlow<MarketplaceOperationsDto?> = _ops.asStateFlow()
+
     fun loadOrders(workspaceId: String) {
         if (workspaceId.isBlank()) return
         _isLoading.value = true
         _error.value = null
+        viewModelScope.launch {
+            repository.getMarketplaceOperations(workspaceId).onSuccess { o ->
+                _ops.value = if (o.summary.connected) o else null
+            }
+        }
         viewModelScope.launch {
             // Canonical Web contract: only workspaceId + provider + limit go to backend
             repository.getOrders(

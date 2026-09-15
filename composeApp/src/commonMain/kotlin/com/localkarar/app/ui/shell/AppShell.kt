@@ -515,6 +515,7 @@ private fun ScreenContent(
             onNavigateToDecisionDetail = { code -> navController.navigateTo(Destination.DecisionTool(code)) },
             onNavigateToWorkspaces = { navController.navigateTo(Destination.Workspaces) },
             onNavigateToTracker = { workspaceId -> navController.navigateTo(Destination.Records(workspaceId)) },
+            onNavigateToRapor = { workspaceId -> navController.navigateTo(Destination.Rapor(workspaceId)) },
             onQuickAction = { workspaceId, tur, yon ->
                 navController.navigateTo(
                     Destination.RecordEdit(workspaceId, null, presetType = tur, presetDirection = yon)
@@ -816,8 +817,6 @@ private fun ScreenContent(
                 onOpenKararRaporu = { navController.navigateTo(Destination.KararRaporu(destination.workspaceId)) },
                 onOpenRapor = { navController.navigateTo(Destination.Rapor(destination.workspaceId)) },
                 onOpenAccounts = { navController.navigateTo(Destination.BusinessFinance(destination.workspaceId, "accounts")) },
-                financeContent = { com.localkarar.app.ui.screens.workspaces.FinanceOverviewPanel(destination.workspaceId, workspaceRepository,
-                    onOpenRecord = { navController.navigateTo(Destination.RecordDetail(destination.workspaceId, it)) }) },
                 onBack = geriVarsa
             )
         }

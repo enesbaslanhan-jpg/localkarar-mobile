@@ -163,79 +163,19 @@ fun WorkspaceHomeScreen(
                 val ozet = state.summary
                 if (ozet != null) {
                     /* plan30: pazaryeri hakedisi dahil, geciken disarida (15.09.2026). */
-                    val planAlacak = ozet.plan30?.let { it.receivable.amount + it.hakedis.net.amount } ?: ozet.nextThirtyDays.receivable
-                    val planBorc = ozet.plan30?.payable?.amount ?: ozet.nextThirtyDays.payable
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = LkSpacing.Space5, vertical = LkSpacing.Space4)
-                    ) {
+                    /* Hero'da tek sayı: 30 gün NET. Alacak/borç aşağıdaki Plan bloğunda;
+                       ikisi birden tekrar ediyordu (ürün sahibi, 15.09.2026). */
+                    Box(Modifier.fillMaxWidth().padding(horizontal = LkSpacing.Space5, vertical = LkSpacing.Space4)) {
                         HeroTutar(
-                            if (ozet.plan30?.estimated == true) "30 GÜN ALACAK · TAHMİNİ" else "30 GÜN ALACAK",
-                            planAlacak,
+                            if (ozet.plan30?.estimated == true) "30 GÜN NET · TAHMİNİ" else "30 GÜN NET",
+                            ozet.plan30?.net ?: ozet.nextThirtyDays.net,
                             { LkFormatting.formatMoney(it, state.workspace.currency) },
-                            Modifier.weight(1f)
-                        )
-                        Box(
-                            Modifier
-                                .width(1.dp)
-                                .height(40.dp)
-                                .background(androidx.compose.ui.graphics.Color(0x29FFFFFF))
-                        )
-                        HeroTutar(
-                            "30 GÜN BORÇ",
-                            planBorc,
-                            { LkFormatting.formatMoney(it, state.workspace.currency) },
-                            Modifier.weight(1f).padding(start = LkSpacing.Space4)
+                            Modifier.fillMaxWidth()
                         )
                     }
 
-                    /*
-                     * 🔴 MOCKUP'TAKI "EYLUL HEDEFININ %57'SI" UYDURMAYDI.
-                     *
-                     * Sunucuda hedef/target alani YOK -- ne TrackerSummaryDto'da
-                     * ne baska bir uctan geliyor. Uydurma bir finansal hedefi
-                     * ekrana basmak kullanicinin gercek sandigi bir sey
-                     * gostermek olurdu.
-                     *
-                     * Yerine GERCEKTEN turetilebilen bir oran: onumuzdeki 30
-                     * gunun toplam hareketi icinde tahsilatin payi. Etiket ne
-                     * oldugunu acikca soyluyor; "hedef" demiyor.
-                     */
-                    val alacak = planAlacak
-                    val borc = planBorc
-                    val toplam = alacak + borc
-                    if (toplam > 0.0) {
-                        Column(
-                            Modifier.fillMaxWidth().padding(
-                                start = LkSpacing.Space5,
-                                end = LkSpacing.Space5,
-                                bottom = LkSpacing.Space2
-                            )
-                        ) {
-                            /*
-                             * Dolgu KOYU, yol ACIK — referans desenin yonu bu.
-                             * Ilk denemede tersi yapilmisti (beyaz dolgu,
-                             * saydam yol) ve hero uzerinde koca bir beyaz blok
-                             * gibi bagirarak ekranin hakim ogesi oluyordu;
-                             * oysa hakim oge ustteki tutarlar olmali.
-                             */
-                            LkProgressPill(
-                                oran = (alacak / toplam).toFloat(),
-                                sagDeger = LkFormatting.formatMoney(toplam, state.workspace.currency),
-                                dolguRengi = LkBrand.B700,
-                                dolguUstuRengi = androidx.compose.ui.graphics.Color.White,
-                                yolRengi = androidx.compose.ui.graphics.Color(0xE8F1F5F7),
-                                yolUstuRengi = LkBrand.B700
-                            )
-                            Spacer(Modifier.height(LkSpacing.Space2))
-                            Text(
-                                text = "30 günlük hareketin bu kadarı tahsilat.",
-                                style = LkTypography.getMetadata(),
-                                color = LkHero.OnHeroSecondary
-                            )
-                        }
-                    }
+                    /* Oran çubuğu ve açıklama cümlesi kalktı (15.09.2026):
+                       web hero'da yok, kullanıcı açıklama satırı istemiyor. */
                 }
             }
             Spacer(Modifier.height(LkSpacing.Space5))
@@ -290,7 +230,7 @@ fun WorkspaceHomeScreen(
                     if (summary != null) {
                         item {
                             Column(verticalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
-                                LkSectionHeader(title = "BUGÜN NE DURUMDAYIM?")
+                                LkSectionHeader(title = "PLAN · 30 GÜN")
                                 /*
                                  * 🔴 SAYI DEGIL TUTAR (urun sahibi, 11.09.2026). "3 geciken"
                                  * karar verdirmez, "₺18.400 gecikmis" verdirir. Webdeki
@@ -299,23 +239,30 @@ fun WorkspaceHomeScreen(
                                  * ⚠️ Kasa hesabi yoksa "—", sifir degil. "Yon bekleyen"
                                  * kutu olmaktan cikti; varsa asagida tek satir uyari.
                                  */
-                                val hafta = summary.thisWeek
+                                /*
+                                 * PLAN · 30 GÜN (15.09.2026): web Genel Bakış bandıyla aynı dört kutu.
+                                 * "Bu hafta" (kayan 7 gün) kutuları kalktı; [şimdi,+30] penceresi,
+                                 * geciken dışarıda, pazaryeri hakedişi tahsilata dahil.
+                                 */
+                                val plan = summary.plan30
                                 val geciken = summary.overdueTotals
                                 val kasa = summary.cash
+                                val planTahsil = plan?.let { it.receivable.amount + it.hakedis.net.amount } ?: summary.nextThirtyDays.receivable
+                                val planOde = plan?.payable?.amount ?: summary.nextThirtyDays.payable
                                 Row(horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
                                     DurumKutusu(
-                                        deger = LkFormatting.formatMoney(hafta?.payable ?: 0.0, paraBirimi),
-                                        etiket = "Bu hafta ödenecek",
-                                        alt = "${hafta?.payableCount ?: 0} kayıt",
-                                        vurgu = LkWarning,
+                                        deger = LkFormatting.formatMoney(planTahsil, paraBirimi),
+                                        etiket = "Tahsil edilecek",
+                                        alt = plan?.let { p -> if (p.hakedis.net.amount > 0) LkFormatting.formatMoney(p.hakedis.net.amount, paraBirimi) + " pazaryeri" + (if (p.estimated) " · tahmini" else "") else "${p.counts.receivable} kayıt" },
+                                        vurgu = LkSuccess,
                                         onClick = onOpenCalendar,
                                         modifier = Modifier.weight(1f)
                                     )
                                     DurumKutusu(
-                                        deger = LkFormatting.formatMoney(hafta?.receivable ?: 0.0, paraBirimi),
-                                        etiket = "Bu hafta tahsilat",
-                                        alt = "${hafta?.receivableCount ?: 0} kayıt",
-                                        vurgu = LkSuccess,
+                                        deger = LkFormatting.formatMoney(planOde, paraBirimi),
+                                        etiket = "Ödenecek",
+                                        alt = "${plan?.counts?.payable ?: 0} kayıt",
+                                        vurgu = LkWarning,
                                         onClick = onOpenCalendar,
                                         modifier = Modifier.weight(1f)
                                     )
@@ -356,22 +303,6 @@ fun WorkspaceHomeScreen(
                     }
 
                     /*
-                     * GERCEKLESEN — donem haplari (Faz 2, 15.09.2026).
-                     * Sunucu uc donemi de summary.periods icinde veriyor
-                     * (Istanbul takvimi: bugun / Pzt-Paz / ay); ek istek yok.
-                     * Web Genel Bakis'taki satirla ayni. Tam tablo Rapor'da.
-                     */
-                    summary?.periods?.let { periods ->
-                        item {
-                            GerceklesenSeridi(
-                                periods = periods,
-                                paraBirimi = paraBirimi,
-                                onOpenRapor = onOpenRapor
-                            )
-                        }
-                    }
-
-                    /*
                      * PAZARYERI SERIDI — yalniz entegrasyon bagliyken.
                      *
                      * Web Genel Bakis'ta baglanti kurulunca beliren serit
@@ -394,10 +325,8 @@ fun WorkspaceHomeScreen(
                         }
                     }
 
-                    /* Vergi/SGK karti durum kutularinin ALTINDA: tepede tek basina
-                       bos bir kart gibi duruyordu (emulator, 11.09.2026). */
-                    item { financeContent() }
-
+                    /* Vergi/SGK kutusu tamamen kalktı (ürün sahibi, 15.09.2026);
+                       hatırlatmalar Kayıtlar/Takvim'de. */
                     /*
                      * SON HAREKETLER — ekranin GERCEK VERI blogu.
                      *
@@ -682,71 +611,6 @@ fun WorkspaceHomeScreen(
  * Ust kenardaki renk seridi durumu renkle SOYLEMIYOR, yalniz ayirt
  * ediyor; anlam etiketten okunuyor (§19: durum yalniz renge yaslanmaz).
  */
-/*
- * Pazaryeri seridi: 4 tutar/sayi kutusu + aksiyon satirlari.
- * Aksiyon baglantisi sunucudan geliyor (page + query); orders sayfasi
- * status ile, products sayfasi filtresiz acilir (mobil Urunler ekrani
- * kendi filtre haplarini gosteriyor).
- */
-@Composable
-private fun GerceklesenSeridi(
-    periods: TrackerPeriodsDto,
-    paraBirimi: String?,
-    onOpenRapor: () -> Unit
-) {
-    var secim by remember { mutableStateOf("week") }
-    val d = when (secim) { "today" -> periods.today; "month" -> periods.month; else -> periods.week }
-    LkSection(
-        title = "Gerçekleşen",
-        actionLabel = "Rapor",
-        onAction = onOpenRapor
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
-                listOf("today" to "Bugün", "week" to "Bu hafta", "month" to "Bu ay").forEach { (k, etiket) ->
-                    LkPillChip(label = etiket, selected = secim == k, onClick = { secim = k })
-                }
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
-                DurumKutusu(
-                    deger = LkFormatting.formatMoney(d.tahsilat.amount, paraBirimi),
-                    etiket = "Tahsil edilen",
-                    alt = d.tahsilat.otherCurrencies.firstOrNull()?.let { "+ ${it.amount} ${it.currency} ayrıca" },
-                    vurgu = LkSuccess,
-                    onClick = onOpenRapor,
-                    modifier = Modifier.weight(1f)
-                )
-                DurumKutusu(
-                    deger = LkFormatting.formatMoney(d.odeme.amount, paraBirimi),
-                    etiket = "Ödenen",
-                    alt = d.odeme.otherCurrencies.firstOrNull()?.let { "+ ${it.amount} ${it.currency} ayrıca" },
-                    vurgu = LkWarning,
-                    onClick = onOpenRapor,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
-                DurumKutusu(
-                    deger = LkFormatting.formatMoney(d.pazaryeriNet.amount, paraBirimi),
-                    etiket = "Pazaryeri net",
-                    alt = "${d.siparisSayisi} sipariş · iade ${LkFormatting.formatMoney(d.iade.amount, paraBirimi)}",
-                    vurgu = LkTileInk,
-                    onClick = onOpenRapor,
-                    modifier = Modifier.weight(1f)
-                )
-                DurumKutusu(
-                    deger = LkFormatting.formatMoney(d.net, paraBirimi),
-                    etiket = "Net",
-                    alt = "tahsilat − ödeme + pazaryeri",
-                    vurgu = if (d.net < 0) LkDanger else LkSuccess,
-                    onClick = onOpenRapor,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-        }
-    }
-}
-
 @Composable
 private fun PazaryeriSeridi(
     ops: MarketplaceOperationsDto,
@@ -756,51 +620,12 @@ private fun PazaryeriSeridi(
     onOpenProducts: () -> Unit
 ) {
     val s = ops.summary
-    /* Kargo bekleyen: aksiyon sayisi (TUM bekleyenler). today.pendingShipmentCount yalniz
-       bugun olusanlari sayiyor; web Ana Sayfa'da ayni fark 0/2 gosterdi (15.09.2026). */
-    val kargoBekleyen = ops.actions.firstOrNull { it.type == "PENDING_SHIPMENT" }?.count ?: s.today.pendingShipmentCount
-    val iade = ops.actions.firstOrNull { it.type == "RETURN_PENDING" }?.count ?: s.today.returnCount
     val saglayicilar = s.providers.filter { it.status != "DISABLED" }
         .map { it.displayName ?: it.provider.lowercase().replaceFirstChar { c -> c.uppercase() } }
-    LkSection(title = "Pazaryeri", trailing = { Text(if (saglayicilar.isEmpty()) "Bağlı" else saglayicilar.joinToString(" · "), style = LkTypography.getMetadata(), color = LkTextMuted, maxLines = 1) }) {
+    /* İş satırları — sayı şeridi değil (15.09.2026). Günlük sayılar Siparişler'de. */
+    LkSection(title = "Pazaryeri işleri", trailing = { Text(if (saglayicilar.isEmpty()) "Bağlı" else saglayicilar.joinToString(" · "), style = LkTypography.getMetadata(), color = LkTextMuted, maxLines = 1) }) {
         Column(verticalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
-                DurumKutusu(
-                    deger = "${s.today.orderCount}",
-                    etiket = "Bugün sipariş",
-                    alt = LkFormatting.formatMoney(s.today.grossSales, paraBirimi),
-                    vurgu = LkSuccess,
-                    onClick = onOpenOrders,
-                    modifier = Modifier.weight(1f)
-                )
-                DurumKutusu(
-                    deger = "$kargoBekleyen",
-                    etiket = "Kargo bekleyen",
-                    alt = if (kargoBekleyen > 0) "Kargoya ver" else "Bekleyen yok",
-                    vurgu = LkWarning,
-                    onClick = { onOpenOrdersWithStatus("CREATED") },
-                    modifier = Modifier.weight(1f)
-                )
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
-                DurumKutusu(
-                    deger = "${s.inventory.lowStockCount}",
-                    etiket = "Düşük stok",
-                    alt = if (s.inventory.outOfStockCount > 0) "${s.inventory.outOfStockCount} tükendi" else "Eşik ${s.inventory.threshold}",
-                    vurgu = LkDanger,
-                    onClick = onOpenProducts,
-                    modifier = Modifier.weight(1f)
-                )
-                DurumKutusu(
-                    deger = "$iade",
-                    etiket = "İade",
-                    alt = if (iade > 0) "Süreç bekliyor" else "İade yok",
-                    vurgu = LkLineStrong,
-                    onClick = { onOpenOrdersWithStatus("RETURNED") },
-                    modifier = Modifier.weight(1f)
-                )
-            }
-            val aksiyonlar = ops.actions.take(3)
+            val aksiyonlar = ops.actions
             if (aksiyonlar.isNotEmpty()) {
                 LkRowGroup {
                     aksiyonlar.forEachIndexed { i, a ->

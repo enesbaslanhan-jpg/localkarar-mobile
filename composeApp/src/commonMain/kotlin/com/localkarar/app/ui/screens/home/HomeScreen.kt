@@ -46,6 +46,8 @@ import com.localkarar.app.ui.components.LkPageLayout
 import com.localkarar.app.ui.components.LkSection
 import com.localkarar.app.ui.components.LkHairline
 import com.localkarar.app.ui.components.LkPulseBadge
+import com.localkarar.app.ui.components.LkPillChip
+import com.localkarar.app.ui.theme.LkTypography.numeric
 import com.localkarar.app.ui.components.LkSectionHeader
 import com.localkarar.app.ui.components.LkTactileAction
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -177,6 +179,8 @@ fun HomeScreen(
     onQuickAction: (String, String, String) -> Unit,
     /** Kisayol dosemesi: (isletmeId, bolumKodu) -- KISAYOLLAR.kod */
     onKisayol: (String, String) -> Unit = { _, _ -> },
+    /** Gerçekleşen kartındaki "Rapor" → Destination.Rapor(isletmeId). */
+    onNavigateToRapor: (String) -> Unit = {},
     onOpenProductCenter: () -> Unit = {},
     onOpenSearch: () -> Unit = {}
 ) {
@@ -208,6 +212,7 @@ fun HomeScreen(
                         onNavigateToDecisionDetail = onNavigateToDecisionDetail,
                         onNavigateToWorkspaces = onNavigateToWorkspaces,
                         onNavigateToTracker = onNavigateToTracker,
+                        onNavigateToRapor = onNavigateToRapor,
                         onQuickAction = onQuickAction,
                         onKisayol = onKisayol,
                         onOpenProductCenter = onOpenProductCenter,
@@ -233,6 +238,7 @@ private fun DashboardContent(
     onNavigateToDecisionDetail: (String) -> Unit,
     onNavigateToWorkspaces: () -> Unit,
     onNavigateToTracker: (String) -> Unit,
+    onNavigateToRapor: (String) -> Unit,
     /** Hizli Islem dosemesi: (isletmeId, kayitTuru, yon) */
     onQuickAction: (String, String, String) -> Unit,
     onKisayol: (String, String) -> Unit,
@@ -327,6 +333,19 @@ private fun DashboardContent(
             tracker = state.trackerSummary,
             onNavigateToWorkspaces = onNavigateToWorkspaces
         )
+
+        /*
+         * GERÇEKLEŞEN (15.09.2026): Bugün / Bu hafta / Bu ay — web Ana Sayfa'daki
+         * kartla aynı dört sayı, aynı kaynak (tracker.periods). İşletme
+         * Takibi'nde tekrar etmez; orada yalnız 30 günlük plan var.
+         */
+        state.trackerSummary?.periods?.let { periods ->
+            GerceklesenKarti(
+                periods = periods,
+                paraBirimi = state.trackerSummary.currency ?: "TRY",
+                onRapor = state.activeWorkspaceId?.let { ws -> { onNavigateToRapor(ws) } }
+            )
+        }
 
         // Hizli Islemler + Mentor seridi
         QuickActionsCard(
@@ -803,6 +822,52 @@ private fun QuickActionsCard(
             }
         }
 
+    }
+}
+
+@Composable
+private fun GerceklesenKarti(
+    periods: com.localkarar.app.network.dto.TrackerPeriodsDto,
+    paraBirimi: String,
+    onRapor: (() -> Unit)?
+) {
+    /* Varsayılan "Bu hafta" — web ile aynı. */
+    var donem by remember { mutableStateOf("week") }
+    val g = when (donem) { "today" -> periods.today; "month" -> periods.month; else -> periods.week }
+    val para = { v: Double -> LkFormatting.formatMoney(v, paraBirimi) }
+    LkSection(title = "Gerçekleşen", actionLabel = if (onRapor != null) "Rapor" else null, onAction = onRapor) {
+        Row(horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
+            LkPillChip("Bugün", donem == "today", { donem = "today" })
+            LkPillChip("Bu hafta", donem == "week", { donem = "week" })
+            LkPillChip("Bu ay", donem == "month", { donem = "month" })
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
+            GerceklesenKutu(para(g.tahsilat.amount), "Tahsil edilen", null, LkSuccess, Modifier.weight(1f))
+            GerceklesenKutu(para(g.odeme.amount), "Ödenen", null, LkWarning, Modifier.weight(1f))
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
+            GerceklesenKutu(
+                para(g.pazaryeriNet.amount), "Pazaryeri net",
+                "brüt " + para(g.pazaryeriBrut.amount) + " · iade " + para(g.iade.amount) + " · " + g.siparisSayisi + " sipariş",
+                LkPrimary, Modifier.weight(1f)
+            )
+            GerceklesenKutu(para(g.net), "Net", null, if (g.net < 0) LkWarning else LkSuccess, Modifier.weight(1f))
+        }
+    }
+}
+
+@Composable
+private fun GerceklesenKutu(deger: String, etiket: String, alt: String?, vurgu: Color, modifier: Modifier) {
+    Column(
+        modifier = modifier.clip(LkShapes.MD).background(LkSurfacePanel).heightIn(min = 76.dp)
+            .padding(horizontal = LkSpacing.Space2, vertical = LkSpacing.Space3),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Box(Modifier.padding(bottom = LkSpacing.Space2).width(24.dp).height(3.dp).clip(LkShapes.FULL).background(vurgu))
+        Text(deger, style = LkTypography.getTitleS().numeric(), color = LkTextPrimary, maxLines = 1)
+        Text(etiket, style = LkTypography.getMicro(), color = LkTextSecondary, maxLines = 1)
+        if (alt != null) Text(alt, style = LkTypography.getMicro(), color = LkTextMuted, maxLines = 2)
     }
 }
 

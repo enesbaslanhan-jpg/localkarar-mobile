@@ -34,6 +34,9 @@ import com.localkarar.app.ui.components.LkPressable
 import com.localkarar.app.ui.components.LkButtonVariant
 import com.localkarar.app.ui.components.LkTextField
 import com.localkarar.app.ui.theme.*
+import androidx.compose.ui.draw.clip
+import com.localkarar.app.ui.theme.LkTypography.numeric
+import com.localkarar.app.core.LkFormatting
 import com.localkarar.app.workspaces.DESTEKLENEN_SAGLAYICILAR
 import com.localkarar.app.workspaces.TUM_SAGLAYICILAR
 import com.localkarar.app.workspaces.OrdersViewModel
@@ -74,6 +77,7 @@ fun OrdersScreen(
     // Note: searchQuery not present in canonical Web Orders.jsx (status is a deep-link filter)
 
     val selectedOrderDetail by viewModel.detail.collectAsState()
+    val ops by viewModel.ops.collectAsState()
 
     LaunchedEffect(workspaceId) {
         if (baslangicDurumu != null) viewModel.setStatusFilter(baslangicDurumu)
@@ -140,6 +144,22 @@ fun OrdersScreen(
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
+            /* Günlük şerit — web Siparişler ile aynı dört sayı (15.09.2026). */
+            ops?.let { o ->
+                val kargo = o.actions.firstOrNull { it.type == "PENDING_SHIPMENT" }?.count ?: o.summary.today.pendingShipmentCount
+                val iade = o.actions.firstOrNull { it.type == "RETURN_PENDING" }?.count ?: o.summary.today.returnCount
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = LkSpacing.Space4, vertical = LkSpacing.Space3),
+                    horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2)
+                ) {
+                    GunlukKutu(o.summary.today.orderCount.toString(), "Bugünkü sipariş", Modifier.weight(1f))
+                    GunlukKutu(LkFormatting.formatMoney(o.summary.today.grossSales, "TRY"), "Bugünkü brüt", Modifier.weight(1f))
+                    GunlukKutu(kargo.toString(), "Kargo bekleyen", Modifier.weight(1f))
+                    GunlukKutu(iade.toString(), "İade bekleyen", Modifier.weight(1f))
+                }
+            }
             // Integration Sync Status Banner
             Row(
                 modifier = Modifier
@@ -567,5 +587,21 @@ private fun DetailRow(
             color = color,
             fontWeight = if (isBold) FontWeight.Bold else FontWeight.Normal
         )
+    }
+}
+
+@Composable
+private fun GunlukKutu(deger: String, etiket: String, modifier: Modifier) {
+    Column(
+        modifier = modifier
+            .clip(LkShapes.MD)
+            .background(LkSurfacePanel)
+            .heightIn(min = 64.dp)
+            .padding(horizontal = LkSpacing.Space1, vertical = LkSpacing.Space2),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(deger, style = LkTypography.getTitleS().numeric(), color = LkTextPrimary, maxLines = 1)
+        Text(etiket, style = LkTypography.getMicro(), color = LkTextSecondary, maxLines = 1)
     }
 }
