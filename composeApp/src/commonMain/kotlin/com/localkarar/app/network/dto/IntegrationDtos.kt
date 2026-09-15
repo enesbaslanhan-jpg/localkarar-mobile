@@ -62,7 +62,23 @@ data class IntegrationConnectionDto(
     val displayName: String? = null,
     val lastSyncedAt: String? = null,
     val createdAt: String? = null,
-    val consecutiveFailureCount: Int = 0
+    val consecutiveFailureCount: Int = 0,
+    /* Kullanicinin girdigi odeme vadesi (gun) ve ortalama komisyon (%).
+       Bos = bilinmiyor -> hakedis "tahmini" isaretlenir (Faz 3, 15.09.2026). */
+    val payoutDelayDays: Int? = null,
+    val avgCommissionPercent: Double? = null
+)
+
+/**
+ * PATCH /integrations/:connectionId/settings govdesi.
+ * Alanlarin VARSAYILANI YOK: ikisi de her seferinde gidiyor, `null` acikca
+ * yaziliyor (temizle). Varsayilan olsaydi encodeDefaults=false yuzunden
+ * null alan govdeden duser ve temizlemek imkansiz olurdu.
+ */
+@Serializable
+data class ConnectionSettingsRequestDto(
+    val payoutDelayDays: Int?,
+    val avgCommissionPercent: Double?
 )
 
 // ---------------------------------------------------------------------------

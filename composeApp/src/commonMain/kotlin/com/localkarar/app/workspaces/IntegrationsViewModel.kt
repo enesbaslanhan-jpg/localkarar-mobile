@@ -6,6 +6,7 @@ import com.localkarar.app.core.AppMessages
 import com.localkarar.app.core.openExternalUrl
 import com.localkarar.app.network.dto.HepsiburadaConnectRequestDto
 import com.localkarar.app.network.dto.IntegrationConnectionDto
+import com.localkarar.app.network.dto.ConnectionSettingsRequestDto
 import com.localkarar.app.network.dto.MarketplaceEntryDto
 import com.localkarar.app.network.dto.N11ConnectRequestDto
 import com.localkarar.app.network.dto.ShopifyConnectRequestDto
@@ -168,6 +169,24 @@ class IntegrationsViewModel(
                     AppMessages.hata(hata.message ?: "Shopify bağlantısı başlatılamadı.")
                 }
             _islemDevamEdiyor.value = false
+        }
+    }
+
+    /**
+     * Odeme vadesi + ortalama komisyon (Faz 3). Ikisi birden gidiyor;
+     * bos alan null = "bilmiyorum" (hakedis tahmini kalir).
+     */
+    fun ayarlariKaydet(workspaceId: String, connectionId: String, vadeGun: Int?, komisyonYuzde: Double?) {
+        _islemDevamEdiyor.value = true
+        viewModelScope.launch {
+            sonucuIsle(
+                workspaceId,
+                repository.updateConnectionSettings(
+                    connectionId,
+                    ConnectionSettingsRequestDto(payoutDelayDays = vadeGun, avgCommissionPercent = komisyonYuzde)
+                ).map { },
+                "Pazaryeri ayarları kaydedildi."
+            )
         }
     }
 

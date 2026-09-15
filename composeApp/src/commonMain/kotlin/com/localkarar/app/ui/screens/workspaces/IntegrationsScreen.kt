@@ -24,6 +24,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.localkarar.app.core.LkDateUtils
+import com.localkarar.app.core.LkFormatting
+import com.localkarar.app.core.AppMessages
 import com.localkarar.app.core.SecureScreen
 import com.localkarar.app.network.dto.IntegrationConnectionDto
 import com.localkarar.app.network.dto.MarketplaceEntryDto
@@ -198,6 +200,50 @@ private fun SaglayiciKarti(
         Spacer(modifier = Modifier.height(LkSpacing.Space3))
 
         if (baglanti != null) {
+            /*
+             * ODEME VADESI + ORTALAMA KOMISYON (Faz 3, 15.09.2026) — web
+             * Ayarlar → Entegrasyonlar ile ayni iki alan. Bos = bilinmiyor;
+             * o zaman hakedis rakamlari "tahmini" kalir.
+             */
+            var vade by remember(baglanti.id, baglanti.payoutDelayDays) {
+                mutableStateOf(baglanti.payoutDelayDays?.toString() ?: "")
+            }
+            var komisyon by remember(baglanti.id, baglanti.avgCommissionPercent) {
+                mutableStateOf(baglanti.avgCommissionPercent?.let { LkFormatting.formatNumber(it) } ?: "")
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
+                LkTextField(
+                    value = vade,
+                    onValueChange = { vade = it.filter { c -> c.isDigit() } },
+                    label = "Ödeme vadesi (gün)",
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.weight(1f)
+                )
+                LkTextField(
+                    value = komisyon,
+                    onValueChange = { komisyon = it.filter { c -> c.isDigit() || c == ',' || c == '.' } },
+                    label = "Ortalama komisyon (%)",
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            Spacer(modifier = Modifier.height(LkSpacing.Space2))
+            LkButton(
+                text = "Ayarları kaydet",
+                onClick = {
+                    val gun = vade.trim().toIntOrNull()
+                    /* parseDecimal noktayı binlik ayracı sayar ("18.5" → 185); yüzde alanında virgül de nokta da ondalıktır. */
+                    val oran = komisyon.trim().replace(',', '.').toDoubleOrNull()
+                    when {
+                        vade.isNotBlank() && (gun == null || gun > 365) -> AppMessages.hata("Ödeme vadesi 0-365 gün arasında olmalı.")
+                        komisyon.isNotBlank() && (oran == null || oran < 0 || oran > 100) -> AppMessages.hata("Komisyon 0-100 arasında olmalı.")
+                        else -> viewModel.ayarlariKaydet(workspaceId, baglanti.id, gun, if (komisyon.isBlank()) null else oran)
+                    }
+                },
+                variant = LkButtonVariant.SECONDARY,
+                enabled = !islemDevamEdiyor
+            )
+            Spacer(modifier = Modifier.height(LkSpacing.Space2))
             Row(horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
                 LkButton(
                     text = "Şimdi eşitle",

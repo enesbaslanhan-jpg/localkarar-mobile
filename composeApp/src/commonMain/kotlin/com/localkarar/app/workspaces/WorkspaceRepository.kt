@@ -513,6 +513,10 @@ class WorkspaceRepository(private val api: SafeApiClient) {
     suspend fun getWorkspaceIntegrations(workspaceId: String): Result<WorkspaceIntegrationsDto> =
         api.get("$base/integrations?workspaceId=$workspaceId")
 
+    /** Odeme vadesi + ortalama komisyon; web IntegrationsPanel ile ayni uc. */
+    suspend fun updateConnectionSettings(connectionId: String, body: ConnectionSettingsRequestDto): Result<IntegrationConnectionDto> =
+        api.patch("$base/integrations/$connectionId/settings", body)
+
     /*
      * Baglanma cagrilari saglayici basina AYRI, cunku her birinin kimlik
      * modeli farkli ve sunucu ayri zod semalariyla dogruluyor. Tek bir "genel"
