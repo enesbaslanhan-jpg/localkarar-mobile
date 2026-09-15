@@ -106,11 +106,16 @@ jobs:
           echo "$LK_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/upload.jks"
           echo "LK_KEYSTORE_PATH=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
 
+      # versionCode = 100 + kosum numarasi; her kosumda artar, Play'in
+      # "oncekinden buyuk olmali" kuralina elle dokunmadan uyar.
+      # 🔴 ${{ 100 + github.run_number }} YAZILAMAZ: GitHub ifadelerinde
+      # aritmetik yok; o satir workflow'un hic parse edilmemesine yol acti
+      # ve uc commit boyunca Android CI hic calismadi (15.09.2026).
+      - name: Surum kodunu hesapla
+        run: echo "LK_VERSION_CODE=$((100 + GITHUB_RUN_NUMBER))" >> "$GITHUB_ENV"
+
       - name: Release derleme (R8 acik)
         env:
-          # versionCode = 100 + kosum numarasi; her kosumda artar, Play'in
-          # "oncekinden buyuk olmali" kuralina elle dokunmadan uyar.
-          LK_VERSION_CODE: ${{ 100 + github.run_number }}
           LK_KEYSTORE_PASSWORD: ${{ secrets.LK_KEYSTORE_PASSWORD }}
           LK_KEY_ALIAS: ${{ secrets.LK_KEY_ALIAS }}
           LK_KEY_PASSWORD: ${{ secrets.LK_KEY_PASSWORD }}
