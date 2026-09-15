@@ -45,6 +45,7 @@ object DestinationCodec {
             is Destination.CariHesap -> "cari_hesap:${destination.workspaceId}:${destination.contactId}"
             is Destination.Activity -> "activity:${destination.workspaceId}"
             is Destination.KararRaporu -> "karar_raporu:${destination.workspaceId}"
+            is Destination.Rapor -> "rapor:${destination.workspaceId}"
             is Destination.BusinessFinance -> "business_finance:${destination.workspaceId}:${destination.section}"
             is Destination.AccountCreate -> "account_create:${destination.workspaceId}"
             is Destination.LoanCreate -> "loan_create:${destination.workspaceId}"
@@ -115,6 +116,7 @@ object DestinationCodec {
                 "cari_hesap" -> Destination.CariHesap(parts[1], parts[2])
                 "activity" -> Destination.Activity(parts[1])
                 "karar_raporu" -> Destination.KararRaporu(parts[1])
+                "rapor" -> Destination.Rapor(parts[1])
                 "business_finance" -> Destination.BusinessFinance(parts[1], parts[2])
                 "account_create" -> Destination.AccountCreate(parts[1])
                 "loan_create" -> Destination.LoanCreate(parts[1])

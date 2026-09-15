@@ -476,6 +476,10 @@ class WorkspaceRepository(private val api: SafeApiClient) {
         )
     }
 
+    /** Donem raporu: period = today|week|month. Web Rapor sayfasi ile ayni uc. */
+    suspend fun getTrackerReport(workspaceId: String, period: String): Result<TrackerReportDto> =
+        api.get("$base/workspaces/$workspaceId/tracker/report?period=$period")
+
     /** Pazaryeri operasyon ozeti ve aksiyonlari (web Genel Bakis ile ayni uc). */
     suspend fun getMarketplaceOperations(workspaceId: String): Result<MarketplaceOperationsDto> =
         api.get("$base/marketplace/operations?workspaceId=$workspaceId")

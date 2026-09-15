@@ -79,6 +79,8 @@ import com.localkarar.app.workspaces.WorkspaceSettingsViewModel
 import com.localkarar.app.workspaces.IntegrationsViewModel
 import com.localkarar.app.ui.screens.workspaces.CariHesapScreen
 import com.localkarar.app.ui.screens.workspaces.KararRaporuScreen
+import com.localkarar.app.ui.screens.workspaces.RaporScreen
+import com.localkarar.app.workspaces.RaporViewModel
 import com.localkarar.app.ui.screens.workspaces.WorkspacesScreen
 import com.localkarar.app.ui.screens.workspaces.WorkspaceHomeScreen
 import com.localkarar.app.ui.screens.workspaces.WorkspaceSectionSheet
@@ -812,6 +814,7 @@ private fun ScreenContent(
                 onAddRecord = { navController.navigateTo(Destination.RecordEdit(destination.workspaceId, null)) },
                 onOpenSectionSelector = { onOpenWorkspaceSections(destination.workspaceId, "overview") },
                 onOpenKararRaporu = { navController.navigateTo(Destination.KararRaporu(destination.workspaceId)) },
+                onOpenRapor = { navController.navigateTo(Destination.Rapor(destination.workspaceId)) },
                 onOpenAccounts = { navController.navigateTo(Destination.BusinessFinance(destination.workspaceId, "accounts")) },
                 financeContent = { com.localkarar.app.ui.screens.workspaces.FinanceOverviewPanel(destination.workspaceId, workspaceRepository,
                     onOpenRecord = { navController.navigateTo(Destination.RecordDetail(destination.workspaceId, it)) }) },
@@ -954,6 +957,12 @@ private fun ScreenContent(
                     navController.navigateTo(Destination.RecordDetail(destination.workspaceId, kayitId))
                 }
             )
+        }
+        is Destination.Rapor -> {
+            val viewModel = viewModel(key = "rapor:${destination.workspaceId}") {
+                RaporViewModel(destination.workspaceId, workspaceRepository)
+            }
+            RaporScreen(viewModel = viewModel, onBack = onBack)
         }
         is Destination.WorkspaceSettings -> {
             
@@ -1342,6 +1351,7 @@ private fun isTabSelected(current: Destination, tabTarget: Destination): Boolean
             current is Destination.Notifications ||
             current is Destination.Activity ||
             current is Destination.KararRaporu ||
+            current is Destination.Rapor ||
             current is Destination.BusinessFinance ||
             current is Destination.AccountCreate ||
             current is Destination.LoanCreate ||
@@ -1390,6 +1400,7 @@ private fun aktifBolumKodu(destination: Destination): String = when (destination
     is Destination.CariHesap -> "contacts"
     is Destination.Activity -> "activity"
     is Destination.KararRaporu -> "decisions"
+    is Destination.Rapor -> "report"
     is Destination.BusinessFinance -> destination.section
     is Destination.AccountCreate -> "accounts"
     is Destination.LoanCreate -> "loans"

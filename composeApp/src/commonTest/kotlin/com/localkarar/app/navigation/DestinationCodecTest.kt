@@ -35,6 +35,9 @@ class DestinationCodecTest {
             Destination.RecordEdit(workspaceId = "ws_alpha", recordId = "rec_55"),
             Destination.RecordEdit(workspaceId = "ws_alpha", recordId = null),
             Destination.Orders(workspaceId = "ws_alpha"),
+            /* 15.09.2026: siparise dokununca o siparis acilir; aksiyon satiri durum filtresiyle */
+            Destination.Orders(workspaceId = "ws_alpha", orderId = "ord_1"),
+            Destination.Orders(workspaceId = "ws_alpha", durum = "CREATED"),
             Destination.Products(workspaceId = "ws_alpha"),
             Destination.Documents(workspaceId = "ws_alpha"),
             Destination.Notifications(workspaceId = "ws_alpha"),
@@ -44,6 +47,7 @@ class DestinationCodecTest {
             Destination.CariHesap(workspaceId = "ws_alpha", contactId = "kisi_77"),
             Destination.Activity(workspaceId = "ws_alpha"),
             Destination.KararRaporu(workspaceId = "ws_alpha"),
+            Destination.Rapor(workspaceId = "ws_alpha"),
             Destination.BusinessFinance(workspaceId = "ws_alpha", section = "accounts"),
             Destination.AccountCreate(workspaceId = "ws_alpha"),
             Destination.LoanCreate(workspaceId = "ws_alpha"),

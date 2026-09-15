@@ -90,6 +90,8 @@ sealed interface Destination {
      * gunlugu YAZILIYOR ama hicbir yerde okunmuyordu.
      */
     data class KararRaporu(val workspaceId: String) : Destination
+    /** Donem raporu (Faz 2, 15.09.2026): gunluk/haftalik/aylik gerceklesen + pazaryeri. */
+    data class Rapor(val workspaceId: String) : Destination
     data class BusinessFinance(val workspaceId: String, val section: String) : Destination
     data class AccountCreate(val workspaceId: String) : Destination
     data class LoanCreate(val workspaceId: String) : Destination

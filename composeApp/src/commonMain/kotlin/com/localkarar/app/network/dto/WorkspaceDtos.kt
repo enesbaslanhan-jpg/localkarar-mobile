@@ -565,6 +565,33 @@ data class GerceklesenDto(
     val range: DonemAraligiDto = DonemAraligiDto()
 )
 
+/** GET /workspaces/:id/tracker/report → satirlar + toplamlar (tracker-periods.ts). */
+@Serializable
+data class TrackerReportRowDto(
+    val key: String,
+    val from: String = "",
+    val to: String = "",
+    val tahsilat: Double = 0.0,
+    val odeme: Double = 0.0,
+    val pazaryeriBrut: Double = 0.0,
+    val pazaryeriNet: Double = 0.0,
+    val iade: Double = 0.0,
+    val net: Double = 0.0,
+    val siparisSayisi: Int = 0
+)
+
+@Serializable
+data class TrackerReportDto(
+    val period: DonemAraligiDto = DonemAraligiDto(),
+    val currency: String = "TRY",
+    /** 'day' (≤31 gun) ya da 'week' (Pazartesi anahtarli). */
+    val granularity: String = "day",
+    val rows: List<TrackerReportRowDto> = emptyList(),
+    val totals: GerceklesenDto = GerceklesenDto(),
+    val estimated: Boolean = false,
+    val estimatedReasons: List<String> = emptyList()
+)
+
 @Serializable
 data class TrackerPeriodsDto(
     val today: GerceklesenDto = GerceklesenDto(),

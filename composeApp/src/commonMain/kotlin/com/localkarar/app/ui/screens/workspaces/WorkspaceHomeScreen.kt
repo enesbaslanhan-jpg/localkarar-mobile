@@ -51,6 +51,8 @@ import com.localkarar.app.core.LkDateUtils
 import com.localkarar.app.core.LkFormatting
 import com.localkarar.app.network.dto.BusinessRecordDto
 import com.localkarar.app.network.dto.MarketplaceOperationsDto
+import com.localkarar.app.network.dto.TrackerPeriodsDto
+import com.localkarar.app.ui.components.LkPillChip
 import com.localkarar.app.ui.components.LkErrorState
 import com.localkarar.app.ui.components.LkLoadingDesen
 import com.localkarar.app.ui.components.LkLoadingState
@@ -81,6 +83,8 @@ fun WorkspaceHomeScreen(
     onAddRecord: () -> Unit,
     onOpenSectionSelector: () -> Unit,
     onOpenKararRaporu: () -> Unit,
+    /** Donem raporu (Faz 2). */
+    onOpenRapor: () -> Unit = {},
     /** Kasada bugun kutusu; kasa/banka ekranina. */
     onOpenAccounts: () -> Unit = {},
     onBack: (() -> Unit)? = null,
@@ -348,6 +352,22 @@ fun WorkspaceHomeScreen(
                                     )
                                 }
                             }
+                        }
+                    }
+
+                    /*
+                     * GERCEKLESEN — donem haplari (Faz 2, 15.09.2026).
+                     * Sunucu uc donemi de summary.periods icinde veriyor
+                     * (Istanbul takvimi: bugun / Pzt-Paz / ay); ek istek yok.
+                     * Web Genel Bakis'taki satirla ayni. Tam tablo Rapor'da.
+                     */
+                    summary?.periods?.let { periods ->
+                        item {
+                            GerceklesenSeridi(
+                                periods = periods,
+                                paraBirimi = paraBirimi,
+                                onOpenRapor = onOpenRapor
+                            )
                         }
                     }
 
@@ -668,6 +688,65 @@ fun WorkspaceHomeScreen(
  * status ile, products sayfasi filtresiz acilir (mobil Urunler ekrani
  * kendi filtre haplarini gosteriyor).
  */
+@Composable
+private fun GerceklesenSeridi(
+    periods: TrackerPeriodsDto,
+    paraBirimi: String?,
+    onOpenRapor: () -> Unit
+) {
+    var secim by remember { mutableStateOf("week") }
+    val d = when (secim) { "today" -> periods.today; "month" -> periods.month; else -> periods.week }
+    LkSection(
+        title = "Gerçekleşen",
+        actionLabel = "Rapor",
+        onAction = onOpenRapor
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
+                listOf("today" to "Bugün", "week" to "Bu hafta", "month" to "Bu ay").forEach { (k, etiket) ->
+                    LkPillChip(label = etiket, selected = secim == k, onClick = { secim = k })
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
+                DurumKutusu(
+                    deger = LkFormatting.formatMoney(d.tahsilat.amount, paraBirimi),
+                    etiket = "Tahsil edilen",
+                    alt = d.tahsilat.otherCurrencies.firstOrNull()?.let { "+ ${it.amount} ${it.currency} ayrıca" },
+                    vurgu = LkSuccess,
+                    onClick = onOpenRapor,
+                    modifier = Modifier.weight(1f)
+                )
+                DurumKutusu(
+                    deger = LkFormatting.formatMoney(d.odeme.amount, paraBirimi),
+                    etiket = "Ödenen",
+                    alt = d.odeme.otherCurrencies.firstOrNull()?.let { "+ ${it.amount} ${it.currency} ayrıca" },
+                    vurgu = LkWarning,
+                    onClick = onOpenRapor,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
+                DurumKutusu(
+                    deger = LkFormatting.formatMoney(d.pazaryeriNet.amount, paraBirimi),
+                    etiket = "Pazaryeri net",
+                    alt = "${d.siparisSayisi} sipariş · iade ${LkFormatting.formatMoney(d.iade.amount, paraBirimi)}",
+                    vurgu = LkTileInk,
+                    onClick = onOpenRapor,
+                    modifier = Modifier.weight(1f)
+                )
+                DurumKutusu(
+                    deger = LkFormatting.formatMoney(d.net, paraBirimi),
+                    etiket = "Net",
+                    alt = "tahsilat − ödeme + pazaryeri",
+                    vurgu = if (d.net < 0) LkDanger else LkSuccess,
+                    onClick = onOpenRapor,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+    }
+}
+
 @Composable
 private fun PazaryeriSeridi(
     ops: MarketplaceOperationsDto,
