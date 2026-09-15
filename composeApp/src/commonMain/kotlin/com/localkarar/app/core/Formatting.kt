@@ -21,10 +21,9 @@ object LkFormatting {
             .chunked(3)
             .joinToString(".")
             .reversed()
-        val fractionPart = if (fraction == 0) "" else {
-            val s = fraction.toString().padStart(2, '0')
-            if (s.endsWith("0")) ",${s.dropLast(1)}" else ",$s"
-        }
+        /* Kuruş varsa hep iki hane: "2.508,90" (web ile aynı). Eskiden sondaki
+           sıfır atılıp "2.508,9" yazıyordu; kuruş eksik gibi görünüyordu (15.09.2026). */
+        val fractionPart = if (fraction == 0) "" else "," + fraction.toString().padStart(2, '0')
         return (if (isNegative) "-" else "") + grouped + fractionPart
     }
 
