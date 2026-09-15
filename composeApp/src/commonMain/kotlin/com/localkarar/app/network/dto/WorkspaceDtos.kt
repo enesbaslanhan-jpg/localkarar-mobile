@@ -489,7 +489,87 @@ data class TrackerSummaryDto(
     val thisWeek: TrackerWeekDto? = null,
     val overdueTotals: TrackerOverdueDto? = null,
     /** Kasa hesabi yoksa null: arayuz "—" yazar, sifir degil. */
-    val cash: TrackerCashDto? = null
+    val cash: TrackerCashDto? = null,
+    /*
+     * TEK DONEM TANIMI (15.09.2026, sunucu tracker-periods.ts). Hepsi
+     * nullable: eski sunucuya karsi kurulu uygulama bozulmaz.
+     *  currency     : toplamlarin para birimi (isletme)
+     *  plan30       : [simdi, +30] vadesi gelen kayitlar + beklenen pazaryeri
+     *                 hakedisi. GECIKEN DISARIDA (nextThirtyDays onu da sayiyordu).
+     *  overdueSplit : geciken, yon yon (overdueTotals ikisini topluyor)
+     *  periods      : bugun / bu hafta / bu ay GERCEKLESEN (Istanbul takvimi)
+     */
+    val currency: String? = null,
+    val plan30: TrackerPlanDto? = null,
+    val overdueSplit: TrackerOverdueSplitDto? = null,
+    val periods: TrackerPeriodsDto? = null
+)
+
+/** Tutar + para birimi; baska birimler toplama GIRMEZ, ayri listelenir. */
+@Serializable
+data class ParaToplamiDto(
+    val amount: Double = 0.0,
+    val currency: String = "TRY",
+    val otherCurrencies: List<DigerParaBirimiDto> = emptyList()
+)
+
+@Serializable
+data class DigerParaBirimiDto(val currency: String, val amount: Double = 0.0, val count: Int = 0)
+
+@Serializable
+data class HakedisOzetiDto(
+    val gross: ParaToplamiDto = ParaToplamiDto(),
+    val net: ParaToplamiDto = ParaToplamiDto(),
+    val returns: ParaToplamiDto = ParaToplamiDto(),
+    val orderCount: Int = 0,
+    /** Vade ya da komisyon varsayilandan geldiyse true; ekranda "tahmini". */
+    val estimated: Boolean = false,
+    val estimatedReasons: List<String> = emptyList()
+)
+
+@Serializable
+data class TrackerPlanCountsDto(val receivable: Int = 0, val payable: Int = 0, val hakedisOrders: Int = 0)
+
+@Serializable
+data class TrackerPlanDto(
+    val receivable: ParaToplamiDto = ParaToplamiDto(),
+    val payable: ParaToplamiDto = ParaToplamiDto(),
+    val hakedis: HakedisOzetiDto = HakedisOzetiDto(),
+    /** receivable + hakedis.net − payable (isletme para birimi). */
+    val net: Double = 0.0,
+    val counts: TrackerPlanCountsDto = TrackerPlanCountsDto(),
+    val estimated: Boolean = false,
+    val estimatedReasons: List<String> = emptyList()
+)
+
+@Serializable
+data class TrackerOverdueSplitDto(
+    val payable: ParaToplamiDto = ParaToplamiDto(),
+    val receivable: ParaToplamiDto = ParaToplamiDto(),
+    val count: Int = 0
+)
+
+@Serializable
+data class DonemAraligiDto(val key: String = "", val from: String = "", val to: String = "", val timezone: String = "")
+
+@Serializable
+data class GerceklesenDto(
+    val tahsilat: ParaToplamiDto = ParaToplamiDto(),
+    val odeme: ParaToplamiDto = ParaToplamiDto(),
+    val pazaryeriBrut: ParaToplamiDto = ParaToplamiDto(),
+    val pazaryeriNet: ParaToplamiDto = ParaToplamiDto(),
+    val iade: ParaToplamiDto = ParaToplamiDto(),
+    /** tahsilat − odeme + pazaryeri net. */
+    val net: Double = 0.0,
+    val siparisSayisi: Int = 0,
+    val range: DonemAraligiDto = DonemAraligiDto()
+)
+
+@Serializable
+data class TrackerPeriodsDto(
+    val today: GerceklesenDto = GerceklesenDto(),
+    val week: GerceklesenDto = GerceklesenDto(),
+    val month: GerceklesenDto = GerceklesenDto()
 )
 
 @Serializable

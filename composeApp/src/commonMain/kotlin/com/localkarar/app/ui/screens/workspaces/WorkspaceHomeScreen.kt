@@ -158,14 +158,17 @@ fun WorkspaceHomeScreen(
             if (state is WorkspaceHomeUiState.Content) {
                 val ozet = state.summary
                 if (ozet != null) {
+                    /* plan30: pazaryeri hakedisi dahil, geciken disarida (15.09.2026). */
+                    val planAlacak = ozet.plan30?.let { it.receivable.amount + it.hakedis.net.amount } ?: ozet.nextThirtyDays.receivable
+                    val planBorc = ozet.plan30?.payable?.amount ?: ozet.nextThirtyDays.payable
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = LkSpacing.Space5, vertical = LkSpacing.Space4)
                     ) {
                         HeroTutar(
-                            "30 GÜN ALACAK",
-                            ozet.nextThirtyDays.receivable,
+                            if (ozet.plan30?.estimated == true) "30 GÜN ALACAK · TAHMİNİ" else "30 GÜN ALACAK",
+                            planAlacak,
                             { LkFormatting.formatMoney(it, state.workspace.currency) },
                             Modifier.weight(1f)
                         )
@@ -177,7 +180,7 @@ fun WorkspaceHomeScreen(
                         )
                         HeroTutar(
                             "30 GÜN BORÇ",
-                            ozet.nextThirtyDays.payable,
+                            planBorc,
                             { LkFormatting.formatMoney(it, state.workspace.currency) },
                             Modifier.weight(1f).padding(start = LkSpacing.Space4)
                         )
@@ -195,8 +198,8 @@ fun WorkspaceHomeScreen(
                      * gunun toplam hareketi icinde tahsilatin payi. Etiket ne
                      * oldugunu acikca soyluyor; "hedef" demiyor.
                      */
-                    val alacak = ozet.nextThirtyDays.receivable
-                    val borc = ozet.nextThirtyDays.payable
+                    val alacak = planAlacak
+                    val borc = planBorc
                     val toplam = alacak + borc
                     if (toplam > 0.0) {
                         Column(
@@ -317,7 +320,9 @@ fun WorkspaceHomeScreen(
                                     DurumKutusu(
                                         deger = LkFormatting.formatMoney(geciken?.amount ?: 0.0, paraBirimi),
                                         etiket = "Geciken",
-                                        alt = if ((geciken?.count ?: 0) > 0) "${geciken?.count} kayıt" else "Geciken yok",
+                                        /* Yön yön (15.09.2026): tek toplam borç mu alacak mı söylemiyordu. */
+                                        alt = summary.overdueSplit?.let { g -> if (g.count > 0) "Ödeme ${LkFormatting.formatMoney(g.payable.amount, paraBirimi)} · Tahsilat ${LkFormatting.formatMoney(g.receivable.amount, paraBirimi)}" else "Geciken yok" }
+                                            ?: if ((geciken?.count ?: 0) > 0) "${geciken?.count} kayıt" else "Geciken yok",
                                         vurgu = LkDanger,
                                         onClick = onOpenRecords,
                                         modifier = Modifier.weight(1f)

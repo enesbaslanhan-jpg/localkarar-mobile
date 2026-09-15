@@ -372,7 +372,14 @@ private fun DashboardContent(
 @Composable
 private fun BusinessPulseCard(tracker: TrackerSummaryDto?, onNavigateToWorkspaces: () -> Unit) {
     val gecikmis = tracker?.counts?.overdue ?: 0
-    val net = tracker?.nextThirtyDays?.net ?: 0.0
+    /*
+     * plan30 varsa o (30 gun = [simdi,+30], geciken disarida, pazaryeri
+     * hakedisi dahil); eski sunucuda nextThirtyDays'e duser (15.09.2026).
+     */
+    val plan = tracker?.plan30
+    val net = plan?.net ?: tracker?.nextThirtyDays?.net ?: 0.0
+    val planTahsilat = plan?.let { it.receivable.amount + it.hakedis.net.amount } ?: tracker?.nextThirtyDays?.receivable
+    val planOdeme = plan?.payable?.amount ?: tracker?.nextThirtyDays?.payable
 
     if (tracker == null) {
         LkSection(title = "Business Pulse") {
@@ -451,7 +458,8 @@ private fun BusinessPulseCard(tracker: TrackerSummaryDto?, onNavigateToWorkspace
                     style = LkTypography.getMetadata(),
                     color = LkHero.OnHeroSecondary
                 )
-                LkPulseBadge("Son 30 Gün", koyuZemin = true)
+                /* Ileriye bakan sayi: "Son 30 Gun" yaziyordu, yanlisti. */
+                LkPulseBadge(if (plan?.estimated == true) "30 Gün İçinde · tahmini" else "30 Gün İçinde", koyuZemin = true)
             }
             Spacer(Modifier.height(LkSpacing.Space2))
 
@@ -474,7 +482,7 @@ private fun BusinessPulseCard(tracker: TrackerSummaryDto?, onNavigateToWorkspace
             Row(Modifier.fillMaxWidth()) {
                 PulseMetric(
                     "TAHSİLAT",
-                    formatMoney(tracker.nextThirtyDays?.receivable),
+                    formatMoney(planTahsilat),
                     LkHero.OnHero,
                     Modifier.weight(1f)
                 )
@@ -486,7 +494,7 @@ private fun BusinessPulseCard(tracker: TrackerSummaryDto?, onNavigateToWorkspace
                 )
                 PulseMetric(
                     "ÖDEME",
-                    formatMoney(tracker.nextThirtyDays?.payable),
+                    formatMoney(planOdeme),
                     LkHero.OnHero,
                     Modifier.weight(1f).padding(start = LkSpacing.Space4)
                 )
