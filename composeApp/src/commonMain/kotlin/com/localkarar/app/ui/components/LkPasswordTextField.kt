@@ -1,6 +1,8 @@
 package com.localkarar.app.ui.components
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
@@ -28,7 +30,11 @@ fun LkPasswordTextField(
     label: String? = null,
     placeholder: String = "",
     enabled: Boolean = true,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /* Giris kartinda alan simgesi (16.09.2026). */
+    leadingContent: @Composable (() -> Unit)? = null,
+    containerColor: Color? = null,
+    shape: RoundedCornerShape? = null
 ) {
     var passwordVisible by remember { mutableStateOf(false) }
 
@@ -39,6 +45,9 @@ fun LkPasswordTextField(
         placeholder = placeholder,
         enabled = enabled,
         modifier = modifier,
+        leadingContent = leadingContent,
+        containerColor = containerColor,
+        shape = shape,
         visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
         trailingContent = {

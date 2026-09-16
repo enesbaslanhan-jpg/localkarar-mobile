@@ -75,9 +75,12 @@ fun LkButton(
     variant: LkButtonVariant = LkButtonVariant.PRIMARY,
     size: LkButtonSize = LkButtonSize.MD,
     icon: ImageVector? = null,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    /** Giris akisi foyu: tam yuvarlak (hap) dugme. null = §6.1 varsayilani. */
+    shape: androidx.compose.ui.graphics.Shape? = null
 ) {
     val etkilesim = remember { MutableInteractionSource() }
+    val bicim = shape ?: if (size == LkButtonSize.LG) LkShapes.MD else LkShapes.SM
     val basili by etkilesim.collectIsPressedAsState()
 
     // §12 `fast`: basma geri bildirimi 120-150ms, tek standart easing.
@@ -140,7 +143,7 @@ fun LkButton(
                      * Birakinca geri yukseliyor.
                      */
                     if (basili && enabled) 0.dp else LkElevation.SM,
-                    if (size == LkButtonSize.LG) LkShapes.MD else LkShapes.SM
+                    bicim
                 )
             )
             .height(size.height)
@@ -148,14 +151,16 @@ fun LkButton(
         enabled = enabled,
         interactionSource = etkilesim,
         // §6.1: sm/md radius-sm, lg radius-md.
-        shape = if (size == LkButtonSize.LG) LkShapes.MD else LkShapes.SM,
+        shape = bicim,
         border = kenar,
         colors = ButtonDefaults.buttonColors(
             backgroundColor = zemin,
             contentColor = icerik,
-            // §6.2 disabled: opaklik 0.5 + golgesiz.
-            disabledBackgroundColor = zemin.copy(alpha = 0.5f),
-            disabledContentColor = icerik.copy(alpha = 0.5f)
+            /* §6.2 disabled: golgesiz, zemin soluk ama YAZI OKUNUR. Onceden ikisi de
+               %50 idi; acik panelde gri-yesil bir levha gibi duruyordu, yazi silikti
+               (urun sahibi, 16.09.2026: "kaliteli durmuyor"). */
+            disabledBackgroundColor = zemin.copy(alpha = 0.55f),
+            disabledContentColor = icerik.copy(alpha = 0.92f)
         ),
         // §6.2: normal state'te buyuk golge yok; glow yalniz focus/active.
         elevation = ButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp),

@@ -67,6 +67,9 @@ fun LkTextField(
     trailingContent: @Composable (() -> Unit)? = null,
     /** Alanin BASINDA duran icerik — arama ikonu gibi. */
     leadingContent: @Composable (() -> Unit)? = null,
+    /** Giris akisi foyu: beyaz, 16dp koseli alan. null = varsayilan (sunken, SM). */
+    containerColor: Color? = null,
+    shape: androidx.compose.foundation.shape.RoundedCornerShape? = null,
     /**
      * Cok satirli giris (destek mesaji, not, aciklama).
      *
@@ -119,10 +122,10 @@ fun LkTextField(
             onValueChange = onValueChange,
             modifier = (if (singleLine) Modifier.height(size.height + 6.dp) else Modifier.heightIn(min = 102.dp))
                 .fillMaxWidth()
-                .border(3.dp, halkaRengi, LkShapes.SM)
+                .border(3.dp, halkaRengi, shape ?: LkShapes.SM)
                 .padding(3.dp)
-                .background(if (enabled) LkSurfaceSunken else LkSurfaceSunken.copy(alpha = 0.5f), LkShapes.SM)
-                .border(1.dp, kenarRengi, LkShapes.SM)
+                .background((containerColor ?: LkSurfaceSunken).let { if (enabled) it else it.copy(alpha = 0.5f) }, shape ?: LkShapes.SM)
+                .border(1.dp, kenarRengi, shape ?: LkShapes.SM)
                 .onFocusChanged { isFocused = it.isFocused },
             enabled = enabled,
             singleLine = singleLine,

@@ -1,6 +1,9 @@
 package com.localkarar.app.ui
 
 import androidx.compose.foundation.layout.offset
+import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.Icon
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import com.localkarar.app.ui.components.LkBrandMark
@@ -31,7 +34,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.localkarar.app.auth.AuthViewModel
+import com.localkarar.app.auth.SosyalGirisSonucu
+import com.localkarar.app.auth.rememberSosyalGiris
+import kotlinx.coroutines.launch
 import com.localkarar.app.ui.components.LkButton
+import com.localkarar.app.ui.components.LkButtonSize
 import com.localkarar.app.ui.components.LkButtonVariant
 import com.localkarar.app.ui.components.LkPasswordTextField
 import com.localkarar.app.ui.components.LkTextField
@@ -50,6 +57,23 @@ fun RegisterScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var legalAccepted by remember { mutableStateOf(false) }
+    /* Sosyal giris (16.09.2026): platform koprusu; onay kutusu isaretli olmali. */
+    val sosyal = rememberSosyalGiris()
+    val kapsam = rememberCoroutineScope()
+    fun sosyalBaslat(saglayici: String) {
+        if (!legalAccepted) {
+            viewModel.registerHata("Devam etmek için Kullanım Koşulları ve Gizlilik Politikası'nı onaylayın.")
+            return
+        }
+        kapsam.launch {
+            val sonuc = if (saglayici == "google") sosyal.google() else sosyal.apple()
+            when (sonuc) {
+                is SosyalGirisSonucu.Basarili -> viewModel.sosyalGiris(sonuc.kimlik, acceptedLegal = true)
+                is SosyalGirisSonucu.Hata -> viewModel.registerHata(sonuc.mesaj)
+                SosyalGirisSonucu.Iptal -> {}
+            }
+        }
+    }
 
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.registerError.collectAsState()
@@ -61,7 +85,33 @@ fun RegisterScreen(
     Column(modifier = Modifier.fillMaxSize()) {
 
         LkHeroBlock(tone = LkHeroTone.Auth) {
-            Box(Modifier.fillMaxWidth().height(LkSpacing.Space12))
+            /* Foy: hero ust bari — geri dugmesi + baslik, gradyan uzerinde (16.09.2026). */
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = LkSpacing.Space3, end = LkSpacing.Space3, top = LkSpacing.Space6, bottom = LkSpacing.Space10),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(LkShapes.FULL)
+                        .background(LkHero.OnHero.copy(alpha = 0.14f))
+                        .clickable(onClick = onNavigateToLogin),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Outlined.ArrowBack, contentDescription = "Geri", tint = LkHero.OnHero, modifier = Modifier.size(22.dp))
+                }
+                Text(
+                    text = "Hesap oluştur",
+                    style = LkTypography.getSectionTitle(),
+                    color = LkHero.OnHero,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.weight(1f)
+                )
+                Spacer(Modifier.size(44.dp))
+            }
+
         }
 
         Column(
@@ -70,7 +120,9 @@ fun RegisterScreen(
                 .fillMaxWidth()
                 .offset(y = (-22).dp)
                 .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-                .background(LkSurfaceCanvas)
+                /* Foy "Giris 2-5": panel acik (surface-1), alanlar beyaz ve 16dp koseli,
+                   ana dugme hap (16.09.2026). Onceki hali canvas + sunken gri alanlardi. */
+                .background(LkSurfacePanel)
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -79,31 +131,6 @@ fun RegisterScreen(
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = LkSpacing.Space6, vertical = LkSpacing.Space8)
             ) {
-                // Brand Header
-                LkBrandMark(size = 56.dp, hareketli = true)
-
-                Spacer(modifier = Modifier.height(LkSpacing.Space4))
-
-                Text(
-                    /* Metinler foy "Giris 2" ile birebir (13.09.2026): kisa baslik, pazarlama
-                       cumlesi yok, "Kurumsal" sifati yok -- esnafin sirket e-postasi olmayabilir. */
-                    text = "Hesap oluştur",
-                    style = LkTypography.getSectionTitle(),
-                    color = LkTextPrimary,
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(modifier = Modifier.height(LkSpacing.Space2))
-
-                Text(
-                    text = "Kendi verinden çıkan sayılarla karar ver.",
-                    style = LkTypography.getBodySmall(),
-                    color = LkTextSecondary,
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(modifier = Modifier.height(LkSpacing.Space6))
-
                 if (error != null) {
                     Box(
                         modifier = Modifier
@@ -124,6 +151,8 @@ fun RegisterScreen(
                 }
 
                 LkTextField(
+                    containerColor = LkSurfaceRaised,
+                    shape = LkShapes.LG,
                     value = name,
                     onValueChange = { name = it },
                     label = "Ad Soyad",
@@ -133,6 +162,8 @@ fun RegisterScreen(
                 Spacer(modifier = Modifier.height(LkSpacing.Space4))
 
                 LkTextField(
+                    containerColor = LkSurfaceRaised,
+                    shape = LkShapes.LG,
                     value = email,
                     onValueChange = { email = it },
                     label = "E-posta",
@@ -142,6 +173,8 @@ fun RegisterScreen(
                 Spacer(modifier = Modifier.height(LkSpacing.Space4))
 
                 LkPasswordTextField(
+                    containerColor = LkSurfaceRaised,
+                    shape = LkShapes.LG,
                     value = password,
                     onValueChange = { password = it },
                     label = "Parola (En az 10 karakter)",
@@ -208,19 +241,51 @@ fun RegisterScreen(
                 LkButton(
                     text = if (isLoading) "Hesap oluşturuluyor…" else "Hesabı oluştur",
                     onClick = { viewModel.register(name, email, password, legalAccepted, onRegistered) },
-                    enabled = name.isNotBlank() && email.isNotBlank() && password.length >= 10 && legalAccepted && !isLoading,
-                    modifier = Modifier.fillMaxWidth()
+                    enabled = !isLoading,
+                    modifier = Modifier.fillMaxWidth(),
+                    size = LkButtonSize.LG,
+                    shape = LkShapes.FULL
                 )
 
                 /*
-                 * GOOGLE / APPLE DUGMELERI ILK MAGAZA SURUMUNDE YOK (14.09.2026).
-                 *
-                 * "YAKINDA" etiketli, tiklanmayan iki dugme duruyordu. App Store
-                 * incelemesi islevsiz dugmeye takilabiliyor; calismayan bir sey
-                 * gostermektense hic gostermemek secildi. Girisler Apple gelistirici
-                 * hesabi ve OAuth kimlikleri gelince eklenecek; foy "Giris 2" onlari
-                 * bu konumda gosteriyor, geri geldiklerinde yer belli.
+                 * GOOGLE / APPLE (16.09.2026) — foy "Giris 2" bu konumda gosteriyor.
+                 * Kayit ekraninda yasal onay kutusu zaten var: isaretliyse belirtec
+                 * acceptedLegal=true ile gider ve hesap tek adimda acilir; degilse
+                 * once kutuyu isaretlemesi istenir (sunucuya bosuna gidilmez).
                  */
+                if (sosyal.googleVar || sosyal.appleVar) {
+                    Spacer(modifier = Modifier.height(LkSpacing.Space5))
+                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.weight(1f).height(1.dp).background(LkLineStrong))
+                        Text("veya", style = LkTypography.getMicro(), color = LkTextMuted, modifier = Modifier.padding(horizontal = LkSpacing.Space3))
+                        Box(Modifier.weight(1f).height(1.dp).background(LkLineStrong))
+                    }
+                    Spacer(modifier = Modifier.height(LkSpacing.Space4))
+                    Row(horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space3), modifier = Modifier.fillMaxWidth()) {
+                        if (sosyal.googleVar) {
+                            LkButton(
+                                text = "Google",
+                                onClick = { sosyalBaslat("google") },
+                                variant = LkButtonVariant.SECONDARY,
+                                size = LkButtonSize.LG,
+                                shape = LkShapes.FULL,
+                                enabled = !isLoading,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                        if (sosyal.appleVar) {
+                            LkButton(
+                                text = "Apple",
+                                onClick = { sosyalBaslat("apple") },
+                                variant = LkButtonVariant.SECONDARY,
+                                size = LkButtonSize.LG,
+                                shape = LkShapes.FULL,
+                                enabled = !isLoading,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(LkSpacing.Space6))
 

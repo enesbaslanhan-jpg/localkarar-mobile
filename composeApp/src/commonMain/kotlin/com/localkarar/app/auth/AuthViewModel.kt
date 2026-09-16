@@ -71,6 +71,7 @@ class AuthViewModel(
         sosyalGiris(kimlik, acceptedLegal = true)
     }
 
+    fun registerHata(mesaj: String) { _registerError.value = mesaj }
     fun sosyalHata(mesaj: String) { _loginError.value = mesaj }
     fun sosyalOnayiVazgec() { _onayBekleyenSosyal.value = null }
     fun sosyalYeniHesapTuketildi() { _sosyalYeniHesap.value = false }

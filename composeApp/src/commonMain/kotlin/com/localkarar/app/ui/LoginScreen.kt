@@ -29,6 +29,7 @@ import androidx.compose.material.Checkbox
 import androidx.compose.material.CheckboxDefaults
 import kotlinx.coroutines.launch
 import com.localkarar.app.ui.components.LkButton
+import com.localkarar.app.ui.components.LkButtonSize
 import com.localkarar.app.ui.components.LkButtonVariant
 import com.localkarar.app.ui.components.LkPasswordTextField
 import com.localkarar.app.ui.components.LkTextField
@@ -137,7 +138,9 @@ fun LoginScreen(
                 .fillMaxWidth()
                 .offset(y = (-22).dp)
                 .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-                .background(LkSurfaceCanvas)
+                /* Foy "Giris 2-5": panel acik (surface-1), alanlar beyaz ve 16dp koseli,
+                   ana dugme hap (16.09.2026). Onceki hali canvas + sunken gri alanlardi. */
+                .background(LkSurfacePanel)
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -169,6 +172,8 @@ fun LoginScreen(
                 }
 
                 LkTextField(
+                    containerColor = LkSurfaceRaised,
+                    shape = LkShapes.LG,
                     value = email,
                     onValueChange = { email = it },
                     label = "E-posta",
@@ -178,6 +183,8 @@ fun LoginScreen(
                 Spacer(modifier = Modifier.height(LkSpacing.Space4))
                 
                 LkPasswordTextField(
+                    containerColor = LkSurfaceRaised,
+                    shape = LkShapes.LG,
                     value = password,
                     onValueChange = { password = it },
                     label = "Parola",
@@ -203,8 +210,10 @@ fun LoginScreen(
                 LkButton(
                     text = if (isLoading) "Giriş Yapılıyor..." else "Giriş Yap",
                     onClick = { viewModel.login(email, password) },
-                    enabled = email.isNotBlank() && password.isNotBlank() && !isLoading,
-                    modifier = Modifier.fillMaxWidth()
+                    enabled = !isLoading,
+                    modifier = Modifier.fillMaxWidth(),
+                    size = LkButtonSize.LG,
+                    shape = LkShapes.FULL
                 )
 
                 /*
@@ -276,7 +285,9 @@ fun LoginScreen(
                                 text = if (isLoading) "Hesap açılıyor..." else "Onayla ve devam et",
                                 onClick = { viewModel.sosyalOnayla() },
                                 enabled = sosyalOnay && !isLoading,
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth(),
+                                size = LkButtonSize.LG,
+                                shape = LkShapes.FULL
                             )
                             TextButton(onClick = { viewModel.sosyalOnayiVazgec(); sosyalOnay = false }) {
                                 Text("Vazgeç", color = LkTextSecondary)

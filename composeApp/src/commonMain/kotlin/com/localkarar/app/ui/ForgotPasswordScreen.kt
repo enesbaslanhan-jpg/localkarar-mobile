@@ -1,6 +1,7 @@
 package com.localkarar.app.ui
 
 import androidx.compose.foundation.layout.offset
+import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import com.localkarar.app.ui.components.LkBrandMark
@@ -27,6 +28,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.localkarar.app.auth.AuthViewModel
 import com.localkarar.app.ui.components.LkButton
+import com.localkarar.app.ui.components.LkButtonSize
 import com.localkarar.app.ui.components.LkButtonVariant
 import com.localkarar.app.ui.components.LkTextField
 import com.localkarar.app.ui.theme.*
@@ -52,7 +54,33 @@ fun ForgotPasswordScreen(
     Column(modifier = Modifier.fillMaxSize()) {
 
         LkHeroBlock(tone = LkHeroTone.Auth) {
-            Box(Modifier.fillMaxWidth().height(LkSpacing.Space12))
+            /* Foy: hero ust bari — geri dugmesi + baslik, gradyan uzerinde (16.09.2026). */
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = LkSpacing.Space3, end = LkSpacing.Space3, top = LkSpacing.Space6, bottom = LkSpacing.Space10),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(LkShapes.FULL)
+                        .background(LkHero.OnHero.copy(alpha = 0.14f))
+                        .clickable(onClick = onNavigateToLogin),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Outlined.ArrowBack, contentDescription = "Geri", tint = LkHero.OnHero, modifier = Modifier.size(22.dp))
+                }
+                Text(
+                    text = if (resetSuccess) "Gelen kutunu kontrol et" else "Parolamı unuttum",
+                    style = LkTypography.getSectionTitle(),
+                    color = LkHero.OnHero,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.weight(1f)
+                )
+                Spacer(Modifier.size(44.dp))
+            }
+
         }
 
         Column(
@@ -61,7 +89,9 @@ fun ForgotPasswordScreen(
                 .fillMaxWidth()
                 .offset(y = (-22).dp)
                 .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-                .background(LkSurfaceCanvas)
+                /* Foy "Giris 2-5": panel acik (surface-1), alanlar beyaz ve 16dp koseli,
+                   ana dugme hap (16.09.2026). Onceki hali canvas + sunken gri alanlardi. */
+                .background(LkSurfacePanel)
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -71,34 +101,6 @@ fun ForgotPasswordScreen(
                     .padding(horizontal = LkSpacing.Space6, vertical = LkSpacing.Space8)
             ) {
                 // Header Icon
-                Box(
-                    modifier = Modifier
-                        .size(56.dp)
-                        .background(LkSurfaceSignature, shape = LkShapes.MD)
-                        .border(1.dp, LkLineSoft, LkShapes.MD),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = if (resetSuccess) Icons.Outlined.CheckCircle else Icons.Outlined.LockReset,
-                        contentDescription = null,
-                        tint = if (resetSuccess) LkSuccess else LkPrimary,
-                        modifier = Modifier.size(28.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(LkSpacing.Space4))
-
-                Text(
-                    /* Foy "Giris 3" (13.09.2026). Hesabin var olup olmadigini SOYLEMIYOR:
-                       hesap sayimi sizdirmamak icin. */
-                    text = if (resetSuccess) "Gelen kutunu kontrol et" else "Parolamı unuttum",
-                    style = LkTypography.getSectionTitle(),
-                    color = LkTextPrimary,
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(modifier = Modifier.height(LkSpacing.Space2))
-
                 Text(
                     text = if (resetSuccess) {
                         "$email adresi sistemde kayıtlıysa parola sıfırlama bağlantısı gönderildi. Bağlantı 1 saat geçerlidir."
@@ -133,6 +135,8 @@ fun ForgotPasswordScreen(
 
                 if (!resetSuccess) {
                     LkTextField(
+                        containerColor = LkSurfaceRaised,
+                        shape = LkShapes.LG,
                         value = email,
                         onValueChange = { email = it },
                         label = "E-posta",
@@ -144,8 +148,10 @@ fun ForgotPasswordScreen(
                     LkButton(
                         text = if (isLoading) "Gönderiliyor…" else "Bağlantı gönder",
                         onClick = { viewModel.requestPasswordReset(email) },
-                        enabled = email.isNotBlank() && !isLoading,
-                        modifier = Modifier.fillMaxWidth()
+                        enabled = !isLoading,
+                        modifier = Modifier.fillMaxWidth(),
+                        size = LkButtonSize.LG,
+                        shape = LkShapes.FULL
                     )
 
                     Spacer(modifier = Modifier.height(LkSpacing.Space4))
@@ -162,7 +168,9 @@ fun ForgotPasswordScreen(
                     LkButton(
                         text = "Sıfırlama Kodunu Gir",
                         onClick = onNavigateToResetPassword,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        size = LkButtonSize.LG,
+                        shape = LkShapes.FULL
                     )
 
                     Spacer(modifier = Modifier.height(LkSpacing.Space4))
@@ -171,7 +179,9 @@ fun ForgotPasswordScreen(
                         text = "Girişe dön",
                         variant = LkButtonVariant.SECONDARY,
                         onClick = onNavigateToLogin,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        size = LkButtonSize.LG,
+                        shape = LkShapes.FULL
                     )
                 }
 

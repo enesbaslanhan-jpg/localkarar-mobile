@@ -1,6 +1,7 @@
 package com.localkarar.app.ui
 
 import androidx.compose.foundation.layout.offset
+import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import com.localkarar.app.ui.components.LkBrandMark
@@ -26,6 +27,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.localkarar.app.auth.AuthViewModel
 import com.localkarar.app.ui.components.LkButton
+import com.localkarar.app.ui.components.LkButtonSize
 import com.localkarar.app.ui.components.LkPasswordTextField
 import com.localkarar.app.ui.components.LkTextField
 import com.localkarar.app.ui.theme.*
@@ -56,7 +58,20 @@ fun ResetPasswordScreen(
     Column(modifier = Modifier.fillMaxSize()) {
 
         LkHeroBlock(tone = LkHeroTone.Auth) {
-            Box(Modifier.fillMaxWidth().height(LkSpacing.Space12))
+            /* Foy "Yeni parola": hero'da ikon dairesi + baslik (16.09.2026). */
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth().padding(top = LkSpacing.Space10, bottom = LkSpacing.Space10)
+            ) {
+                Box(
+                    modifier = Modifier.size(72.dp).clip(LkShapes.FULL).background(LkHero.OnHero.copy(alpha = 0.14f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Outlined.Lock, contentDescription = null, tint = LkHero.OnHero, modifier = Modifier.size(30.dp))
+                }
+                Spacer(Modifier.height(LkSpacing.Space4))
+                Text("Yeni parola belirle", style = LkTypography.getTitleL(), color = LkHero.OnHero, textAlign = TextAlign.Center)
+            }
         }
 
         Column(
@@ -65,7 +80,9 @@ fun ResetPasswordScreen(
                 .fillMaxWidth()
                 .offset(y = (-22).dp)
                 .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-                .background(LkSurfaceCanvas)
+                /* Foy "Giris 2-5": panel acik (surface-1), alanlar beyaz ve 16dp koseli,
+                   ana dugme hap (16.09.2026). Onceki hali canvas + sunken gri alanlardi. */
+                .background(LkSurfacePanel)
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -75,32 +92,6 @@ fun ResetPasswordScreen(
                     .padding(horizontal = LkSpacing.Space6, vertical = LkSpacing.Space8)
             ) {
                 // Header Icon
-                Box(
-                    modifier = Modifier
-                        .size(56.dp)
-                        .background(LkSurfaceSignature, shape = LkShapes.MD)
-                        .border(1.dp, LkLineSoft, LkShapes.MD),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Lock,
-                        contentDescription = null,
-                        tint = LkPrimary,
-                        modifier = Modifier.size(28.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(LkSpacing.Space4))
-
-                Text(
-                    text = "Yeni Parola Belirleyin",
-                    style = LkTypography.getSectionTitle(),
-                    color = LkTextPrimary,
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(modifier = Modifier.height(LkSpacing.Space2))
-
                 Text(
                     text = "E-postanıza iletilen sıfırlama kodunu ve yeni parolanızı girin.",
                     style = LkTypography.getBodySmall(),
@@ -130,6 +121,8 @@ fun ResetPasswordScreen(
                 }
 
                 LkTextField(
+                    containerColor = LkSurfaceRaised,
+                    shape = LkShapes.LG,
                     value = token,
                     onValueChange = { token = it; localError = null },
                     label = "Sıfırlama Kodu / Token",
@@ -139,6 +132,8 @@ fun ResetPasswordScreen(
                 Spacer(modifier = Modifier.height(LkSpacing.Space4))
 
                 LkPasswordTextField(
+                    containerColor = LkSurfaceRaised,
+                    shape = LkShapes.LG,
                     value = newPassword,
                     onValueChange = { newPassword = it; localError = null },
                     label = "Yeni Parola (En az 8 karakter)",
@@ -148,6 +143,8 @@ fun ResetPasswordScreen(
                 Spacer(modifier = Modifier.height(LkSpacing.Space4))
 
                 LkPasswordTextField(
+                    containerColor = LkSurfaceRaised,
+                    shape = LkShapes.LG,
                     value = confirmPassword,
                     onValueChange = { confirmPassword = it; localError = null },
                     label = "Yeni Parola Tekrar",
@@ -177,8 +174,10 @@ fun ResetPasswordScreen(
                             viewModel.confirmPasswordReset(token, newPassword)
                         }
                     },
-                    enabled = token.isNotBlank() && newPassword.isNotBlank() && confirmPassword.isNotBlank() && !isLoading,
-                    modifier = Modifier.fillMaxWidth()
+                    enabled = !isLoading,
+                    modifier = Modifier.fillMaxWidth(),
+                    size = LkButtonSize.LG,
+                    shape = LkShapes.FULL
                 )
 
                 Spacer(modifier = Modifier.height(LkSpacing.Space6))
