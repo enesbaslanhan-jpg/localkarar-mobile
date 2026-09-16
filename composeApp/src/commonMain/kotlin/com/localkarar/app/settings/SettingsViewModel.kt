@@ -307,10 +307,8 @@ class SettingsViewModel(
             setNotice("Mevcut şifrenizi giriniz.", isError = true)
             return
         }
-        if (deleteConfirmation.trim() != "HESABIMI SİL") {
-            setNotice("Lütfen 'HESABIMI SİL' yazarak onaylayın.", isError = true)
-            return
-        }
+        /* "HESABIMI SİL" yazdırma kalktı (16.09.2026): onay tek diyalog, sabiti
+           repository gönderir. */
         deleteLoading = true
         viewModelScope.launch {
             repository.deleteAccount(if (parolasiVar) deletePassword else null).onSuccess {

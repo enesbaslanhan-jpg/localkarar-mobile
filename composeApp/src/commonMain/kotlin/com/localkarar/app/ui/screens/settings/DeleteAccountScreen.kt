@@ -1,6 +1,11 @@
 package com.localkarar.app.ui.screens.settings
 
 import androidx.compose.foundation.background
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.material.AlertDialog
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -93,12 +98,6 @@ fun DeleteAccountScreen(
                 )
             }
 
-            LkTextField(
-                value = viewModel.deleteConfirmation,
-                onValueChange = { viewModel.onDeleteConfirmationChange(it) },
-                label = "Onaylamak için HESABIMI SİL yazın",
-                placeholder = "HESABIMI SİL"
-            )
 
             viewModel.notice?.let {
                 Row(
@@ -126,13 +125,37 @@ fun DeleteAccountScreen(
 
             Spacer(Modifier.height(LkSpacing.Space6))
 
+            /* Tek onay diyaloğu: "Emin misin? Geri alınamaz." (ürün sahibi, 16.09.2026) */
+            var onayAcik by remember { mutableStateOf(false) }
             LkButton(
                 text = if (viewModel.deleteLoading) "Siliniyor..." else "Hesabı kalıcı olarak sil",
                 variant = LkButtonVariant.DANGER,
-                onClick = { viewModel.deleteAccount(onDeleted) },
+                onClick = { onayAcik = true },
                 enabled = !viewModel.deleteLoading,
                 modifier = Modifier.fillMaxWidth()
             )
+            if (onayAcik) {
+                AlertDialog(
+                    onDismissRequest = { onayAcik = false },
+                    title = { Text("Emin misin?", style = LkTypography.getCardTitle(), color = LkTextPrimary) },
+                    text = {
+                        Text(
+                            "Bu işlem geri alınamaz. Tek sahibi olduğun işletmeler arşivlenir, hesabın kapanır ve oturumun kapatılır.",
+                            style = LkTypography.getBodySmall(),
+                            color = LkTextSecondary
+                        )
+                    },
+                    confirmButton = {
+                        TextButton(onClick = { onayAcik = false; viewModel.deleteAccount(onDeleted) }) {
+                            Text("Evet, hesabımı sil", color = LkDanger)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { onayAcik = false }) { Text("Vazgeç", color = LkTextSecondary) }
+                    },
+                    backgroundColor = LkSurfaceRaised
+                )
+            }
 
             LkButton(
                 text = "Vazgeç",
