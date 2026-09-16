@@ -82,6 +82,10 @@ kotlin {
             implementation(libs.androidx.activity.compose)
             implementation(libs.ktor.client.android)
             implementation(libs.androidx.security.crypto)
+            /* Sosyal giris: Google Credential Manager (16.09.2026). */
+            implementation(libs.androidx.credentials)
+            implementation(libs.androidx.credentials.play)
+            implementation(libs.google.identity.googleid)
             implementation(libs.androidx.media3.exoplayer)
             implementation(libs.androidx.media3.ui)
         }

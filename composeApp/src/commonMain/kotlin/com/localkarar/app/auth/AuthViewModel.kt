@@ -29,6 +29,52 @@ class AuthViewModel(
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
+    /*
+     * SOSYAL GIRIS (16.09.2026). Sunucu ilk giriste onay isterse belirtec
+     * burada bekletilir; ekran onay kutusunu gosterir, kullanici onaylayinca
+     * `sosyalOnayla()` ayni belirteci acceptedLegal=true ile gonderir.
+     */
+    private val _onayBekleyenSosyal = MutableStateFlow<SosyalKimlik?>(null)
+    val onayBekleyenSosyal: StateFlow<SosyalKimlik?> = _onayBekleyenSosyal.asStateFlow()
+
+    /** Sunucu yeni hesap actiysa true: AppShell karsilama ekranina yonlendirir. */
+    private val _sosyalYeniHesap = MutableStateFlow(false)
+    val sosyalYeniHesap: StateFlow<Boolean> = _sosyalYeniHesap.asStateFlow()
+
+    fun sosyalGiris(kimlik: SosyalKimlik, acceptedLegal: Boolean = false) {
+        _isLoading.value = true
+        _loginError.value = null
+        viewModelScope.launch {
+            val result = authRepository.socialLogin(
+                SocialLoginRequest(
+                    provider = kimlik.provider,
+                    idToken = kimlik.idToken,
+                    authorizationCode = kimlik.authorizationCode,
+                    name = kimlik.name,
+                    acceptedLegal = if (acceptedLegal) true else null,
+                    appleClientId = if (kimlik.provider == "apple") SosyalGirisKimlikleri.APPLE_BUNDLE_ID else null
+                )
+            )
+            result.onSuccess { yanit ->
+                _onayBekleyenSosyal.value = null
+                if (yanit.isNewUser) _sosyalYeniHesap.value = true
+            }.onFailure { hata ->
+                if (hata is OnayGerekli) _onayBekleyenSosyal.value = kimlik
+                else _loginError.value = hata.message ?: "Giriş tamamlanamadı."
+            }
+            _isLoading.value = false
+        }
+    }
+
+    fun sosyalOnayla() {
+        val kimlik = _onayBekleyenSosyal.value ?: return
+        sosyalGiris(kimlik, acceptedLegal = true)
+    }
+
+    fun sosyalHata(mesaj: String) { _loginError.value = mesaj }
+    fun sosyalOnayiVazgec() { _onayBekleyenSosyal.value = null }
+    fun sosyalYeniHesapTuketildi() { _sosyalYeniHesap.value = false }
+
     init {
         viewModelScope.launch {
             authRepository.restoreSession()

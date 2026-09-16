@@ -124,6 +124,12 @@ fun App(secureStorage: SecureStorage, appPreferences: AppPreferences) {
      */
     var yeniKayit by remember { mutableStateOf(false) }
 
+    /* Sosyal giriste sunucu yeni hesap actiysa ayni karsilama ekrani (16.09.2026). */
+    val sosyalYeniHesap by authViewModel.sosyalYeniHesap.collectAsState()
+    LaunchedEffect(sosyalYeniHesap) {
+        if (sosyalYeniHesap) { yeniKayit = true; authViewModel.sosyalYeniHesapTuketildi() }
+    }
+
     /*
      * TEMA. Webdeki `ThemeContext` ile ayni uc durum: kullanici acik ya da
      * koyu secebilir, secmediyse SISTEM tercihi gecerli.

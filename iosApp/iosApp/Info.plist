@@ -29,6 +29,21 @@
 		<key>UIApplicationSupportsMultipleScenes</key>
 		<false/>
 	</dict>
+	<!--
+	  Google ile giris (16.09.2026): iOS OAuth istemcisinin ters-DNS semasi.
+	  ASWebAuthenticationSession bu semaya donen yonlendirmeyi yakalar; SDK yok.
+	-->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.501996851998-mflmcqteo1kq1l5dr63iisvfb2a4mel6</string>
+			</array>
+		</dict>
+	</array>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UIRequiredDeviceCapabilities</key>

@@ -19,5 +19,10 @@
 		<string>applinks:localkarar.com</string>
 		<string>applinks:www.localkarar.com</string>
 	</array>
+	<!-- Sign in with Apple (16.09.2026). App ID'de de acik olmali. -->
+	<key>com.apple.developer.applesignin</key>
+	<array>
+		<string>Default</string>
+	</array>
 </dict>
 </plist>

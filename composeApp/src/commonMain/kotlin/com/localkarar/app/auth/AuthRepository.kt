@@ -108,6 +108,41 @@ class AuthRepository(
         }
     }
 
+    /**
+     * Google / Apple ile giris (16.09.2026). Sunucu belirteci dogrular;
+     * 409 CONSENT_REQUIRED → yeni hesap, yasal onay alinip acceptedLegal=true
+     * ile yeniden cagrilmali (OnayGerekli firlatilir). 503 → saglayici kapali.
+     */
+    suspend fun socialLogin(request: SocialLoginRequest): Result<LoginResponse> {
+        return try {
+            val response = httpClient.post("/auth/social") {
+                contentType(ContentType.Application.Json)
+                setBody(request)
+            }
+            when (response.status) {
+                HttpStatusCode.Conflict -> return Result.failure(OnayGerekli())
+                HttpStatusCode.ServiceUnavailable -> return Result.failure(Exception("Bu giriş yöntemi şu an kapalı."))
+                HttpStatusCode.Unauthorized -> return Result.failure(Exception("Kimlik doğrulanamadı. Tekrar deneyin."))
+                HttpStatusCode.Forbidden -> return Result.failure(Exception("Bu hesabın e-postası doğrulanmamış; sağlayıcıda doğrulayıp tekrar deneyin."))
+                HttpStatusCode.TooManyRequests -> return Result.failure(Exception("Çok fazla deneme. Biraz sonra tekrar deneyin."))
+                else -> {}
+            }
+            val loginResponse = response.body<LoginResponse>()
+            secureStorage.saveToken(loginResponse.token)
+            loginResponse.refreshToken?.let { secureStorage.saveRefreshToken(it) }
+            _sessionState.value = SessionState.Authenticated(loginResponse.user)
+            Result.success(loginResponse)
+        } catch (e: OnayGerekli) {
+            Result.failure(e)
+        } catch (e: ApiError.NetworkUnavailable) {
+            Result.failure(Exception("İnternet bağlantısı kurulamadı. Lütfen bağlantınızı kontrol edin."))
+        } catch (e: ApiError.Timeout) {
+            Result.failure(Exception("Sunucu yanıt vermedi. Lütfen daha sonra tekrar deneyin."))
+        } catch (e: Exception) {
+            Result.failure(Exception(e.message ?: "Giriş tamamlanamadı."))
+        }
+    }
+
     suspend fun register(request: RegisterRequest): Result<UserDto> {
         return try {
             val response = httpClient.post("/auth/register") {

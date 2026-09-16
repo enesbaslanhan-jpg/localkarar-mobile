@@ -47,6 +47,16 @@ fun PasswordChangeScreen(
                 .padding(LkSpacing.Space4),
             verticalArrangement = Arrangement.spacedBy(LkSpacing.Space4)
         ) {
+            if (!viewModel.parolasiVar) {
+                /* Google/Apple ile acilan hesap: mevcut parola yok. Parola belirleme
+                   sifirlama akisiyla (e-postaya kod) yapilir; burada form gizli. */
+                Text(
+                    "Bu hesap Google/Apple ile açıldı; henüz bir parolan yok. E-postayla da giriş yapabilmek için Giriş ekranındaki “Parolamı unuttum” adımıyla parola belirleyebilirsin.",
+                    style = LkTypography.getBodySmall(),
+                    color = LkTextSecondary
+                )
+                return@Column
+            }
             Text(
                 "Hesap güvenliğiniz için yeni parolanız en az 10 karakter olmalıdır.",
                 style = LkTypography.getBodySmall(),

@@ -1,4 +1,6 @@
 [versions]
+credentials = "1.5.0"
+googleid = "1.1.1"
 agp = "8.6.0"
 android-compileSdk = "36"
 android-minSdk = "24"
@@ -61,6 +63,9 @@ kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serializa
 
 # Android Security
 androidx-security-crypto = { module = "androidx.security:security-crypto", version.ref = "security-crypto" }
+androidx-credentials = { module = "androidx.credentials:credentials", version.ref = "credentials" }
+androidx-credentials-play = { module = "androidx.credentials:credentials-play-services-auth", version.ref = "credentials" }
+google-identity-googleid = { module = "com.google.android.libraries.identity.googleid:googleid", version.ref = "googleid" }
 
 # Markdown
 multiplatform-markdown-renderer = { module = "com.mikepenz:multiplatform-markdown-renderer-m2", version.ref = "markdown-renderer" }

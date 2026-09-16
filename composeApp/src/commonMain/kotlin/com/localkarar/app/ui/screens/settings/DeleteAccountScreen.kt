@@ -85,11 +85,13 @@ fun DeleteAccountScreen(
                 }
             }
 
-            LkPasswordTextField(
-                value = viewModel.deletePassword,
-                onValueChange = { viewModel.onDeletePasswordChange(it) },
-                label = "Mevcut parola"
-            )
+            if (viewModel.parolasiVar) {
+                LkPasswordTextField(
+                    value = viewModel.deletePassword,
+                    onValueChange = { viewModel.onDeletePasswordChange(it) },
+                    label = "Mevcut parola"
+                )
+            }
 
             LkTextField(
                 value = viewModel.deleteConfirmation,

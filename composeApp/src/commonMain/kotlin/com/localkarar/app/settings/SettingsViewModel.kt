@@ -299,8 +299,11 @@ class SettingsViewModel(
         deleteConfirmation = value
     }
 
+    /** Google/Apple ile acilan hesapta parola yok; alan gizli, parola istenmez. */
+    val parolasiVar: Boolean get() = user?.hasPassword != false
+
     fun deleteAccount(onDeleted: () -> Unit) {
-        if (deletePassword.isBlank()) {
+        if (parolasiVar && deletePassword.isBlank()) {
             setNotice("Mevcut şifrenizi giriniz.", isError = true)
             return
         }
@@ -310,7 +313,7 @@ class SettingsViewModel(
         }
         deleteLoading = true
         viewModelScope.launch {
-            repository.deleteAccount(deletePassword).onSuccess {
+            repository.deleteAccount(if (parolasiVar) deletePassword else null).onSuccess {
                 onDeleted()
             }.onFailure { e ->
                 setNotice(e.message ?: "Hesap silinemedi.", isError = true)

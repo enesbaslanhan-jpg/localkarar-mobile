@@ -45,6 +45,8 @@ data class UserDto(
     val websiteUrl: String? = null,
     val onboardingCompleted: Boolean = false,
     val emailVerified: Boolean = false,
+    /** Google/Apple ile acilan hesapta false: "sifre degistir" yerine "sifre belirle". */
+    val hasPassword: Boolean = true,
     /**
      * Uyelik durumu. Sunucu bunu /auth/login, /auth/register VE /auth/me
      * yanitlarinin ucunde de gonderiyor (auth.ts, hesaplaUyelikDurumu).
@@ -81,7 +83,9 @@ data class MembershipDto(
 data class LoginResponse(
     val token: String,
     val refreshToken: String? = null,
-    val user: UserDto
+    val user: UserDto,
+    /** Sosyal giriste sunucu yeni hesap actiysa true (karsilama ekrani). */
+    val isNewUser: Boolean = false
 )
 
 @Serializable

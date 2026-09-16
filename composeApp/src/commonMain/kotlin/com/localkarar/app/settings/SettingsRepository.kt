@@ -41,7 +41,9 @@ data class ChangeEmailRequest(
 
 @Serializable
 data class DeleteAccountRequest(
-    val currentPassword: String,
+    /* Sosyal girisle acilan hesapta parola yok: null gider (encodeDefaults
+       kapali → alan govdeden duser), sunucu JWT + onay metniyle siler. */
+    val currentPassword: String? = null,
     val confirmation: String
 )
 
@@ -173,11 +175,11 @@ class SettingsRepository(
         }
     }
 
-    suspend fun deleteAccount(currentPassword: String): Result<Unit> {
+    suspend fun deleteAccount(currentPassword: String?): Result<Unit> {
         return try {
             val response = client.delete("/auth/account") {
                 contentType(ContentType.Application.Json)
-                setBody(DeleteAccountRequest(currentPassword, "HESABIMI SİL"))
+                setBody(DeleteAccountRequest(currentPassword?.takeIf { it.isNotBlank() }, "HESABIMI SİL"))
             }
             if (response.status.isSuccess()) Result.success(Unit)
             else Result.failure(Exception(errorMessage(response)))

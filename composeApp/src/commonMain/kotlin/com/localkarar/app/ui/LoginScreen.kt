@@ -22,6 +22,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.localkarar.app.auth.AuthViewModel
+import com.localkarar.app.auth.SosyalGirisSonucu
+import com.localkarar.app.auth.rememberSosyalGiris
+import com.localkarar.app.core.openExternalUrl
+import androidx.compose.material.Checkbox
+import androidx.compose.material.CheckboxDefaults
+import kotlinx.coroutines.launch
 import com.localkarar.app.ui.components.LkButton
 import com.localkarar.app.ui.components.LkButtonVariant
 import com.localkarar.app.ui.components.LkPasswordTextField
@@ -58,6 +64,21 @@ fun LoginScreen(
      */
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    /* Sosyal giris (16.09.2026): platform koprusu + onay bekleyen kimlik. */
+    val sosyal = rememberSosyalGiris()
+    val kapsam = rememberCoroutineScope()
+    val onayBekleyen by viewModel.onayBekleyenSosyal.collectAsState()
+    var sosyalOnay by remember { mutableStateOf(false) }
+    fun sosyalBaslat(saglayici: String) {
+        kapsam.launch {
+            val sonuc = if (saglayici == "google") sosyal.google() else sosyal.apple()
+            when (sonuc) {
+                is SosyalGirisSonucu.Basarili -> viewModel.sosyalGiris(sonuc.kimlik)
+                is SosyalGirisSonucu.Hata -> viewModel.sosyalHata(sonuc.mesaj)
+                SosyalGirisSonucu.Iptal -> {}
+            }
+        }
+    }
     
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.loginError.collectAsState()
@@ -187,14 +208,103 @@ fun LoginScreen(
                 )
 
                 /*
-                 * GOOGLE / APPLE DUGMELERI ILK MAGAZA SURUMUNDE YOK (14.09.2026).
-                 *
-                 * "YAKINDA" etiketli, tiklanmayan iki dugme duruyordu. App Store
-                 * incelemesi islevsiz dugmeye takilabiliyor; calismayan bir sey
-                 * gostermektense hic gostermemek secildi. Girisler Apple gelistirici
-                 * hesabi ve OAuth kimlikleri gelince eklenecek; foy "Giris 2" onlari
-                 * bu konumda gosteriyor, geri geldiklerinde yer belli.
+                 * GOOGLE / APPLE (16.09.2026). Yalniz platformun destekledigi
+                 * dugme cizilir: Android'de Google, iOS'ta Google + Apple. Islevsiz
+                 * "yakinda" dugmesi YOK (App Store incelemesi buna takiliyor).
+                 * Belirtec sunucuya gider; ilk giriste sunucu onay isterse asagidaki
+                 * onay kutusu acilir.
                  */
+                if (sosyal.googleVar || sosyal.appleVar) {
+                    Spacer(modifier = Modifier.height(LkSpacing.Space5))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(Modifier.weight(1f).height(1.dp).background(LkLineStrong))
+                        Text(
+                            "veya",
+                            style = LkTypography.getMicro(),
+                            color = LkTextMuted,
+                            modifier = Modifier.padding(horizontal = LkSpacing.Space3)
+                        )
+                        Box(Modifier.weight(1f).height(1.dp).background(LkLineStrong))
+                    }
+                    Spacer(modifier = Modifier.height(LkSpacing.Space4))
+                    if (onayBekleyen != null) {
+                        /* Ilk sosyal giris: kayittaki yasal onayin aynisi. */
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(LkSurfacePanel, LkShapes.MD)
+                                .padding(LkSpacing.Space4)
+                        ) {
+                            Text(
+                                "Yeni hesap oluşturuluyor — devam etmek için onayla",
+                                style = LkTypography.getBodyStrong(),
+                                color = LkTextPrimary
+                            )
+                            Spacer(Modifier.height(LkSpacing.Space2))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(
+                                    checked = sosyalOnay,
+                                    onCheckedChange = { sosyalOnay = it },
+                                    colors = CheckboxDefaults.colors(checkedColor = LkPrimary)
+                                )
+                                Text(
+                                    buildString {
+                                        append("Kullanım Koşulları'nı ve Aydınlatma Metni'ni okudum, onaylıyorum.")
+                                    },
+                                    style = LkTypography.getBodySmall(),
+                                    color = LkTextSecondary,
+                                    modifier = Modifier.clickable { sosyalOnay = !sosyalOnay }
+                                )
+                            }
+                            Row(horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
+                                Text(
+                                    "Kullanım Koşulları",
+                                    style = LkTypography.getMicro(), color = LkPrimary,
+                                    modifier = Modifier.clickable { openExternalUrl("https://localkarar.com/terms") }
+                                )
+                                Text(
+                                    "Aydınlatma Metni",
+                                    style = LkTypography.getMicro(), color = LkPrimary,
+                                    modifier = Modifier.clickable { openExternalUrl("https://localkarar.com/privacy") }
+                                )
+                            }
+                            Spacer(Modifier.height(LkSpacing.Space3))
+                            LkButton(
+                                text = if (isLoading) "Hesap açılıyor..." else "Onayla ve devam et",
+                                onClick = { viewModel.sosyalOnayla() },
+                                enabled = sosyalOnay && !isLoading,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            TextButton(onClick = { viewModel.sosyalOnayiVazgec(); sosyalOnay = false }) {
+                                Text("Vazgeç", color = LkTextSecondary)
+                            }
+                        }
+                    } else {
+                        Row(horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space3), modifier = Modifier.fillMaxWidth()) {
+                            if (sosyal.googleVar) {
+                                LkButton(
+                                    text = "Google",
+                                    onClick = { sosyalBaslat("google") },
+                                    variant = LkButtonVariant.SECONDARY,
+                                    enabled = !isLoading,
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                            if (sosyal.appleVar) {
+                                LkButton(
+                                    text = "Apple",
+                                    onClick = { sosyalBaslat("apple") },
+                                    variant = LkButtonVariant.SECONDARY,
+                                    enabled = !isLoading,
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                        }
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(LkSpacing.Space6))
 
