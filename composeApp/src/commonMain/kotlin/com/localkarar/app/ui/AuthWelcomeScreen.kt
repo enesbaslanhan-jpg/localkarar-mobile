@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import com.localkarar.app.ui.components.LkBrandMark
 import com.localkarar.app.ui.components.LkPusulaKadrani
 import com.localkarar.app.ui.components.LkButton
+import com.localkarar.app.ui.components.LkButtonSize
 import com.localkarar.app.ui.components.LkButtonVariant
 import com.localkarar.app.ui.components.LkHeroBlock
 import com.localkarar.app.ui.components.LkHeroTone
@@ -123,7 +124,10 @@ fun AuthWelcomeScreen(
             LkButton(
                 text = "Hesap oluştur",
                 onClick = onCreateAccount,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                /* Giris akisi foyu: hap dugme, giris ekranlariyla ayni (16.09.2026). */
+                size = LkButtonSize.LG,
+                shape = LkShapes.FULL
             )
 
             Spacer(Modifier.height(LkSpacing.Space3))
@@ -132,7 +136,10 @@ fun AuthWelcomeScreen(
                 text = "Giriş yap",
                 variant = LkButtonVariant.SECONDARY,
                 onClick = onLogin,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                /* Giris akisi foyu: hap dugme, giris ekranlariyla ayni (16.09.2026). */
+                size = LkButtonSize.LG,
+                shape = LkShapes.FULL
             )
 
             Spacer(Modifier.height(LkSpacing.Space2))
