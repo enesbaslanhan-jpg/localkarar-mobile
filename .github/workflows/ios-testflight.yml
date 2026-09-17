@@ -89,6 +89,19 @@ jobs:
           security unlock-keychain -p "$MATCH_KEYCHAIN_PASSWORD" "$MATCH_KEYCHAIN_NAME"
           security list-keychains -d user -s "$MATCH_KEYCHAIN_NAME" $(security list-keychains -d user | tr -d '"')
 
+      # 🔴 Kotlin/Native arm64 release baglama 2 GB heap ile OOM veriyor
+      # ("Java heap space", 17.09.2026 ilk deneme). Runner 7 GB: native derleyiciye
+      # 4 GB, Gradle'a 1.5 GB. Xcode run-script'i de ~/.gradle/gradle.properties okur.
+      - name: Gradle/Kotlin bellek ayarı (runner)
+        run: |
+          mkdir -p ~/.gradle
+          cat >> ~/.gradle/gradle.properties <<'EOF'
+          org.gradle.jvmargs=-Xmx1536m -Dfile.encoding=UTF-8
+          kotlin.daemon.jvmargs=-Xmx1536m
+          kotlin.native.jvmArgs=-Xmx4g
+          org.gradle.workers.max=2
+          EOF
+
       - name: Kotlin iOS çerçevesi ön derleme (hata erken görünsün)
         run: |
           set -o pipefail
