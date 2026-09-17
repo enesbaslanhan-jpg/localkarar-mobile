@@ -13,7 +13,10 @@ struct ComposeView: UIViewControllerRepresentable {
 struct ContentView: View {
     var body: some View {
         ComposeView()
-            .ignoresSafeArea(.keyboard) // Compose has own keyboard handler
+            // Tam ekran: SwiftUI temsilciyi guvenli alana sikistiriyordu → ustte/altta
+            // siyah seritler (TestFlight 106, 18.09.2026). Compose kenar boslugunu
+            // WindowInsets ile kendi uygular; klavyeyi de kendi yonetir.
+            .ignoresSafeArea()
             .onOpenURL { url in
                 _ = DeepLinkDispatcher.shared.submit(rawUrl: url.absoluteString)
             }

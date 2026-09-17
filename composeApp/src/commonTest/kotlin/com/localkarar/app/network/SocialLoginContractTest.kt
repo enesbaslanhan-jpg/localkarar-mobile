@@ -1,6 +1,7 @@
 package com.localkarar.app.network
 
 import com.localkarar.app.auth.LoginResponse
+import com.localkarar.app.auth.RegisterRequest
 import com.localkarar.app.auth.SocialLoginRequest
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
@@ -41,5 +42,18 @@ class SocialLoginContractTest {
         val eski = json.decodeFromString<LoginResponse>("""{"token":"t","user":{"id":1,"email":"a@b.c","name":"A","role":"student"}}""")
         assertFalse(eski.isNewUser); assertTrue(eski.user.hasPassword)
         assertEquals("A", eski.user.name)
+    }
+
+    /*
+     * POST /auth/register: sunucu acceptedLegal=true ZORUNLU tutar. Alanin varsayilani
+     * varken encodeDefaults kapali oldugu icin JSON'a yazilmiyordu → 422 (TestFlight 106).
+     */
+    @Test
+    fun kayitIsteginde_acceptedLegal_herZamanGider() {
+        val govde = json.encodeToString(
+            RegisterRequest.serializer(),
+            RegisterRequest(name = "Enes", email = "e@ornek.com", password = "cokgizli1234", acceptedLegal = true)
+        )
+        assertTrue(govde.contains("\"acceptedLegal\":true"), govde)
     }
 }

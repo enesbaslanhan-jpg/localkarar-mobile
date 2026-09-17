@@ -13,7 +13,12 @@ data class RegisterRequest(
     val name: String,
     val email: String,
     val password: String,
-    val acceptedLegal: Boolean = true
+    /*
+     * 🔴 VARSAYILAN DEGER VERILMEZ. Json encodeDefaults kapali; `= true` iken alan
+     * JSON'a hic yazilmiyordu ve sunucu 422 "Geçersiz kayıt bilgileri" donuyordu
+     * (TestFlight 106, 18.09.2026). ConnectionSettingsRequestDto ile ayni tuzak.
+     */
+    val acceptedLegal: Boolean
 )
 
 @Serializable
