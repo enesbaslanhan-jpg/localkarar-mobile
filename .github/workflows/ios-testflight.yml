@@ -92,7 +92,8 @@ jobs:
       - name: Kotlin iOS çerçevesi ön derleme (hata erken görünsün)
         run: |
           set -o pipefail
-          ./gradlew :composeApp:linkReleaseFrameworkIosArm64 --stacktrace 2>&1 | tail -n 40
+          mkdir -p artifacts
+          ./gradlew :composeApp:linkReleaseFrameworkIosArm64 --stacktrace 2>&1 | tee artifacts/gradle_ios_release.log | grep -vE "^s+at |^s*$"
 
       - name: İmzala, arşivle, TestFlight'a yükle
         working-directory: iosApp
@@ -107,5 +108,6 @@ jobs:
             iosApp/build/*.ipa
             iosApp/build/*.dSYM.zip
             ~/Library/Logs/gym/*.log
+            artifacts/*.log
           if-no-files-found: ignore
           retention-days: 14
