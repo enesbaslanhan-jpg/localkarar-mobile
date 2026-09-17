@@ -79,6 +79,9 @@
 			</dict>
 		</dict>
 	</dict>
+	<!-- Yalniz standart HTTPS; TestFlight her derlemede "Missing Compliance" sormasin (17.09.2026). -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Profil fotoğrafı ve topluluk paylaşımları için fotoğraf seçimi.</string>
 </dict>
