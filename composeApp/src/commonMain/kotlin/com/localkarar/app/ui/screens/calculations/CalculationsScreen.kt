@@ -1,6 +1,11 @@
 package com.localkarar.app.ui.screens.calculations
 
 import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.material.IconButton
@@ -108,6 +113,14 @@ fun CalculationsScreen(
      */
     val tabs = listOf("Katalog", "Geçmiş")
 
+    /*
+     * ARAMA ACILIR-KAPANIR (urun sahibi, 18.09.2026): kutu surekli ustte
+     * durunca sayfayi bogiyordu. Hero'da yazisiz bir buyutec; dokununca
+     * katalogun ustunde arama alani acilir, tekrar dokununca kapanir ve
+     * metin silinir.
+     */
+    var aramaAcik by remember { mutableStateOf(false) }
+
     LaunchedEffect(selectedTab) {
         if (selectedTab == 1) viewModel.refresh()
     }
@@ -158,6 +171,15 @@ fun CalculationsScreen(
                     color = LkHero.OnHero,
                     modifier = Modifier.weight(1f).padding(start = LkSpacing.Space2)
                 )
+                if (selectedTab == 0) {
+                    IconButton(onClick = { aramaAcik = !aramaAcik }) {
+                        Icon(
+                            if (aramaAcik) Icons.Outlined.Close else Icons.Outlined.Search,
+                            contentDescription = if (aramaAcik) "Aramayı kapat" else "Araç ara",
+                            tint = LkHero.OnHero
+                        )
+                    }
+                }
             }
         }
 
@@ -192,6 +214,7 @@ fun CalculationsScreen(
                     is CalculationsUiState.Content -> {
                         when (selectedTab) {
                             0 -> KatalogTab(
+                                aramaAcik = aramaAcik,
                                 catalog = state.catalog,
                                 categoryFilter = categoryFilter,
                                 onCategoryChanged = { viewModel.updateCategoryFilter(it) },
@@ -229,6 +252,7 @@ fun formulaResultLabel(key: String): String {
 
 @Composable
 private fun KatalogTab(
+    aramaAcik: Boolean,
     catalog: List<CalculationItem>,
     categoryFilter: String,
     onCategoryChanged: (String) -> Unit,
@@ -253,6 +277,11 @@ private fun KatalogTab(
      * uydurulmadi.
      */
     var arama by remember { mutableStateOf("") }
+    val odakIsteyici = remember { FocusRequester() }
+    /* Kapaninca metin de gider: gizli bir filtre kalmasin. Acilinca klavye gelsin. */
+    LaunchedEffect(aramaAcik) {
+        if (!aramaAcik) arama = "" else odakIsteyici.requestFocus()
+    }
 
     val aramaSonucu = remember(catalog, arama) {
         val q = arama.trim()
@@ -287,11 +316,12 @@ private fun KatalogTab(
         verticalArrangement = Arrangement.spacedBy(LkSpacing.Space5)
     ) {
 
-        item {
+        if (aramaAcik) item {
             LkTextField(
                 value = arama,
                 onValueChange = { arama = it },
                 placeholder = "Araç ara — “komisyon”, “başabaş”…",
+                modifier = Modifier.focusRequester(odakIsteyici),
                 leadingContent = {
                     Icon(
                         Icons.Outlined.Search,
@@ -350,7 +380,12 @@ private fun KatalogTab(
                      */
                     val kategoriler = CALCULATION_CATEGORIES.filter { it.key != "all" }
                     kategoriler.chunked(2).forEach { satir ->
-                        Row(horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
+                        /* Satirdaki iki kutu AYNI boyda: uzun baslik (iki satira sarilan)
+                           komsusunu da uzatir; yoksa alt kenarlar kaymis gorunuyordu. */
+                        Row(
+                            modifier = Modifier.height(IntrinsicSize.Max),
+                            horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2)
+                        ) {
                             satir.forEach { kategori ->
                                 val adet = catalog.count { it.category == kategori.key }
                                 KategoriKutusu(
@@ -358,7 +393,7 @@ private fun KatalogTab(
                                     ikon = kategoriIkonu(kategori.key),
                                     adet = adet,
                                     onClick = { onCategoryChanged(kategori.key) },
-                                    modifier = Modifier.weight(1f)
+                                    modifier = Modifier.weight(1f).fillMaxHeight()
                                 )
                             }
                             /* Tek kalan kategori satiri germesin. */

@@ -1,6 +1,9 @@
 package com.localkarar.app.ui
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -118,6 +121,7 @@ fun AuthWelcomeScreen(
                 .offset(y = (-22).dp)
                 .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
                 .background(LkSurfaceCanvas)
+                .windowInsetsPadding(WindowInsets.navigationBars)
                 .padding(horizontal = LkSpacing.Space6, vertical = LkSpacing.Space6),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {

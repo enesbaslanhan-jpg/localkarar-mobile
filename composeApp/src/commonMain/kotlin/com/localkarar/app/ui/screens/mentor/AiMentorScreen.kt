@@ -1,6 +1,8 @@
 package com.localkarar.app.ui.screens.mentor
 
 import com.localkarar.app.ui.components.LkLoadingSpinner
+import com.localkarar.app.core.PrefKeys
+import com.localkarar.app.core.LocalAppPreferences
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -57,6 +59,28 @@ fun AiMentorScreen(
             conversationToRename != null -> conversationToRename = null
             showMemorySheet -> showMemorySheet = false
         }
+    }
+
+    /*
+     * VERI ISLEME ONAYI (urun sahibi, 18.09.2026): Mentor'a yazilan sorular ve
+     * secili isletmenin ozet baglami yanit uretmek icin yapay zeka
+     * saglayicisina gider. Ilk kullanimda bu acikca soylenir ve onay
+     * alinmadan sohbet acilmaz. Onay cihazda saklanir (AppPreferences);
+     * cikista silinmez, webdeki yerel tercihlerle ayni kural.
+     */
+    val tercihler = LocalAppPreferences.current
+    var aiOnayi by remember { mutableStateOf(tercihler?.getString(PrefKeys.AI_MENTOR_ONAY) != null) }
+    if (!aiOnayi) {
+        LkHeroPage(title = "AI Mentor", onBack = onBack) {
+            AiVeriOnayi(
+                onOnayla = {
+                    tercihler?.putString(PrefKeys.AI_MENTOR_ONAY, LkDateUtils.now().toString())
+                    aiOnayi = true
+                },
+                onVazgec = { onBack?.invoke() }
+            )
+        }
+        return
     }
 
     LkHeroPage(
@@ -621,5 +645,47 @@ private fun MemoryCard(
                 )
             }
         }
+    }
+}
+
+/** Ilk kullanim bilgilendirmesi — onay verilmeden sohbet listesi gosterilmez. */
+@Composable
+private fun AiVeriOnayi(onOnayla: () -> Unit, onVazgec: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = LkSpacing.Space5, vertical = LkSpacing.Space6),
+        verticalArrangement = Arrangement.spacedBy(LkSpacing.Space4)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .background(LkSurfaceTile),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(Icons.Outlined.Psychology, contentDescription = null, tint = LkTileInk, modifier = Modifier.size(26.dp))
+        }
+        Text("Mentor verilerini nasıl kullanır?", style = LkTypography.getSectionTitle(), color = LkTextPrimary)
+        Text(
+            "Yazdığın sorular ve seçili işletmenin özet bilgileri (kayıt toplamları, ürün ve sipariş özetleri, kaydettiğin hatıralar) " +
+                "yanıt üretmek için yapay zeka sağlayıcısına gönderilir. Kart bilgisi, parola veya kimlik numarası gönderilmez.",
+            style = LkTypography.getBody(),
+            color = LkTextSecondary
+        )
+        Text(
+            "Sohbetler hesabında saklanır; istediğin zaman silebilirsin. Hatıralar sekmesinden mentorun hatırladığı bilgileri görebilir ve kaldırabilirsin. " +
+                "Yanıtlar öneri niteliğindedir; mali, hukuki veya vergisel kararlarda uzman görüşünün yerine geçmez.",
+            style = LkTypography.getBodySmall(),
+            color = LkTextSecondary
+        )
+        Text(
+            "Ayrıntılar: Aydınlatma Metni (Ayarlar → Yasal).",
+            style = LkTypography.getMetadata(),
+            color = LkTextMuted
+        )
+        Spacer(Modifier.weight(1f))
+        LkButton(text = "Anladım, onaylıyorum", onClick = onOnayla, modifier = Modifier.fillMaxWidth())
+        LkButton(text = "Şimdi değil", variant = LkButtonVariant.QUIET, onClick = onVazgec, modifier = Modifier.fillMaxWidth())
     }
 }

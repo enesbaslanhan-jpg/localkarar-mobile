@@ -133,7 +133,15 @@ fun LkButton(
         // yuzeyin golgesi olurdu.
         modifier = modifier
             .then(
-                if (variant == LkButtonVariant.GHOST) Modifier
+                /*
+                 * 🔴 GOLGE, YARI SAYDAM ZEMININ ALTINDAN GORUNUYORDU (TestFlight 106,
+                 * 18.09.2026): devre disi buton %55 saydam; Skia golgeyi seklin
+                 * TAMAMININ altina cizer, saydam zeminden golgenin ici sizar ve
+                 * dugmenin ustunde acik/gri bir dikdortgen olusur. QUIET (panel
+                 * renginde, panel ustunde) da ayni nedenle golgesiz: yuzeyle ayni
+                 * tondaki bir seklin golgesi "ayri kutu" gibi durur.
+                 */
+                if (variant == LkButtonVariant.GHOST || variant == LkButtonVariant.QUIET || !enabled) Modifier
                 else Modifier.lkShadow(
                     /*
                      * 🔴 GOLGE BASILIYKEN DE AYNIYDI: buton basildiginda

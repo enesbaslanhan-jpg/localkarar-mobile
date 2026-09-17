@@ -1,6 +1,9 @@
 package com.localkarar.app.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -77,7 +80,9 @@ fun LkHeroBlock(
                         end = Offset(size.width * 0.40f, size.height)
                     )
                 )
-            },
+            }
+            /* Gradyan durum cubugunun altina kadar boyanir; icerik cubugun altinda baslar. */
+            .windowInsetsPadding(WindowInsets.statusBars),
         content = content
     )
 }

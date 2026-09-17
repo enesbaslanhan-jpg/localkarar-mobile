@@ -1,11 +1,12 @@
 package com.localkarar.app
 
 import androidx.compose.foundation.background
+import com.localkarar.app.core.LocalAppPreferences
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -143,6 +144,7 @@ fun App(secureStorage: SecureStorage, appPreferences: AppPreferences) {
         ThemeMode.SYSTEM -> sistemKoyu
     }
 
+    androidx.compose.runtime.CompositionLocalProvider(LocalAppPreferences provides appPreferences) {
     LocalKararTheme(darkTheme = koyuMu, themeController = themeController) {
         val sessionState by authViewModel.sessionState.collectAsState()
 
@@ -183,11 +185,22 @@ fun App(secureStorage: SecureStorage, appPreferences: AppPreferences) {
             acilisSuresiDoldu = true
         }
 
+        /*
+         * 🔴 TAM EKRAN (18.09.2026). Kok kutu safeDrawing dolgusu veriyordu:
+         * durum cubugu ve ana cubuk seritleri zemin renginde bos kaliyor,
+         * hero ekranin ustune yapismiyordu ("ustten alttan kesik"). Ust
+         * bosluk artik LkHeroBlock / LkPageLayout / kimlik ekranlarinda
+         * (statusBars), alt bosluk dock'ta (navigationBars).
+         *
+         * Bos alana dokunma → odak kalkar → klavye kapanir. detectTapGestures
+         * kokte; cocuklar dokunusu tukettiyse buraya dusmez.
+         */
+        val odak = LocalFocusManager.current
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(LkSurfaceCanvas)
-                .windowInsetsPadding(WindowInsets.safeDrawing)
+                .pointerInput(Unit) { detectTapGestures(onTap = { odak.clearFocus() }) }
         ) {
             /*
              * Tek cagri noktasi: sure dolmadan / oturum kontrolu bitmeden ayni
@@ -311,5 +324,6 @@ fun App(secureStorage: SecureStorage, appPreferences: AppPreferences) {
                 }
             }
         }
+    }
     }
 }

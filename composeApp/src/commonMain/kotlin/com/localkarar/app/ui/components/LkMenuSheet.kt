@@ -1,6 +1,9 @@
 package com.localkarar.app.ui.components
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -104,6 +107,8 @@ fun LkMenuSheet(
             .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
             .background(LkSurfaceElevated)
             .verticalScroll(rememberScrollState())
+            /* Kok tam ekran (18.09.2026): alt guvenli alan burada doldurulur. */
+            .windowInsetsPadding(WindowInsets.navigationBars)
             .padding(bottom = LkSpacing.Space8)
     ) {
         LkSheetHandle()

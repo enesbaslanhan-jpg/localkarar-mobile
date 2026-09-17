@@ -1,6 +1,9 @@
 package com.localkarar.app.ui
 
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import com.localkarar.app.ui.components.LkBrandMark
@@ -148,6 +151,7 @@ fun LoginScreen(
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = LkSpacing.Space6, vertical = LkSpacing.Space8)
+                    .windowInsetsPadding(WindowInsets.navigationBars)
             ) {
 
                 Spacer(modifier = Modifier.height(LkSpacing.Space6))

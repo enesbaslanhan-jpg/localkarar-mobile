@@ -1,6 +1,11 @@
 package com.localkarar.app.ui.screens.decision
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Text
@@ -71,7 +76,7 @@ fun DecisionSessionScreen(
                             if (invalid >= 0) step = invalid
                         }
                         
-                        Column(Modifier.fillMaxSize().imePadding()) {
+                        Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.ime.union(WindowInsets.navigationBars))) {
                         LazyColumn(
                             modifier = Modifier.weight(1f).fillMaxWidth(),
                             contentPadding = PaddingValues(LkSpacing.Space4),

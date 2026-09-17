@@ -347,8 +347,10 @@ private fun DashboardContent(
             )
         }
 
-        // Hizli Islemler + Mentor seridi
-        QuickActionsCard(
+        // Hizli Islemler + Mentor seridi. Isletme yokken bolum HIC cizilmez:
+        // ayni "Isletme olustur" cagrisi hemen ustte Business Pulse'ta var,
+        // ikisi birden ekranda iki ayni dugme demekti (urun sahibi, 18.09.2026).
+        if (state.activeWorkspaceId != null) QuickActionsCard(
             activeWorkspaceId = state.activeWorkspaceId,
             onQuickAction = onQuickAction,
             onKisayol = onKisayol,

@@ -1,6 +1,9 @@
 package com.localkarar.app.ui
 
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
@@ -89,6 +92,7 @@ fun ResetPasswordScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
+                    .windowInsetsPadding(WindowInsets.navigationBars)
                     .padding(horizontal = LkSpacing.Space6, vertical = LkSpacing.Space8)
             ) {
                 // Header Icon

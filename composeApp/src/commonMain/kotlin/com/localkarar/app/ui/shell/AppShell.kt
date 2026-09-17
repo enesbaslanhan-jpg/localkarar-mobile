@@ -1,6 +1,9 @@
 package com.localkarar.app.ui.shell
 
 import androidx.compose.animation.Crossfade
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -210,14 +213,25 @@ fun AppShell(
         navController.popBackStack()
     }
 
+    /*
+     * 🔴 ILK DOKUNUSTA ACILMIYORDU (TestFlight 106, 18.09.2026). `show()`
+     * durum degisikligiyle AYNI karede cagriliyordu; sayfa icerigi henuz
+     * 1dp'lik Spacer oldugu icin hedef konum sifir yukseklikle hesaplanip
+     * sayfa gizli kaliyordu; ikinci dokunusta icerik olculmus oluyordu.
+     * Acma artik iceriğin kompozisyonundan SONRA, LaunchedEffect ile.
+     */
     val openProductCenter = {
         sheetState = ShellSheetState.ProductCenter
-        coroutineScope.launch { bottomSheetState.show() }
     }
 
     val openWorkspaceSections = { wsId: String, sectionId: String ->
         sheetState = ShellSheetState.WorkspaceSections(wsId, sectionId)
-        coroutineScope.launch { bottomSheetState.show() }
+    }
+
+    LaunchedEffect(sheetState) {
+        if (sheetState != ShellSheetState.Closed && !bottomSheetState.isVisible) {
+            bottomSheetState.show()
+        }
     }
 
     val closeSheetAndNavigate = { dest: Destination ->
@@ -512,7 +526,8 @@ private fun ScreenContent(
             viewModel = homeViewModel,
             onNavigateToMentor = { navController.navigateTo(Destination.AiMentor) },
             onNavigateToDecisions = { navController.navigateTo(Destination.DecisionTools()) },
-            onNavigateToDecisionDetail = { code -> navController.navigateTo(Destination.DecisionTool(code)) },
+            /* 🔴 Son kararlar OTURUM kimligi verir; arac koduna gidince 404 ("Aranan kaynak bulunamadı", TestFlight 106). */
+            onNavigateToDecisionDetail = { sessionId -> navController.navigateTo(Destination.DecisionSession(sessionId)) },
             onNavigateToWorkspaces = { navController.navigateTo(Destination.Workspaces) },
             onNavigateToTracker = { workspaceId -> navController.navigateTo(Destination.Records(workspaceId)) },
             onNavigateToRapor = { workspaceId -> navController.navigateTo(Destination.Rapor(workspaceId)) },
@@ -1312,10 +1327,16 @@ private fun LkBottomNavigation(
     activeWorkspaceId: String?,
     onNavigate: (Destination) -> Unit
 ) {
+    /*
+     * Kok artik guvenli alan dolgusu vermiyor (tam ekran, 18.09.2026); dock
+     * alt guvenli alani (iPhone ana cubugu / Android gezinme cubugu) kendi
+     * doldurur. Zemin ayri boyanmaz: kabuk zemini neyse o gorunur, boylece
+     * dock altinda "ayri dikdortgen" kalmaz.
+     */
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(LkSurfaceCanvas)
+            .windowInsetsPadding(WindowInsets.navigationBars)
             .padding(bottom = 12.dp, top = 4.dp)
     ) {
         LkSoftDock(

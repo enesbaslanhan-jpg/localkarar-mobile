@@ -1,7 +1,13 @@
 package com.localkarar.app.auth
 
 import io.ktor.client.*
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.jsonObject
+import io.ktor.http.isSuccess
 import io.ktor.client.call.*
+import io.ktor.client.statement.bodyAsText
+import io.ktor.client.plugins.expectSuccess
 import io.ktor.client.request.*
 import io.ktor.http.*
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -115,7 +121,18 @@ class AuthRepository(
      */
     suspend fun socialLogin(request: SocialLoginRequest): Result<LoginResponse> {
         return try {
+            /*
+             * 🔴 BU ISTEKTE expectSuccess KAPALI. Istemci genelinde acik; 4xx
+             * yaniti daha bu satira gelmeden HttpClient.kt'deki genel esleme
+             * ApiError'a ceviriyordu: 409 → "Veri çakışması oluştu", 403 →
+             * "Bu işlem için yetkiniz bulunmuyor" (TestFlight 106, 18.09.2026).
+             * Yani asagidaki durum eslemesi HIC calismiyor, yeni kullanicinin
+             * yasal onay adimi (409) acilmiyordu. Durum kodlari burada okunur;
+             * 403'te sunucunun aciklamasi (ornegin Apple'in e-posta vermemesi)
+             * kullaniciya aynen gosterilir.
+             */
             val response = httpClient.post("/auth/social") {
+                expectSuccess = false
                 contentType(ContentType.Application.Json)
                 setBody(request)
             }
@@ -123,9 +140,11 @@ class AuthRepository(
                 HttpStatusCode.Conflict -> return Result.failure(OnayGerekli())
                 HttpStatusCode.ServiceUnavailable -> return Result.failure(Exception("Bu giriş yöntemi şu an kapalı."))
                 HttpStatusCode.Unauthorized -> return Result.failure(Exception("Kimlik doğrulanamadı. Tekrar deneyin."))
-                HttpStatusCode.Forbidden -> return Result.failure(Exception("Bu hesabın e-postası doğrulanmamış; sağlayıcıda doğrulayıp tekrar deneyin."))
+                HttpStatusCode.Forbidden -> return Result.failure(Exception(sunucuMesaji(response) ?: "Bu giriş yöntemiyle hesap açılamadı."))
                 HttpStatusCode.TooManyRequests -> return Result.failure(Exception("Çok fazla deneme. Biraz sonra tekrar deneyin."))
-                else -> {}
+                else -> if (!response.status.isSuccess()) {
+                    return Result.failure(Exception(sunucuMesaji(response) ?: "Giriş tamamlanamadı (" + "$" + "{response.status.value})."))
+                }
             }
             val loginResponse = response.body<LoginResponse>()
             secureStorage.saveToken(loginResponse.token)
@@ -142,6 +161,13 @@ class AuthRepository(
             Result.failure(Exception(e.message ?: "Giriş tamamlanamadı."))
         }
     }
+
+    /** Sunucunun `message` (yoksa `error`) alani; kod gibi duran kisa sabitler gosterilmez. */
+    private suspend fun sunucuMesaji(response: io.ktor.client.statement.HttpResponse): String? = try {
+        val govde = kotlinx.serialization.json.Json.parseToJsonElement(response.bodyAsText()).jsonObject
+        val mesaj = govde["message"]?.jsonPrimitive?.contentOrNull ?: govde["error"]?.jsonPrimitive?.contentOrNull
+        mesaj?.takeIf { it.length in 4..300 && it.contains(' ') }
+    } catch (e: Exception) { null }
 
     suspend fun register(request: RegisterRequest): Result<UserDto> {
         return try {

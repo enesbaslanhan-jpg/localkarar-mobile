@@ -1,6 +1,9 @@
 package com.localkarar.app.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.material.IconButton
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -21,7 +24,8 @@ fun LkPageLayout(
     content: @Composable () -> Unit
 ) {
     Scaffold(
-        modifier = modifier.fillMaxSize(),
+        /* Kok tam ekran (18.09.2026): durum cubugu dolgusunu kabuk verir. */
+        modifier = modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars),
         backgroundColor = LkSurfaceCanvas,
         topBar = {
             if (title != null) {

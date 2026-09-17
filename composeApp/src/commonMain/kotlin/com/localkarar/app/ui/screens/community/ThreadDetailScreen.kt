@@ -1,6 +1,11 @@
 package com.localkarar.app.ui.screens.community
 
 import com.localkarar.app.ui.components.LkLoadingSpinner
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -48,7 +53,7 @@ fun ThreadDetailScreen(
         title = "Sohbet",
         onBack = onBack
     ) {
-        Column(Modifier.fillMaxSize().imePadding()) {
+        Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.ime.union(WindowInsets.navigationBars))) {
             when (val s = messagesState) {
                 is ThreadsViewModel.MessagesUiState.Loading, ThreadsViewModel.MessagesUiState.Idle -> {
                     LkLoadingState(modifier = Modifier.weight(1f), desen = LkLoadingDesen.LISTE)

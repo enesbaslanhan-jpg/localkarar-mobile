@@ -21,4 +21,9 @@ expect class AppPreferences {
 /** Tercih anahtarlari tek yerde; elle yazilan dizeler kaymasin. */
 object PrefKeys {
     const val THEME_MODE = "theme_mode"
+    /** AI Mentor veri isleme bilgilendirmesi onaylandi (deger: onay tarihi, ISO). Cihaz basina. */
+    const val AI_MENTOR_ONAY = "ai_mentor_onay"
 }
+
+/** Kabukta saglanir; ekranlar tercih deposuna buradan ulasir. */
+val LocalAppPreferences = androidx.compose.runtime.staticCompositionLocalOf<AppPreferences?> { null }
