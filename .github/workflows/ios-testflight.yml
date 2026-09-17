@@ -74,8 +74,19 @@ jobs:
           gem install bundler --no-document
           bundle install --jobs 4
 
-      - name: Xcode sürümü
-        run: xcodebuild -version
+      # 🔴 EN YENİ Xcode seçilir (ios-build.yml ile aynı kural). Varsayılan 16.4
+      # iOS 18.5 SDK'sıyla bağlıyor; Compose Multiplatform 1.11 iOS 26 sembolü
+      # (UIViewLayoutRegion) istiyor → "Undefined symbols for architecture arm64"
+      # (17.09.2026, 4. deneme). fastlane da DEVELOPER_DIR'i buradan alır.
+      - name: En yeni Xcode
+        run: |
+          set -euo pipefail
+          ls -d /Applications/Xcode*.app || true
+          SECILEN=$(ls -d /Applications/Xcode*.app 2>/dev/null | sort -V | tail -n 1)
+          [ -n "$SECILEN" ] || { echo 'HATA: Xcode bulunamadı'; exit 1; }
+          sudo xcode-select -s "$SECILEN/Contents/Developer"
+          echo "DEVELOPER_DIR=$SECILEN/Contents/Developer" >> "$GITHUB_ENV"
+          xcodebuild -version
 
       # Derleme numarası: run numarası + 100 (Play'deki kural gibi tekil ve artan).
       - name: Derleme numarası
