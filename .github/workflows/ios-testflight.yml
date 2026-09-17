@@ -5,7 +5,7 @@ name: iOS TestFlight
 # bu reponun `ios-certs` dalında şifreli tutulur; Apple ID parolası gerekmez.
 #
 # Gerekli secrets: ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8, MATCH_PASSWORD.
-# Gerekli variable (gizli değil): APPLE_TEAM_ID.
+# Team ID (gizli değil) sabit: 3U8889HZ8A.
 
 on:
   workflow_dispatch:
@@ -31,7 +31,7 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 60
     env:
-      APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+      APPLE_TEAM_ID: 3U8889HZ8A   # gizli değil; developer.apple.com Membership details
       ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
       ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
       ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
