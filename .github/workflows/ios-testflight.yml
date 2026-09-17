@@ -93,7 +93,7 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p artifacts
-          ./gradlew :composeApp:linkReleaseFrameworkIosArm64 --stacktrace 2>&1 | tee artifacts/gradle_ios_release.log | grep -vE "^[[:space:]]+at |^[[:space:]]*$" || true
+          ./gradlew :composeApp:linkReleaseFrameworkIosArm64 --stacktrace 2>&1 | tee artifacts/gradle_ios_release.log | (grep -vE "^[[:space:]]+at |^[[:space:]]*$" || true)
 
       - name: İmzala, arşivle, TestFlight'a yükle
         working-directory: iosApp
