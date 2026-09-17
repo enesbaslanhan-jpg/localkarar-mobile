@@ -10,6 +10,7 @@ import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -170,6 +171,14 @@ fun App(secureStorage: SecureStorage, appPreferences: AppPreferences) {
          */
         var acilisSuresiDoldu by remember { mutableStateOf(false) }
         LaunchedEffect(Unit) {
+            /*
+             * 🔴 SAYAC ILK KAREDEN SONRA BASLAR. iOS soguk acilista ilk kare
+             * 1 sn'ye yakin gecikiyor; sayac kompozisyonda basladiginda igne
+             * hareketi (kare saatine bagli) daha baslamadan sure doluyordu →
+             * kullanici "pusula animasyonu calismiyor" gordu (TestFlight 106,
+             * 18.09.2026). withFrameNanos ilk cizilen kareyi bekler.
+             */
+            withFrameNanos { }
             kotlinx.coroutines.delay(1300)
             acilisSuresiDoldu = true
         }
@@ -180,15 +189,17 @@ fun App(secureStorage: SecureStorage, appPreferences: AppPreferences) {
                 .background(LkSurfaceCanvas)
                 .windowInsetsPadding(WindowInsets.safeDrawing)
         ) {
-            if (!acilisSuresiDoldu) {
+            /*
+             * Tek cagri noktasi: sure dolmadan / oturum kontrolu bitmeden ayni
+             * LkAcilisEkrani ornegi kalir. Iki ayri dalda cagrilirken dal
+             * degisince kadran yeniden kuruluyor ve igne bastan basliyordu.
+             */
+            if (!acilisSuresiDoldu || sessionState is SessionState.CheckingSession) {
                 LkAcilisEkrani()
                 return@Box
             }
             when (val state = sessionState) {
-                is SessionState.CheckingSession -> {
-                    /* Marka acilis karesi — bkz. LkSplash.kt */
-                    LkAcilisEkrani()
-                }
+                is SessionState.CheckingSession -> Unit
                 is SessionState.Unauthenticated -> {
                     when (authRoute) {
                         AuthRoute.WELCOME -> AuthWelcomeScreen(
