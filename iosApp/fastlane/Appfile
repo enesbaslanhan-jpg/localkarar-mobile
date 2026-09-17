@@ -1,0 +1,3 @@
+# Uygulama kimliği ve takım; ikisi de gizli değil. Team ID CI ortamından gelir.
+app_identifier("com.localkarar.app")
+team_id(ENV["APPLE_TEAM_ID"])

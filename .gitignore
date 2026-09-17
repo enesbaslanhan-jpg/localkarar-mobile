@@ -53,3 +53,10 @@ errors.txt
 error_summary.txt
 window_dump*.xml
 response.json
+
+# iOS TestFlight (fastlane) ciktilari
+iosApp/build/
+iosApp/fastlane/report.xml
+iosApp/fastlane/README.md
+iosApp/.bundle/
+iosApp/vendor/

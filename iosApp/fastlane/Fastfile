@@ -1,0 +1,80 @@
+# LocalKarar iOS — TestFlight (17.09.2026)
+#
+# Mac yok; imza ve yükleme GitHub Actions macOS runner'ında. Sertifika ve
+# profil `match` ile üretilir, ŞİFRELİ olarak bu reponun `ios-certs` dalında
+# saklanır (MATCH_PASSWORD). App Store Connect API anahtarı (ASC_*) hem
+# match'e (sertifika/profil oluşturma) hem pilot'a (yükleme) kimlik verir;
+# Apple ID parolası ve 2FA gerekmez.
+#
+# Sürüm: CFBundleShortVersionString sabit (IOS_MARKETING_VERSION), CFBundleVersion
+# = GitHub run numarası → her yükleme artan, TestFlight çakışma vermez.
+
+default_platform(:ios)
+
+platform :ios do
+  desc "TestFlight'a yükle (imza match ile)"
+  lane :beta do
+    api_key = app_store_connect_api_key(
+      key_id: ENV.fetch("ASC_KEY_ID"),
+      issuer_id: ENV.fetch("ASC_ISSUER_ID"),
+      key_content: ENV.fetch("ASC_KEY_P8"),
+      is_key_content_base64: false,
+      in_house: false
+    )
+
+    # Sertifika + App Store profili; yoksa API anahtarıyla oluşturur.
+    match(
+      type: "appstore",
+      app_identifier: ["com.localkarar.app"],
+      team_id: ENV.fetch("APPLE_TEAM_ID"),
+      storage_mode: "git",
+      git_url: ENV.fetch("MATCH_GIT_URL"),
+      git_branch: "ios-certs",
+      readonly: false,
+      api_key: api_key,
+      keychain_name: ENV.fetch("MATCH_KEYCHAIN_NAME", "login.keychain"),
+      keychain_password: ENV["MATCH_KEYCHAIN_PASSWORD"]
+    )
+
+    profile_name = lane_context[SharedValues::MATCH_PROVISIONING_PROFILE_MAPPING]["com.localkarar.app"]
+
+    update_code_signing_settings(
+      path: "iosApp.xcodeproj",
+      use_automatic_signing: false,
+      team_id: ENV.fetch("APPLE_TEAM_ID"),
+      bundle_identifier: "com.localkarar.app",
+      code_sign_identity: "Apple Distribution",
+      profile_name: profile_name,
+      targets: ["iosApp"]
+    )
+
+    build_number = ENV.fetch("IOS_BUILD_NUMBER")
+    marketing = ENV.fetch("IOS_MARKETING_VERSION", "1.0.0")
+    set_info_plist_value(path: "iosApp/Info.plist", key: "CFBundleShortVersionString", value: marketing)
+    set_info_plist_value(path: "iosApp/Info.plist", key: "CFBundleVersion", value: build_number)
+
+    # Kotlin çerçevesi Xcode run-script'iyle (embedAndSignAppleFrameworkForXcode)
+    # arşiv sırasında derlenir; JDK runner'da hazır.
+    build_app(
+      project: "iosApp.xcodeproj",
+      scheme: "iosApp",
+      configuration: "Release",
+      export_method: "app-store",
+      output_directory: "build",
+      output_name: "LocalKarar.ipa",
+      xcargs: "TEAM_ID=#{ENV.fetch('APPLE_TEAM_ID')} BUNDLE_ID=com.localkarar.app",
+      export_options: {
+        provisioningProfiles: { "com.localkarar.app" => profile_name },
+        signingStyle: "manual",
+        teamID: ENV.fetch("APPLE_TEAM_ID")
+      }
+    )
+
+    upload_to_testflight(
+      api_key: api_key,
+      ipa: "build/LocalKarar.ipa",
+      skip_waiting_for_build_processing: true,
+      changelog: ENV.fetch("IOS_CHANGELOG", "LocalKarar iç test sürümü")
+    )
+  end
+end

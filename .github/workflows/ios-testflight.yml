@@ -1,0 +1,111 @@
+name: iOS TestFlight
+
+# TestFlight yükleme (17.09.2026). Elle tetiklenir; her çalıştırma yeni bir
+# derleme numarasıyla (run number) TestFlight'a gider. Sertifika/profil match ile
+# bu reponun `ios-certs` dalında şifreli tutulur; Apple ID parolası gerekmez.
+#
+# Gerekli secrets: ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8, MATCH_PASSWORD.
+# Gerekli variable (gizli değil): APPLE_TEAM_ID.
+
+on:
+  workflow_dispatch:
+    inputs:
+      marketing_version:
+        description: "Sürüm (CFBundleShortVersionString)"
+        default: "1.0.0"
+        required: true
+      changelog:
+        description: "Test notu (TestFlight 'What to Test')"
+        default: "LocalKarar iç test sürümü"
+        required: false
+
+permissions:
+  contents: write   # match: ios-certs dalına şifreli sertifika yazar
+
+concurrency:
+  group: ios-testflight
+  cancel-in-progress: false
+
+jobs:
+  testflight:
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+      MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+      MATCH_GIT_URL: https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+      MATCH_KEYCHAIN_NAME: ci.keychain-db
+      MATCH_KEYCHAIN_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+      IOS_MARKETING_VERSION: ${{ inputs.marketing_version }}
+      IOS_CHANGELOG: ${{ inputs.changelog }}
+      FASTLANE_SKIP_UPDATE_CHECK: "1"
+      FASTLANE_HIDE_CHANGELOG: "1"
+      LC_ALL: en_US.UTF-8
+      LANG: en_US.UTF-8
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Gerekli gizli değerler var mı?
+        run: |
+          eksik=0
+          for k in APPLE_TEAM_ID ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_P8 MATCH_PASSWORD; do
+            if [ -z "${!k}" ]; then echo "::error::$k tanımlı değil (Settings → Secrets/Variables)"; eksik=1; fi
+          done
+          [ "$eksik" = 0 ]
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+
+      - name: fastlane kur
+        working-directory: iosApp
+        run: |
+          gem install bundler --no-document
+          bundle install --jobs 4
+
+      - name: Xcode sürümü
+        run: xcodebuild -version
+
+      # Derleme numarası: run numarası + 100 (Play'deki kural gibi tekil ve artan).
+      - name: Derleme numarası
+        run: echo "IOS_BUILD_NUMBER=$((100 + GITHUB_RUN_NUMBER))" >> "$GITHUB_ENV"
+
+      # match için geçici anahtarlık; runner'ın login anahtarlığı kilitli olabilir.
+      - name: Geçici anahtarlık
+        run: |
+          security create-keychain -p "$MATCH_KEYCHAIN_PASSWORD" "$MATCH_KEYCHAIN_NAME"
+          security set-keychain-settings -lut 21600 "$MATCH_KEYCHAIN_NAME"
+          security unlock-keychain -p "$MATCH_KEYCHAIN_PASSWORD" "$MATCH_KEYCHAIN_NAME"
+          security list-keychains -d user -s "$MATCH_KEYCHAIN_NAME" $(security list-keychains -d user | tr -d '"')
+
+      - name: Kotlin iOS çerçevesi ön derleme (hata erken görünsün)
+        run: |
+          set -o pipefail
+          ./gradlew :composeApp:linkReleaseFrameworkIosArm64 --stacktrace 2>&1 | tail -n 40
+
+      - name: İmzala, arşivle, TestFlight'a yükle
+        working-directory: iosApp
+        run: bundle exec fastlane ios beta
+
+      - name: Çıktıları sakla
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-testflight-${{ github.run_number }}
+          path: |
+            iosApp/build/*.ipa
+            iosApp/build/*.dSYM.zip
+            ~/Library/Logs/gym/*.log
+          if-no-files-found: ignore
+          retention-days: 14
