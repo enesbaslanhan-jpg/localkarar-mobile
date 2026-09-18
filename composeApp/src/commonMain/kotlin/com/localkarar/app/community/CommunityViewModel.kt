@@ -53,6 +53,9 @@ class CommunityViewModel(
     var metinInput by mutableStateOf("")
         private set
     var attachedMedia by mutableStateOf<CommunityMediaDto?>(null)
+    /** Secilen gorselin bellekteki onizlemesi; sunucu URL'i beklenmez (19.09.2026). */
+    var attachedPreview by mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null)
+    var attachedIsVideo by mutableStateOf(false)
         private set
     var isUploadingMedia by mutableStateOf(false)
         private set
@@ -257,6 +260,8 @@ class CommunityViewModel(
 
     fun onMediaSelected(fileName: String, bytes: ByteArray, mimeType: String) {
         mediaUploadJob?.cancel()
+        attachedPreview = if (mimeType.startsWith("image/")) com.localkarar.app.core.gorseliCoz(bytes) else null
+        attachedIsVideo = mimeType.startsWith("video/")
         mediaUploadJob = viewModelScope.launch {
             isUploadingMedia = true
             mediaUploadProgress = 0f
@@ -285,6 +290,8 @@ class CommunityViewModel(
     fun removeAttachedMedia() {
         val mediaId = attachedMedia?.id
         attachedMedia = null
+        attachedPreview = null
+        attachedIsVideo = false
         if (mediaId != null) {
             viewModelScope.launch {
                 repository.discardMedia(mediaId)

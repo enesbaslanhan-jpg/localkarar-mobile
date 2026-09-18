@@ -1,6 +1,11 @@
 package com.localkarar.app.ui.screens.community
 
 import com.localkarar.app.ui.components.LkCommunityVideo
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
+import com.localkarar.app.ui.components.LkGorselGoruntuleyici
 import androidx.compose.foundation.layout.padding
 import com.localkarar.app.ui.components.altBoslukla
 import com.localkarar.app.ui.components.LocalAltBosluk
@@ -313,10 +318,12 @@ private fun MainPostCard(
             post.media?.let { media ->
                 Spacer(Modifier.height(10.dp))
                 if (media.kind == "image" && !media.url.isNullOrBlank()) {
+                    var buyut by remember { mutableStateOf(false) }
+                    if (buyut) LkGorselGoruntuleyici(url = media.url, aciklama = media.originalName, onKapat = { buyut = false })
                     LkRemoteImage(
                         url = media.url,
                         contentDescription = media.originalName,
-                        modifier = Modifier.fillMaxWidth().aspectRatio(16f / 10f).clip(LkShapes.MD)
+                        modifier = Modifier.fillMaxWidth().aspectRatio(16f / 10f).clip(LkShapes.MD).clickable { buyut = true }
                     ) { Box(Modifier.fillMaxSize().background(LkSurfaceTile)) }
                 } else if (media.kind == "video" && media.status == "processing") {
                     Row(

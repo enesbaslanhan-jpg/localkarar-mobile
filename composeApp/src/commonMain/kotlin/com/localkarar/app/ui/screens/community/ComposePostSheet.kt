@@ -1,6 +1,8 @@
 package com.localkarar.app.ui.screens.community
 
 import com.localkarar.app.ui.components.LkLoadingSpinner
+import androidx.compose.foundation.Image
+import com.localkarar.app.ui.components.LkGorselGoruntuleyici
 import androidx.compose.ui.layout.ContentScale
 import com.localkarar.app.ui.components.LkRemoteImage
 import androidx.compose.foundation.layout.padding
@@ -94,6 +96,10 @@ fun ComposePostSheet(
             .orEmpty()
     }
     var etiketAcik by remember { mutableStateOf(false) }
+    var buyukOnizleme by remember { mutableStateOf(false) }
+    if (buyukOnizleme && viewModel.attachedPreview != null) {
+        LkGorselGoruntuleyici(bitmap = viewModel.attachedPreview, aciklama = "Eklenen görsel", onKapat = { buyukOnizleme = false })
+    }
     val odak = remember { FocusRequester() }
     LaunchedEffect(Unit) { odak.requestFocus() }
 
@@ -275,40 +281,53 @@ fun ComposePostSheet(
                             }
                         }
 
-                        viewModel.attachedMedia?.let { media ->
-                            /* Gorsel ONIZLEME (urun sahibi, 19.09.2026): eklenen fotograf paylasimdan
-                               once gorunur; yukleme bitince sunucu URL'i var. */
-                            if (media.kind == "image" && !media.url.isNullOrBlank()) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .heightIn(max = 320.dp)
-                                        .clip(LkShapes.MD)
-                                        .background(LkSurfaceSunken)
-                                ) {
-                                    LkRemoteImage(
-                                        url = media.url,
+                        /*
+                         * GORSEL ONIZLEME (19.09.2026): secildigi an BELLEKTEKI baytlardan
+                         * cizilir (sunucu URL'i beklenmez; onceki surumde beyaz kutu
+                         * kaliyordu). Dokununca tam ekran buyur. Video: yukleme bitince
+                         * sunucu isliyor; poster hazir degil, "Video eklendi" karti.
+                         */
+                        val onizleme = viewModel.attachedPreview
+                        if (onizleme != null || viewModel.attachedIsVideo || viewModel.isUploadingMedia) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(min = 120.dp, max = 320.dp)
+                                    .clip(LkShapes.MD)
+                                    .background(LkSurfaceSunken)
+                                    .clickable(enabled = onizleme != null) { buyukOnizleme = true }
+                            ) {
+                                if (onizleme != null) {
+                                    Image(
+                                        bitmap = onizleme,
                                         contentDescription = "Eklenen görsel",
                                         modifier = Modifier.fillMaxWidth().heightIn(min = 160.dp, max = 320.dp),
-                                        contentScale = ContentScale.Fit,
-                                        yedek = {}
+                                        contentScale = ContentScale.Fit
                                     )
-                                    Icon(
-                                        imageVector = Icons.Outlined.Close,
-                                        contentDescription = "Kaldır",
-                                        tint = LkOnPrimary,
-                                        modifier = Modifier
-                                            .align(Alignment.TopEnd)
-                                            .padding(8.dp)
-                                            .size(28.dp)
-                                            .clip(LkShapes.FULL)
-                                            .background(LkTextPrimary.copy(alpha = 0.55f))
-                                            .clickable { viewModel.removeAttachedMedia() }
-                                            .padding(5.dp)
-                                    )
+                                } else {
+                                    Column(Modifier.fillMaxWidth().padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Icon(Icons.Outlined.Videocam, contentDescription = null, tint = LkTextSecondary, modifier = Modifier.size(32.dp))
+                                        Spacer(Modifier.height(6.dp))
+                                        Text(if (viewModel.isUploadingMedia) "Yükleniyor…" else "Video eklendi — paylaşınca hazırlanır", style = LkTypography.getBodySmall(), color = LkTextSecondary)
+                                    }
                                 }
-                                Spacer(Modifier.height(LkSpacing.Space2))
+                                if (viewModel.attachedMedia != null) Icon(
+                                    imageVector = Icons.Outlined.Close,
+                                    contentDescription = "Kaldır",
+                                    tint = LkOnPrimary,
+                                    modifier = Modifier
+                                        .align(Alignment.TopEnd)
+                                        .padding(8.dp)
+                                        .size(28.dp)
+                                        .clip(LkShapes.FULL)
+                                        .background(LkTextPrimary.copy(alpha = 0.55f))
+                                        .clickable { viewModel.removeAttachedMedia() }
+                                        .padding(5.dp)
+                                )
                             }
+                            Spacer(Modifier.height(LkSpacing.Space2))
+                        }
+                        viewModel.attachedMedia?.let { media ->
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
