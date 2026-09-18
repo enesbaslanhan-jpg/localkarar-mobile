@@ -36,6 +36,7 @@ private class KenarJestiHedefi : NSObject() {
 
 private var kenarJestiHedefi: KenarJestiHedefi? = null
 
+@OptIn(ExperimentalForeignApi::class)
 fun MainViewController(): UIViewController {
     val denetleyici = ComposeUIViewController {
         val secureStorage = SecureStorage()
