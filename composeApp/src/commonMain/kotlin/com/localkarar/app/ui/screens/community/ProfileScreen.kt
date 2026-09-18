@@ -1,6 +1,9 @@
 package com.localkarar.app.ui.screens.community
 
 import com.localkarar.app.ui.components.LkLoadingDesen
+import androidx.compose.foundation.layout.padding
+import com.localkarar.app.ui.components.altBoslukla
+import com.localkarar.app.ui.components.LocalAltBosluk
 import com.localkarar.app.ui.components.LkLoadingState
 import com.localkarar.app.ui.components.LkCoverHeader
 import androidx.compose.foundation.background
@@ -355,7 +358,7 @@ private fun OwnProfileContent(
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 24.dp)
+        contentPadding = PaddingValues(bottom = 24.dp).altBoslukla()
     ) {
         item {
             ProfilBasligi(
@@ -451,7 +454,7 @@ private fun OtherProfileContent(
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 24.dp)
+        contentPadding = PaddingValues(bottom = 24.dp).altBoslukla()
     ) {
         item {
             ProfilBasligi(

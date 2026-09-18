@@ -1,6 +1,9 @@
 package com.localkarar.app.ui.screens.news
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.padding
+import com.localkarar.app.ui.components.altBoslukla
+import com.localkarar.app.ui.components.LocalAltBosluk
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
@@ -77,6 +80,7 @@ fun NewsDetailScreen(
             Modifier
                 .fillMaxSize()
                 .verticalScroll(scrollState)
+                .padding(bottom = LocalAltBosluk.current.calculateBottomPadding())
                 .padding(LkSpacing.Space5),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {

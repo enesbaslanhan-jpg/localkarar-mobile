@@ -1,6 +1,9 @@
 package com.localkarar.app.ui.screens.workspaces
 
 import com.localkarar.app.ui.components.LkHairline
+import androidx.compose.foundation.layout.padding
+import com.localkarar.app.ui.components.altBoslukla
+import com.localkarar.app.ui.components.LocalAltBosluk
 import com.localkarar.app.ui.components.LkRowGroup
 import com.localkarar.app.core.rememberFileSharer
 import com.localkarar.app.ui.components.LkListRow
@@ -139,7 +142,7 @@ fun DocumentsScreen(
                     } else {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(LkSpacing.Space4),
+                            contentPadding = PaddingValues(LkSpacing.Space4).altBoslukla(),
                             verticalArrangement = Arrangement.spacedBy(LkSpacing.Space3)
                         ) {
                             /* Tek yukseltilmis yuzey; kart yigini degil. */

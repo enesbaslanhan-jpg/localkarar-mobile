@@ -1,6 +1,9 @@
 package com.localkarar.app.ui.screens.courses
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.padding
+import com.localkarar.app.ui.components.altBoslukla
+import com.localkarar.app.ui.components.LocalAltBosluk
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -82,7 +85,7 @@ private fun LessonContent(
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
     LazyColumn(
         modifier = Modifier.fillMaxHeight().widthIn(max = LkOkumaGenisligi),
-        contentPadding = PaddingValues(horizontal = LkSpacing.Space5, vertical = LkSpacing.Space4),
+        contentPadding = PaddingValues(horizontal = LkSpacing.Space5, vertical = LkSpacing.Space4).altBoslukla(),
         verticalArrangement = Arrangement.spacedBy(LkSpacing.Space6)
     ) {
         item {

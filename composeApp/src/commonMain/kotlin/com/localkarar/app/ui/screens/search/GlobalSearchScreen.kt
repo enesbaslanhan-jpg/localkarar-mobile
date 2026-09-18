@@ -1,6 +1,9 @@
 package com.localkarar.app.ui.screens.search
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.padding
+import com.localkarar.app.ui.components.altBoslukla
+import com.localkarar.app.ui.components.LocalAltBosluk
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -121,7 +124,7 @@ fun GlobalSearchScreen(
                                 start = LkSpacing.Space4,
                                 end = LkSpacing.Space4,
                                 bottom = 88.dp
-                            ),
+                            ).altBoslukla(),
                             verticalArrangement = Arrangement.spacedBy(LkSpacing.Space2)
                         ) {
                             if (s.sunucu.people.isNotEmpty()) {

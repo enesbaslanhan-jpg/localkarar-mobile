@@ -1,6 +1,9 @@
 package com.localkarar.app.ui.screens.courses
 
 import com.localkarar.app.ui.components.LkProgress
+import androidx.compose.foundation.layout.padding
+import com.localkarar.app.ui.components.altBoslukla
+import com.localkarar.app.ui.components.LocalAltBosluk
 import com.localkarar.app.ui.components.LkProgressPill
 import com.localkarar.app.ui.components.LkCourseProgress
 import androidx.compose.foundation.background
@@ -105,7 +108,7 @@ fun CatalogView(
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = LkSpacing.Space6)
+        contentPadding = PaddingValues(bottom = LkSpacing.Space6).altBoslukla()
     ) {
         if (showFilterBar) {
             item {
@@ -159,7 +162,7 @@ fun EnrollmentsView(
     } else {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = LkSpacing.Space6, start = LkSpacing.Space4, end = LkSpacing.Space4)
+            contentPadding = PaddingValues(bottom = LkSpacing.Space6, start = LkSpacing.Space4, end = LkSpacing.Space4).altBoslukla()
         ) {
             items(data.enrollments) { enrollment ->
                 EnrollmentCard(enrollment, onNavigateToCourseDetail)

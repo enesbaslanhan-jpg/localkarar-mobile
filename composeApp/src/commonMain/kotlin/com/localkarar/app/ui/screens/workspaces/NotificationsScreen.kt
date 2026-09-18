@@ -1,6 +1,9 @@
 package com.localkarar.app.ui.screens.workspaces
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.padding
+import com.localkarar.app.ui.components.altBoslukla
+import com.localkarar.app.ui.components.LocalAltBosluk
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -74,7 +77,7 @@ fun NotificationsScreen(
                 } else {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(LkSpacing.Space4),
+                        contentPadding = PaddingValues(LkSpacing.Space4).altBoslukla(),
                         verticalArrangement = Arrangement.spacedBy(LkSpacing.Space3)
                     ) {
                         /* Tek yukseltilmis yuzey; her bildirim kendi cercevesinde degil. */

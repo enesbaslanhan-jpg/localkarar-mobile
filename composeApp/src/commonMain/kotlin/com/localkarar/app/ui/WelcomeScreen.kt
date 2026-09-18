@@ -1,6 +1,9 @@
 package com.localkarar.app.ui
 
 import kotlin.math.sin
+import androidx.compose.foundation.layout.padding
+import com.localkarar.app.ui.components.altBoslukla
+import com.localkarar.app.ui.components.LocalAltBosluk
 import kotlin.math.cos
 import kotlin.math.PI
 import androidx.compose.ui.graphics.StrokeCap
@@ -68,6 +71,7 @@ fun WelcomeScreen(
             .fillMaxSize()
             .background(LkSurfaceCanvas)
             .verticalScroll(rememberScrollState())
+                .padding(bottom = LocalAltBosluk.current.calculateBottomPadding())
     ) {
         HosGeldinHero(user)
 

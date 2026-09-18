@@ -1,6 +1,9 @@
 package com.localkarar.app.ui.screens.decision
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.padding
+import com.localkarar.app.ui.components.altBoslukla
+import com.localkarar.app.ui.components.LocalAltBosluk
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.navigationBars
@@ -79,7 +82,7 @@ fun DecisionSessionScreen(
                         Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.ime.union(WindowInsets.navigationBars))) {
                         LazyColumn(
                             modifier = Modifier.weight(1f).fillMaxWidth(),
-                            contentPadding = PaddingValues(LkSpacing.Space4),
+                            contentPadding = PaddingValues(LkSpacing.Space4).altBoslukla(),
                             verticalArrangement = Arrangement.spacedBy(LkSpacing.Space4)
                         ) {
                             if (state.result != null) {

@@ -1,6 +1,8 @@
 package com.localkarar.app.ui.screens.calculations
 
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import com.localkarar.app.ui.components.altBoslukla
 import com.localkarar.app.ui.components.LocalAltBosluk
 import com.localkarar.app.ui.components.lkBinenYuzey
 import androidx.compose.ui.focus.focusRequester
@@ -193,7 +195,6 @@ fun CalculationsScreen(
                 .lkBinenYuzey(22.dp)
                 .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
                 .background(LkSurfaceCanvas)
-                .padding(LocalAltBosluk.current)
         ) {
             Spacer(modifier = Modifier.height(LkSpacing.Space5))
 
@@ -315,7 +316,7 @@ private fun KatalogTab(
             start = LkSpacing.Space4,
             end = LkSpacing.Space4,
             bottom = LkSpacing.Space8
-        ),
+        ).altBoslukla(),
         verticalArrangement = Arrangement.spacedBy(LkSpacing.Space5)
     ) {
 
@@ -728,7 +729,7 @@ private fun GecmisTab(
     }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(LkSpacing.Space4),
+        contentPadding = PaddingValues(LkSpacing.Space4).altBoslukla(),
         verticalArrangement = Arrangement.spacedBy(LkSpacing.Space4)
     ) {
         items(history) { item ->

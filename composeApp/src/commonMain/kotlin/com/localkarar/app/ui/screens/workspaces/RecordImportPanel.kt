@@ -1,6 +1,9 @@
 package com.localkarar.app.ui.screens.workspaces
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.padding
+import com.localkarar.app.ui.components.altBoslukla
+import com.localkarar.app.ui.components.LocalAltBosluk
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -56,7 +59,8 @@ fun RecordImportPanel(
                     .clip(LkShapes.LG)
                     .background(LkSurfaceElevated)
                     .padding(LkSpacing.Space5)
-                    .verticalScroll(rememberScrollState()),
+                    .verticalScroll(rememberScrollState())
+                .padding(bottom = LocalAltBosluk.current.calculateBottomPadding()),
                 verticalArrangement = Arrangement.spacedBy(LkSpacing.Space3)
             ) {
                 Text(

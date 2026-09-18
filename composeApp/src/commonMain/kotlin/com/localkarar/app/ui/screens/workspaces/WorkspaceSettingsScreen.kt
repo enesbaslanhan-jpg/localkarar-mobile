@@ -1,6 +1,9 @@
 package com.localkarar.app.ui.screens.workspaces
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.padding
+import com.localkarar.app.ui.components.altBoslukla
+import com.localkarar.app.ui.components.LocalAltBosluk
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.AlertDialog
@@ -151,7 +154,7 @@ fun WorkspaceSettingsScreen(
                         end = LkSpacing.Space4,
                         top = LkSpacing.Space4,
                         bottom = LkSpacing.Space10
-                    ),
+                    ).altBoslukla(),
                     verticalArrangement = Arrangement.spacedBy(LkSpacing.Space5)
                 ) {
                     if (actionError != null || notice != null) {

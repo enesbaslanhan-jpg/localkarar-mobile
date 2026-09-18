@@ -1,6 +1,9 @@
 package com.localkarar.app.ui.screens.mentor
 
 import com.localkarar.app.ui.components.LkLoadingSpinner
+import androidx.compose.foundation.layout.padding
+import com.localkarar.app.ui.components.altBoslukla
+import com.localkarar.app.ui.components.LocalAltBosluk
 import com.localkarar.app.core.PrefKeys
 import com.localkarar.app.core.LocalAppPreferences
 import androidx.compose.foundation.background
@@ -202,7 +205,7 @@ fun AiMentorScreen(
                         } else {
                             LazyColumn(
                                 Modifier.fillMaxSize(),
-                                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp)
+                                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp).altBoslukla()
                             ) {
                                 items(s.conversations, key = { it.id }) { conversation ->
                                     ConversationCard(
@@ -555,6 +558,7 @@ private fun MemorySheet(
                             }
                         } else {
                             LazyColumn(
+        contentPadding = LocalAltBosluk.current,
                                 modifier = Modifier.weight(1f),
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {

@@ -1,6 +1,9 @@
 package com.localkarar.app.ui.screens.settings
 
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.padding
+import com.localkarar.app.ui.components.altBoslukla
+import com.localkarar.app.ui.components.LocalAltBosluk
 import com.localkarar.app.ui.components.LkNotice
 import com.localkarar.app.ui.components.LkSegment
 import com.localkarar.app.ui.components.LkHairline
@@ -75,7 +78,8 @@ fun SettingsScreen(
             onDismissRequest = { showLogoutAllDialog = false },
             title = { Text("Diğer Cihazlardan Çık", style = LkTypography.getBodyStrong(), color = LkTextPrimary) },
             text = {
-                Column(Modifier.verticalScroll(rememberScrollState())) {
+                Column(Modifier.verticalScroll(rememberScrollState())
+                .padding(bottom = LocalAltBosluk.current.calculateBottomPadding())) {
                     Text(
                         "Bu cihaz haricindeki tüm diğer cihaz ve tarayıcılardaki aktif oturumlarınız sonlandırılacaktır. Devam etmek istiyor musunuz?",
                         style = LkTypography.getBodySmall(),
@@ -107,6 +111,7 @@ fun SettingsScreen(
             Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
+                .padding(bottom = LocalAltBosluk.current.calculateBottomPadding())
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {

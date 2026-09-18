@@ -1,6 +1,9 @@
 package com.localkarar.app.ui.screens.settings
 
 import com.localkarar.app.ui.components.LkHeroPage
+import androidx.compose.foundation.layout.padding
+import com.localkarar.app.ui.components.altBoslukla
+import com.localkarar.app.ui.components.LocalAltBosluk
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -112,6 +115,7 @@ fun SupportScreen(
                 .fillMaxSize()
                 
                 .verticalScroll(rememberScrollState())
+                .padding(bottom = LocalAltBosluk.current.calculateBottomPadding())
                 .padding(LkSpacing.Space4),
             verticalArrangement = Arrangement.spacedBy(LkSpacing.Space3)
         ) {

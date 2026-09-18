@@ -1,6 +1,8 @@
 package com.localkarar.app.ui.components
 
 import androidx.compose.animation.core.animateFloatAsState
+import com.localkarar.app.ui.components.altBoslukla
+import com.localkarar.app.ui.components.LocalAltBosluk
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.WindowInsets
@@ -107,6 +109,7 @@ fun LkMenuSheet(
             .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
             .background(LkSurfaceElevated)
             .verticalScroll(rememberScrollState())
+                .padding(bottom = LocalAltBosluk.current.calculateBottomPadding())
             /* Kok tam ekran (18.09.2026): alt guvenli alan burada doldurulur. */
             .windowInsetsPadding(WindowInsets.navigationBars)
             .padding(bottom = LkSpacing.Space8)

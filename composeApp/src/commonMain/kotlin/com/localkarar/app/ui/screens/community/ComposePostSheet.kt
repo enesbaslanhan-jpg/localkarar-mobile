@@ -1,6 +1,11 @@
 package com.localkarar.app.ui.screens.community
 
 import com.localkarar.app.ui.components.LkLoadingSpinner
+import androidx.compose.ui.layout.ContentScale
+import com.localkarar.app.ui.components.LkRemoteImage
+import androidx.compose.foundation.layout.padding
+import com.localkarar.app.ui.components.altBoslukla
+import com.localkarar.app.ui.components.LocalAltBosluk
 import com.localkarar.app.core.rememberCameraCapture
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -139,6 +144,7 @@ fun ComposePostSheet(
                     .weight(1f)
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
+                .padding(bottom = LocalAltBosluk.current.calculateBottomPadding())
                     .padding(horizontal = LkSpacing.Space4, vertical = LkSpacing.Space4)
             ) {
                 if (replyTarget != null) {
@@ -270,6 +276,39 @@ fun ComposePostSheet(
                         }
 
                         viewModel.attachedMedia?.let { media ->
+                            /* Gorsel ONIZLEME (urun sahibi, 19.09.2026): eklenen fotograf paylasimdan
+                               once gorunur; yukleme bitince sunucu URL'i var. */
+                            if (media.kind == "image" && !media.url.isNullOrBlank()) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .heightIn(max = 320.dp)
+                                        .clip(LkShapes.MD)
+                                        .background(LkSurfaceSunken)
+                                ) {
+                                    LkRemoteImage(
+                                        url = media.url,
+                                        contentDescription = "Eklenen görsel",
+                                        modifier = Modifier.fillMaxWidth().heightIn(min = 160.dp, max = 320.dp),
+                                        contentScale = ContentScale.Fit,
+                                        yedek = {}
+                                    )
+                                    Icon(
+                                        imageVector = Icons.Outlined.Close,
+                                        contentDescription = "Kaldır",
+                                        tint = LkOnPrimary,
+                                        modifier = Modifier
+                                            .align(Alignment.TopEnd)
+                                            .padding(8.dp)
+                                            .size(28.dp)
+                                            .clip(LkShapes.FULL)
+                                            .background(LkTextPrimary.copy(alpha = 0.55f))
+                                            .clickable { viewModel.removeAttachedMedia() }
+                                            .padding(5.dp)
+                                    )
+                                }
+                                Spacer(Modifier.height(LkSpacing.Space2))
+                            }
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()

@@ -117,8 +117,6 @@ fun LkHeroPage(
                 .lkBinenYuzey(overlap)
                 .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
                 .background(LkSurfaceCanvas)
-                /* Yuzen dock: yuzey dibe iner, icerik dock'un altinda kalmasin. */
-                .padding(LocalAltBosluk.current)
         ) {
             content()
         }

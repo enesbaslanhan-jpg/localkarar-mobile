@@ -1,6 +1,9 @@
 package com.localkarar.app.ui.screens.workspaces
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.padding
+import com.localkarar.app.ui.components.altBoslukla
+import com.localkarar.app.ui.components.LocalAltBosluk
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.clickable
 import androidx.compose.material.IconButton
@@ -83,7 +86,7 @@ fun RecordDetailScreen(
                 val record = state.record
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(LkSpacing.Space4),
+                    contentPadding = PaddingValues(LkSpacing.Space4).altBoslukla(),
                     verticalArrangement = Arrangement.spacedBy(LkSpacing.Space4)
                 ) {
                     item {

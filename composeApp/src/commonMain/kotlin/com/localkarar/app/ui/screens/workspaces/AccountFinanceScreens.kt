@@ -1,6 +1,8 @@
 package com.localkarar.app.ui.screens.workspaces
 
 import androidx.compose.foundation.layout.Arrangement
+import com.localkarar.app.ui.components.altBoslukla
+import com.localkarar.app.ui.components.LocalAltBosluk
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -89,7 +91,7 @@ internal fun AccountListScreen(
                 } else {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(LkSpacing.Space4),
+                        contentPadding = PaddingValues(LkSpacing.Space4).altBoslukla(),
                         verticalArrangement = Arrangement.spacedBy(LkSpacing.Space4)
                     ) {
                         item {
@@ -153,7 +155,7 @@ fun AccountCreateScreen(
     LkHeroPage(title = "Yeni hesap", onBack = onBack) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(LkSpacing.Space4),
+            contentPadding = PaddingValues(LkSpacing.Space4).altBoslukla(),
             verticalArrangement = Arrangement.spacedBy(LkSpacing.Space4)
         ) {
             item {

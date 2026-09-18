@@ -1,6 +1,9 @@
 package com.localkarar.app.ui.screens.settings
 
 import com.localkarar.app.ui.components.LkHeroPage
+import androidx.compose.foundation.layout.padding
+import com.localkarar.app.ui.components.altBoslukla
+import com.localkarar.app.ui.components.LocalAltBosluk
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -40,6 +43,7 @@ fun AboutScreen(onNavigateBack: () -> Unit) {
             Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
+                .padding(bottom = LocalAltBosluk.current.calculateBottomPadding())
                 .padding(LkSpacing.Space4),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(LkSpacing.Space4)
@@ -142,7 +146,8 @@ private fun InfoScaffold(eyebrow: String, title: String, onBack: () -> Unit, con
         )
     }) {
         Column(
-            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
+            Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+                .padding(bottom = LocalAltBosluk.current.calculateBottomPadding()).padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(22.dp),
             content = content
         )

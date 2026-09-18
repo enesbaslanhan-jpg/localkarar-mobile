@@ -60,7 +60,6 @@ fun LkPageLayout(
                 .fillMaxSize()
                 .padding(paddingValues)
                 .background(LkSurfaceCanvas)
-                .padding(LocalAltBosluk.current)
         ) {
             content()
         }

@@ -1,6 +1,9 @@
 package com.localkarar.app.ui.screens.settings
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.padding
+import com.localkarar.app.ui.components.altBoslukla
+import com.localkarar.app.ui.components.LocalAltBosluk
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -78,6 +81,7 @@ fun ProfileScreen(
             Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
+                .padding(bottom = LocalAltBosluk.current.calculateBottomPadding())
                 .padding(bottom = LkSpacing.Space8),
             verticalArrangement = Arrangement.spacedBy(LkSpacing.Space4)
         ) {

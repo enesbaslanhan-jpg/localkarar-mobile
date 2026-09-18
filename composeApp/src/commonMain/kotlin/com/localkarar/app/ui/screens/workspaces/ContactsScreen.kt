@@ -1,6 +1,9 @@
 package com.localkarar.app.ui.screens.workspaces
 
 import com.localkarar.app.ui.components.LkAvatar
+import androidx.compose.foundation.layout.padding
+import com.localkarar.app.ui.components.altBoslukla
+import com.localkarar.app.ui.components.LocalAltBosluk
 import com.localkarar.app.ui.components.LkHairline
 import com.localkarar.app.ui.components.LkRowGroup
 import com.localkarar.app.ui.components.LkListRow
@@ -103,7 +106,7 @@ fun ContactsScreen(
                         } else {
                             LazyColumn(
                                 modifier = Modifier.fillMaxSize(),
-                                contentPadding = PaddingValues(LkSpacing.Space4),
+                                contentPadding = PaddingValues(LkSpacing.Space4).altBoslukla(),
                                 verticalArrangement = Arrangement.spacedBy(LkSpacing.Space4)
                             ) {
                                 /* Tek yukseltilmis yuzey; kart yigini degil. */
@@ -279,7 +282,8 @@ private fun ContactEditDialog(
         },
         text = {
             Column(
-                modifier = Modifier.verticalScroll(rememberScrollState()),
+                modifier = Modifier.verticalScroll(rememberScrollState())
+                .padding(bottom = LocalAltBosluk.current.calculateBottomPadding()),
                 verticalArrangement = Arrangement.spacedBy(LkSpacing.Space3)
             ) {
                 if (error != null) {

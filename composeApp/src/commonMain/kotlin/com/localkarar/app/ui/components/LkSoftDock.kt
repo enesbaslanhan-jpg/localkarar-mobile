@@ -1,6 +1,8 @@
 package com.localkarar.app.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.border
@@ -139,4 +141,17 @@ fun LkSoftDock(
             }
         }
     }
+}
+
+/** Listenin mevcut iç boşluğuna yüzen dock'un alt boşluğunu ekler (içerik dock'un altından akar, son satır görünür kalır). */
+@androidx.compose.runtime.Composable
+fun androidx.compose.foundation.layout.PaddingValues.altBoslukla(): androidx.compose.foundation.layout.PaddingValues {
+    val yon = androidx.compose.ui.platform.LocalLayoutDirection.current
+    val alt = LocalAltBosluk.current.calculateBottomPadding()
+    return androidx.compose.foundation.layout.PaddingValues(
+        start = calculateStartPadding(yon),
+        top = calculateTopPadding(),
+        end = calculateEndPadding(yon),
+        bottom = calculateBottomPadding() + alt
+    )
 }

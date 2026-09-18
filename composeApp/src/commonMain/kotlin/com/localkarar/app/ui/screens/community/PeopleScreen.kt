@@ -1,6 +1,9 @@
 package com.localkarar.app.ui.screens.community
 
 import com.localkarar.app.ui.components.LkLoadingDesen
+import androidx.compose.foundation.layout.padding
+import com.localkarar.app.ui.components.altBoslukla
+import com.localkarar.app.ui.components.LocalAltBosluk
 import com.localkarar.app.ui.components.LkLoadingState
 import com.localkarar.app.ui.components.LkCard
 import com.localkarar.app.ui.components.LkTextField
@@ -96,7 +99,7 @@ fun PeopleScreen(
                 } else {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp).altBoslukla(),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         items(s.people, key = { it.id }) { person ->

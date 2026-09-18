@@ -7,14 +7,6 @@ import com.localkarar.app.ui.components.LocalAltBosluk
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.ui.input.pointer.positionChange
-import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.foundation.gestures.horizontalDrag
-import androidx.compose.foundation.gestures.awaitHorizontalTouchSlopOrCancellation
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.WindowInsets
@@ -366,46 +358,13 @@ fun AppShell(
                 Box(Modifier.fillMaxSize().padding(paddingValues)) {
                 CompositionLocalProvider(LocalAltBosluk provides altBosluk) {
                 /*
-                 * 🔴 SOL KENARDAN KAYDIRARAK GERI (iOS aliskanligi; urun sahibi
-                 * 18.09.2026: "soldan kaydirinca geri gitme calismiyor").
-                 * Gezinme kendi yiginimiz oldugu icin UIKit'in kenar jesti yok;
-                 * burada yeniden kurulur: dokunus sol 28dp icinde baslar, saga
-                 * 72dp'den fazla surüklenirse bir sayfa geri. Yatay kaydirilan
-                 * cocuklar (sekmeler, slaytlar) jesti once tuketir; onlarla
-                 * catisma yok. Alt sayfa acikken ya da yiginda tek ekran varken
-                 * jest kapali.
+                 * Soldan kaydirarak geri iOS'ta UIKit kenar tanıyıcısıyla
+                 * (MainViewController.kt → SystemBackHandler.ios.kt), Android'de
+                 * sistem geri jestiyle gelir. Compose seviyesinde yazilan jest
+                 * iOS'ta tetiklenmiyordu (TestFlight 112-115); kaldirildi.
                  */
-                val yogunluk = LocalDensity.current
-                val geriJestiAktif = backStack.size > 1 && !bottomSheetState.isVisible
                 Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .pointerInput(geriJestiAktif) {
-                            if (!geriJestiAktif) return@pointerInput
-                            val kenarPx = with(yogunluk) { 28.dp.toPx() }
-                            val esikPx = with(yogunluk) { 72.dp.toPx() }
-                            /*
-                             * Kenardan baslayan dokunus BASTAN sahiplenilir: ilk
-                             * dokunus Initial gecisinde okunur, yatay esik asilinca
-                             * degisiklikler tuketilir ki alttaki liste kaymasin.
-                             * (detectHorizontalDragGestures cocuklardan sonra
-                             * calisiyordu; iOS'ta jest hic tetiklenmiyordu.)
-                             */
-                            awaitEachGesture {
-                                val ilk = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
-                                if (ilk.position.x > kenarPx) return@awaitEachGesture
-                                var toplam = 0f
-                                val esikDegisimi = awaitHorizontalTouchSlopOrCancellation(ilk.id) { degisim, asim ->
-                                    degisim.consume(); toplam += asim
-                                } ?: return@awaitEachGesture
-                                esikDegisimi.consume()
-                                horizontalDrag(ilk.id) { degisim ->
-                                    toplam += degisim.positionChange().x
-                                    degisim.consume()
-                                }
-                                if (toplam > esikPx) navController.popBackStack()
-                            }
-                        }
+                    modifier = Modifier.fillMaxSize()
                 ) {
                     // Seritler TUM ekranlarin ustunde, TEK yerde. Ekran ekran
                     // tekrarlansalardi birbirinden farkli gorunmeleri ve

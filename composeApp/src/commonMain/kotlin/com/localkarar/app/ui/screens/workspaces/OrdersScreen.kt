@@ -1,6 +1,9 @@
 package com.localkarar.app.ui.screens.workspaces
 
 import com.localkarar.app.ui.components.LkLoadingSpinner
+import androidx.compose.foundation.layout.padding
+import com.localkarar.app.ui.components.altBoslukla
+import com.localkarar.app.ui.components.LocalAltBosluk
 import com.localkarar.app.ui.components.UrunKucukGorsel
 import androidx.compose.ui.text.style.TextOverflow
 import com.localkarar.app.ui.components.LkFilterBar
@@ -275,6 +278,7 @@ fun OrdersScreen(
                 }
             } else {
                 LazyColumn(
+        contentPadding = LocalAltBosluk.current,
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = LkSpacing.Space4, vertical = LkSpacing.Space2),
@@ -474,6 +478,7 @@ private fun OrderDetailDialog(
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
+                .padding(bottom = LocalAltBosluk.current.calculateBottomPadding())
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),

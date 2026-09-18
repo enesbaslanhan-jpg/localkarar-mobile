@@ -1,6 +1,9 @@
 package com.localkarar.app.ui.screens.onboarding
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.padding
+import com.localkarar.app.ui.components.altBoslukla
+import com.localkarar.app.ui.components.LocalAltBosluk
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -57,7 +60,7 @@ fun AssessmentScreen(
                 val tamam = durum.cevaplar.size >= durum.sorular.size
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(LkSpacing.Space4),
+                    contentPadding = PaddingValues(LkSpacing.Space4).altBoslukla(),
                     verticalArrangement = Arrangement.spacedBy(LkSpacing.Space4)
                 ) {
                     item {
@@ -197,7 +200,7 @@ private fun SonucGorunumu(
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(LkSpacing.Space4),
+        contentPadding = PaddingValues(LkSpacing.Space4).altBoslukla(),
         verticalArrangement = Arrangement.spacedBy(LkSpacing.Space4)
     ) {
         item {

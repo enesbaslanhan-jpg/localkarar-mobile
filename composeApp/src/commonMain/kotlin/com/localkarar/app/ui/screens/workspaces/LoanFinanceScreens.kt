@@ -1,6 +1,8 @@
 package com.localkarar.app.ui.screens.workspaces
 
 import androidx.compose.foundation.layout.Arrangement
+import com.localkarar.app.ui.components.altBoslukla
+import com.localkarar.app.ui.components.LocalAltBosluk
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -93,7 +95,7 @@ internal fun LoanListScreen(
                 } else {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(LkSpacing.Space4),
+                        contentPadding = PaddingValues(LkSpacing.Space4).altBoslukla(),
                         verticalArrangement = Arrangement.spacedBy(LkSpacing.Space4)
                     ) {
                         item {
@@ -168,7 +170,7 @@ fun LoanCreateScreen(
     LkHeroPage(title = "Yeni kredi", onBack = onBack) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(LkSpacing.Space4),
+            contentPadding = PaddingValues(LkSpacing.Space4).altBoslukla(),
             verticalArrangement = Arrangement.spacedBy(LkSpacing.Space4)
         ) {
             item { Text("Rakamları bankanın ödeme planından aynen girin. LocalKarar faiz hesabı yapmaz.", color = LkTextSecondary) }

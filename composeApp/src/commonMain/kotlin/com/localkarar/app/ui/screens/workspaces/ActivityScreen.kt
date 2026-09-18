@@ -1,6 +1,9 @@
 package com.localkarar.app.ui.screens.workspaces
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.padding
+import com.localkarar.app.ui.components.altBoslukla
+import com.localkarar.app.ui.components.LocalAltBosluk
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -50,7 +53,7 @@ fun ActivityScreen(
                 } else {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(LkSpacing.Space4),
+                        contentPadding = PaddingValues(LkSpacing.Space4).altBoslukla(),
                         verticalArrangement = Arrangement.spacedBy(LkSpacing.Space3)
                     ) {
                         itemsIndexed(state.items, key = { _, item -> item.id }) { index, item ->

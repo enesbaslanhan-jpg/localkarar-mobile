@@ -1,6 +1,9 @@
 package com.localkarar.app.ui.screens.community
 
 import com.localkarar.app.ui.components.LkLoadingSpinner
+import androidx.compose.foundation.layout.padding
+import com.localkarar.app.ui.components.altBoslukla
+import com.localkarar.app.ui.components.LocalAltBosluk
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.navigationBars
@@ -86,7 +89,7 @@ fun ThreadDetailScreen(
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxWidth(),
-                            contentPadding = PaddingValues(16.dp),
+                            contentPadding = PaddingValues(16.dp).altBoslukla(),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             items(s.messages, key = { it.id }) { msg ->

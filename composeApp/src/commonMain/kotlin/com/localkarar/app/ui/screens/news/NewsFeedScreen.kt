@@ -1,6 +1,9 @@
 package com.localkarar.app.ui.screens.news
 
 import com.localkarar.app.ui.components.LkLoadingSpinner
+import androidx.compose.foundation.layout.padding
+import com.localkarar.app.ui.components.altBoslukla
+import com.localkarar.app.ui.components.LocalAltBosluk
 import androidx.compose.runtime.Composable
 
 import androidx.compose.foundation.background
@@ -126,7 +129,7 @@ fun NewsFeedScreen(
                     } else {
                         LazyColumn(
                             Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp).altBoslukla(),
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             items(s.articles, key = { it.id }) { article ->

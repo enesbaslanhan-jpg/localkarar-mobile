@@ -1,6 +1,8 @@
 package com.localkarar.app.ui.screens.home
 
 import com.localkarar.app.ui.components.LkCard
+import androidx.compose.foundation.layout.padding
+import com.localkarar.app.ui.components.altBoslukla
 import com.localkarar.app.ui.components.LocalAltBosluk
 import com.localkarar.app.ui.components.lkBinenYuzey
 import com.localkarar.app.ui.components.LkIconTile
@@ -324,8 +326,8 @@ private fun DashboardContent(
                 .lkBinenYuzey(22.dp)
                 .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
                 .background(LkSurfaceCanvas)
-                .padding(LocalAltBosluk.current)
                 .verticalScroll(scrollState)
+                .padding(bottom = LocalAltBosluk.current.calculateBottomPadding())
                 .padding(horizontal = LkSpacing.Space5),
             verticalArrangement = Arrangement.spacedBy(LkSpacing.Space6)
         ) {

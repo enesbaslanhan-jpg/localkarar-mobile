@@ -1,6 +1,8 @@
 package com.localkarar.app.ui.screens.community
 
 import com.localkarar.app.ui.components.LkLoadingSpinner
+import androidx.compose.foundation.layout.padding
+import com.localkarar.app.ui.components.altBoslukla
 import com.localkarar.app.ui.components.LocalAltBosluk
 import com.localkarar.app.ui.components.lkBinenYuzey
 import androidx.compose.material.icons.outlined.GridView
@@ -218,7 +220,6 @@ fun CommunityFeedScreen(
                 .lkBinenYuzey(22.dp)
                 .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
                 .background(LkSurfaceCanvas)
-                .padding(LocalAltBosluk.current)
         ) {
             Spacer(Modifier.height(LkSpacing.Space4))
             // §11: sekmeler ortak bilesenden.
@@ -407,7 +408,7 @@ private fun FeedTabContent(
                     Box(Modifier.fillMaxSize()) {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 88.dp),
+                            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 88.dp).altBoslukla(),
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             /*
@@ -919,7 +920,7 @@ private fun TrendTabContent(
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 88.dp),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 88.dp).altBoslukla(),
                     verticalArrangement = Arrangement.spacedBy(LkSpacing.Space3)
                 ) {
                     item {

@@ -1,6 +1,9 @@
 package com.localkarar.app.ui.screens.community
 
 import com.localkarar.app.ui.components.LkCommunityVideo
+import androidx.compose.foundation.layout.padding
+import com.localkarar.app.ui.components.altBoslukla
+import com.localkarar.app.ui.components.LocalAltBosluk
 import com.localkarar.app.ui.components.LkLoadingSpinner
 import com.localkarar.app.ui.components.LkRemoteImage
 
@@ -92,7 +95,7 @@ fun CommunityPostDetailScreen(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(bottom = 70.dp),
-                        contentPadding = PaddingValues(16.dp),
+                        contentPadding = PaddingValues(16.dp).altBoslukla(),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         // Parent Post Context (if this is a reply)

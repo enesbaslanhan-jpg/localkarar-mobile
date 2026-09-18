@@ -1,6 +1,9 @@
 package com.localkarar.app.ui
 
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import com.localkarar.app.ui.components.altBoslukla
+import com.localkarar.app.ui.components.LocalAltBosluk
 import com.localkarar.app.ui.components.lkBinenYuzey
 import com.localkarar.app.ui.components.LkYasalOnayPenceresi
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -151,6 +154,7 @@ fun LoginScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
+                .padding(bottom = LocalAltBosluk.current.calculateBottomPadding())
                     .padding(horizontal = LkSpacing.Space6, vertical = LkSpacing.Space8)
                     .windowInsetsPadding(WindowInsets.navigationBars)
             ) {

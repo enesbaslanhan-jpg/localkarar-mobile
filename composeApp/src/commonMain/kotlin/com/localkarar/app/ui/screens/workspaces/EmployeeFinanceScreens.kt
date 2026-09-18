@@ -1,6 +1,8 @@
 package com.localkarar.app.ui.screens.workspaces
 
 import androidx.compose.foundation.layout.Arrangement
+import com.localkarar.app.ui.components.altBoslukla
+import com.localkarar.app.ui.components.LocalAltBosluk
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -92,7 +94,7 @@ internal fun EmployeeListScreen(
                 } else {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(LkSpacing.Space4),
+                        contentPadding = PaddingValues(LkSpacing.Space4).altBoslukla(),
                         verticalArrangement = Arrangement.spacedBy(LkSpacing.Space4)
                     ) {
                         item {
@@ -164,7 +166,7 @@ fun EmployeeCreateScreen(
     LkHeroPage(title = "Yeni çalışan", onBack = onBack) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(LkSpacing.Space4),
+            contentPadding = PaddingValues(LkSpacing.Space4).altBoslukla(),
             verticalArrangement = Arrangement.spacedBy(LkSpacing.Space4)
         ) {
             item { Text("Maaş ve SGK tutarlarını resmi kayıtlarınızdaki haliyle girin.", color = LkTextSecondary) }
@@ -250,7 +252,7 @@ fun EmployeeLeaveScreen(
     LkHeroPage(title = "İzin kaydı", onBack = onBack) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(LkSpacing.Space4),
+            contentPadding = PaddingValues(LkSpacing.Space4).altBoslukla(),
             verticalArrangement = Arrangement.spacedBy(LkSpacing.Space4)
         ) {
             item { Text("Kullanılan izin süresini yarım gün hassasiyetinde kaydedebilirsiniz.", color = LkTextSecondary) }

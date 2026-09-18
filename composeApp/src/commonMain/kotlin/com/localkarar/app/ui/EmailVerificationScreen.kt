@@ -1,6 +1,9 @@
 package com.localkarar.app.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.padding
+import com.localkarar.app.ui.components.altBoslukla
+import com.localkarar.app.ui.components.LocalAltBosluk
 import com.localkarar.app.ui.components.lkBinenYuzey
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -104,6 +107,7 @@ fun EmailVerificationScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
+                .padding(bottom = LocalAltBosluk.current.calculateBottomPadding())
                     .padding(horizontal = LkSpacing.Space6, vertical = LkSpacing.Space8)
             ) {
                 Box(

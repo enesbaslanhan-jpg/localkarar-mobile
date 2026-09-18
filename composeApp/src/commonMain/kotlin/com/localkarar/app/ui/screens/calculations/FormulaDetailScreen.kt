@@ -1,6 +1,9 @@
 package com.localkarar.app.ui.screens.calculations
 
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.layout.padding
+import com.localkarar.app.ui.components.altBoslukla
+import com.localkarar.app.ui.components.LocalAltBosluk
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.background
@@ -154,7 +157,7 @@ fun FormulaDetailScreen(
 
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(LkSpacing.Space4),
+                    contentPadding = PaddingValues(LkSpacing.Space4).altBoslukla(),
                     verticalArrangement = Arrangement.spacedBy(LkSpacing.Space4)
                 ) {
                     item {

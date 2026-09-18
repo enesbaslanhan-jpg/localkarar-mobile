@@ -1,6 +1,9 @@
 package com.localkarar.app.ui
 
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import com.localkarar.app.ui.components.altBoslukla
+import com.localkarar.app.ui.components.LocalAltBosluk
 import com.localkarar.app.ui.components.lkBinenYuzey
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.navigationBars
@@ -102,6 +105,7 @@ fun ForgotPasswordScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
+                .padding(bottom = LocalAltBosluk.current.calculateBottomPadding())
                     .windowInsetsPadding(WindowInsets.navigationBars)
                     .padding(horizontal = LkSpacing.Space6, vertical = LkSpacing.Space8)
             ) {

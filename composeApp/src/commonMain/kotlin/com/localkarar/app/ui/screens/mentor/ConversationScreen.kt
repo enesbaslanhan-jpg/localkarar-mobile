@@ -1,6 +1,9 @@
 package com.localkarar.app.ui.screens.mentor
 
 import com.localkarar.app.ui.components.LkLoadingSpinner
+import androidx.compose.foundation.layout.padding
+import com.localkarar.app.ui.components.altBoslukla
+import com.localkarar.app.ui.components.LocalAltBosluk
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.navigationBars
@@ -147,7 +150,7 @@ fun ConversationScreen(
                     LazyColumn(
                         state = listState,
                         modifier = Modifier.weight(1f).fillMaxWidth(),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp).altBoslukla(),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         items(messages, key = { it.id }) { message ->

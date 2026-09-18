@@ -1,6 +1,9 @@
 package com.localkarar.app.ui.screens.community
 
 import com.localkarar.app.ui.components.LkLoadingSpinner
+import androidx.compose.foundation.layout.padding
+import com.localkarar.app.ui.components.altBoslukla
+import com.localkarar.app.ui.components.LocalAltBosluk
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -99,6 +102,7 @@ fun CreateThreadSheet(
                     }
                 } else {
                     LazyColumn(
+        contentPadding = LocalAltBosluk.current,
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(1f, fill = false)

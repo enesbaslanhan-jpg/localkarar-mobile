@@ -1,6 +1,9 @@
 package com.localkarar.app.ui.screens.workspaces
 
 import com.localkarar.app.ui.components.LkLoadingSpinner
+import androidx.compose.foundation.layout.padding
+import com.localkarar.app.ui.components.altBoslukla
+import com.localkarar.app.ui.components.LocalAltBosluk
 import com.localkarar.app.ui.components.LkFilterBar
 import com.localkarar.app.ui.components.LkFilterGrup
 import com.localkarar.app.ui.components.LkFilterSecenek
@@ -240,6 +243,7 @@ fun ProductsScreen(
                 }
             } else {
                 LazyColumn(
+        contentPadding = LocalAltBosluk.current,
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = LkSpacing.Space4, vertical = LkSpacing.Space2),
@@ -563,6 +567,7 @@ private fun ProductLocalSettingsDialog(
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
+                .padding(bottom = LocalAltBosluk.current.calculateBottomPadding())
             ) {
                 Text(
                     text = "Yerel Ürün Ayarları",
