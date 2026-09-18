@@ -1,6 +1,7 @@
 package com.localkarar.app.ui.screens.calculations
 
 import androidx.compose.foundation.layout.offset
+import com.localkarar.app.ui.components.LocalAltBosluk
 import com.localkarar.app.ui.components.lkBinenYuzey
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.FocusRequester
@@ -192,6 +193,7 @@ fun CalculationsScreen(
                 .lkBinenYuzey(22.dp)
                 .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
                 .background(LkSurfaceCanvas)
+                .padding(LocalAltBosluk.current)
         ) {
             Spacer(modifier = Modifier.height(LkSpacing.Space5))
 

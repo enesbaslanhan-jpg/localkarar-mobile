@@ -1,9 +1,20 @@
 package com.localkarar.app.ui.shell
 
 import androidx.compose.animation.Crossfade
+import androidx.compose.ui.Alignment
+import com.localkarar.app.ui.components.LkDockHeight
+import com.localkarar.app.ui.components.LocalAltBosluk
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.ui.input.pointer.positionChange
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.foundation.gestures.horizontalDrag
+import androidx.compose.foundation.gestures.awaitHorizontalTouchSlopOrCancellation
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.WindowInsets
@@ -336,56 +347,24 @@ fun AppShell(
                 }
             }
         ) {
+            /*
+             * 🔴 DOCK YUZER (urun sahibi, 18.09.2026 — "Instagram gibi"). Scaffold'un
+             * bottomBar'i sayfayi dock kadar kisaltiyordu; sayfanin bittigi yerde
+             * zemin renginde bir "blok" gorunuyordu. Dock artik iceriğin ustunde
+             * (Box + BottomCenter); ekranlar LocalAltBosluk ile alt bosluk verir.
+             */
+            val yazmaEkrani = currentDestination is Destination.LessonReader ||
+                currentDestination is Destination.Conversation ||
+                currentDestination is Destination.CommunityThreadDetail
+            val altGuvenli = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+            val altBosluk = if (yazmaEkrani) PaddingValues(0.dp) else PaddingValues(bottom = LkDockHeight + 16.dp + altGuvenli)
             Scaffold(
                 scaffoldState = scaffoldState,
-                bottomBar = {
-                    /*
-                     * 🔴 YAZMA ALANI OLAN EKRANLARDA DOCK YAZMA ALANINA
-                     * BINIYORDU.
-                     *
-                     * Mentor konusmasi ve topluluk sohbetinde ekranin
-                     * altinda "Mentora sorun…" / "Mesaj yazın…" alani var;
-                     * dock onun hemen altinda duruyor ve klavye acilinca
-                     * ikisi ust uste geliyordu. Bu ekranlarda ekranin alti
-                     * YAZMA alanina ait — okuyucu ekraninda oldugu gibi
-                     * dock gizleniyor. Geri donus ust soldaki okla.
-                     */
-                    val yazmaEkrani = currentDestination is Destination.LessonReader ||
-                        currentDestination is Destination.Conversation ||
-                        currentDestination is Destination.CommunityThreadDetail
-                    if (!yazmaEkrani) {
-                        LkBottomNavigation(
-                            currentDestination = currentDestination,
-                            activeWorkspaceId = activeWorkspaceId,
-                            onNavigate = { hedef ->
-                                /*
-                                 * 🔴 BOLUM SECICIYE YALNIZ "GENEL BAKIS"TAN
-                                 * ULASILIYORDU.
-                                 *
-                                 * Siparisler, Urunler, Kisiler gibi bir alt
-                                 * bolumdeyken baska bir bolume gecmenin yolu
-                                 * yoktu: once geri, sonra hap, sonra liste.
-                                 * Artik ZATEN acik oldugun İşletme Takibi
-                                 * sekmesine tekrar dokunmak bolum secicisini
-                                 * aciyor — sekmeye ikinci kez basmak
-                                 * "buradaki bolumleri goster" demek.
-                                 */
-                                val isletmeSekmesi = hedef is Destination.WorkspaceHome ||
-                                    hedef is Destination.Workspaces
-                                val zatenBurada = isTabSelected(currentDestination, hedef)
-                                val wsId = activeWorkspaceId
-                                if (isletmeSekmesi && zatenBurada && wsId != null) {
-                                    openWorkspaceSections(wsId, aktifBolumKodu(currentDestination))
-                                } else {
-                                    navController.navigateTo(hedef)
-                                }
-                            }
-                        )
-                    }
-                },
                 backgroundColor = LkSurfaceCanvas,
                 modifier = Modifier.fillMaxSize()
             ) { paddingValues ->
+                Box(Modifier.fillMaxSize().padding(paddingValues)) {
+                CompositionLocalProvider(LocalAltBosluk provides altBosluk) {
                 /*
                  * 🔴 SOL KENARDAN KAYDIRARAK GERI (iOS aliskanligi; urun sahibi
                  * 18.09.2026: "soldan kaydirinca geri gitme calismiyor").
@@ -401,22 +380,31 @@ fun AppShell(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(paddingValues)
                         .pointerInput(geriJestiAktif) {
                             if (!geriJestiAktif) return@pointerInput
                             val kenarPx = with(yogunluk) { 28.dp.toPx() }
                             val esikPx = with(yogunluk) { 72.dp.toPx() }
-                            var baslangicX = -1f
-                            var toplam = 0f
-                            detectHorizontalDragGestures(
-                                onDragStart = { baslangicX = it.x; toplam = 0f },
-                                onHorizontalDrag = { _, fark -> toplam += fark },
-                                onDragCancel = { baslangicX = -1f },
-                                onDragEnd = {
-                                    if (baslangicX in 0f..kenarPx && toplam > esikPx) navController.popBackStack()
-                                    baslangicX = -1f
+                            /*
+                             * Kenardan baslayan dokunus BASTAN sahiplenilir: ilk
+                             * dokunus Initial gecisinde okunur, yatay esik asilinca
+                             * degisiklikler tuketilir ki alttaki liste kaymasin.
+                             * (detectHorizontalDragGestures cocuklardan sonra
+                             * calisiyordu; iOS'ta jest hic tetiklenmiyordu.)
+                             */
+                            awaitEachGesture {
+                                val ilk = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                                if (ilk.position.x > kenarPx) return@awaitEachGesture
+                                var toplam = 0f
+                                val esikDegisimi = awaitHorizontalTouchSlopOrCancellation(ilk.id) { degisim, asim ->
+                                    degisim.consume(); toplam += asim
+                                } ?: return@awaitEachGesture
+                                esikDegisimi.consume()
+                                horizontalDrag(ilk.id) { degisim ->
+                                    toplam += degisim.positionChange().x
+                                    degisim.consume()
                                 }
-                            )
+                                if (toplam > esikPx) navController.popBackStack()
+                            }
                         }
                 ) {
                     // Seritler TUM ekranlarin ustunde, TEK yerde. Ekran ekran
@@ -481,6 +469,39 @@ fun AppShell(
                     )
                     }
                     }
+                }
+                }
+                if (!yazmaEkrani) {
+                    Box(Modifier.align(Alignment.BottomCenter)) {
+                        LkBottomNavigation(
+                            currentDestination = currentDestination,
+                            activeWorkspaceId = activeWorkspaceId,
+                            onNavigate = { hedef ->
+                                /*
+                                 * 🔴 BOLUM SECICIYE YALNIZ "GENEL BAKIS"TAN
+                                 * ULASILIYORDU.
+                                 *
+                                 * Siparisler, Urunler, Kisiler gibi bir alt
+                                 * bolumdeyken baska bir bolume gecmenin yolu
+                                 * yoktu: once geri, sonra hap, sonra liste.
+                                 * Artik ZATEN acik oldugun İşletme Takibi
+                                 * sekmesine tekrar dokunmak bolum secicisini
+                                 * aciyor — sekmeye ikinci kez basmak
+                                 * "buradaki bolumleri goster" demek.
+                                 */
+                                val isletmeSekmesi = hedef is Destination.WorkspaceHome ||
+                                    hedef is Destination.Workspaces
+                                val zatenBurada = isTabSelected(currentDestination, hedef)
+                                val wsId = activeWorkspaceId
+                                if (isletmeSekmesi && zatenBurada && wsId != null) {
+                                    openWorkspaceSections(wsId, aktifBolumKodu(currentDestination))
+                                } else {
+                                    navController.navigateTo(hedef)
+                                }
+                            }
+                        )
+                    }
+                }
                 }
             }
         }

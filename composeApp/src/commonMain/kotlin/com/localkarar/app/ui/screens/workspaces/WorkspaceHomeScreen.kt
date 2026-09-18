@@ -1,6 +1,7 @@
 package com.localkarar.app.ui.screens.workspaces
 
 import androidx.compose.foundation.rememberScrollState
+import com.localkarar.app.ui.components.LocalAltBosluk
 import com.localkarar.app.ui.components.lkBinenYuzey
 import androidx.compose.foundation.horizontalScroll
 import com.localkarar.app.ui.screens.home.RECORD_TYPE_LABEL
@@ -191,6 +192,7 @@ fun WorkspaceHomeScreen(
                 .lkBinenYuzey(22.dp)
                 .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
                 .background(LkSurfaceCanvas)
+                .padding(LocalAltBosluk.current)
         ) {
         when (state) {
             is WorkspaceHomeUiState.Loading -> LkLoadingState(desen = LkLoadingDesen.DETAY)

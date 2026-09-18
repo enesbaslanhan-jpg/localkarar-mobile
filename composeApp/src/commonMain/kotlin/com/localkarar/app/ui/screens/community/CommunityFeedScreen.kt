@@ -1,6 +1,7 @@
 package com.localkarar.app.ui.screens.community
 
 import com.localkarar.app.ui.components.LkLoadingSpinner
+import com.localkarar.app.ui.components.LocalAltBosluk
 import com.localkarar.app.ui.components.lkBinenYuzey
 import androidx.compose.material.icons.outlined.GridView
 import com.localkarar.app.ui.components.LkErrorState
@@ -217,6 +218,7 @@ fun CommunityFeedScreen(
                 .lkBinenYuzey(22.dp)
                 .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
                 .background(LkSurfaceCanvas)
+                .padding(LocalAltBosluk.current)
         ) {
             Spacer(Modifier.height(LkSpacing.Space4))
             // §11: sekmeler ortak bilesenden.

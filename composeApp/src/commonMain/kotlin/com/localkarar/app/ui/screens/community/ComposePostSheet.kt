@@ -1,6 +1,7 @@
 package com.localkarar.app.ui.screens.community
 
 import com.localkarar.app.ui.components.LkLoadingSpinner
+import com.localkarar.app.core.rememberCameraCapture
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -57,6 +58,10 @@ fun ComposePostSheet(
     viewModel: CommunityViewModel,
     currentUser: UserDto? = null
 ) {
+    /* Fotograf cek (urun sahibi, 18.09.2026): dosya seciminin SOLUNDA; kamera yoksa cizilmez. */
+    val fotografCek = rememberCameraCapture { cekilen ->
+        if (cekilen != null) viewModel.onMediaSelected(cekilen.name, cekilen.bytes, "image/jpeg")
+    }
     val filePicker = rememberFilePicker { picked ->
         if (picked != null) {
             val ext = picked.name.substringAfterLast('.', "").lowercase()
@@ -200,21 +205,30 @@ fun ComposePostSheet(
 
                         /* Ekleme simgeleri — metnin hemen altinda. */
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            IconButton(
-                                onClick = { filePicker() },
-                                enabled = !viewModel.isUploadingMedia && viewModel.attachedMedia == null
-                            ) {
+                            val eklenebilir = !viewModel.isUploadingMedia && viewModel.attachedMedia == null
+                            if (fotografCek != null) {
+                                IconButton(onClick = { fotografCek() }, enabled = eklenebilir) {
+                                    Icon(Icons.Outlined.PhotoCamera, contentDescription = "Fotoğraf çek", tint = LkTextSecondary)
+                                }
+                            }
+                            IconButton(onClick = { filePicker() }, enabled = eklenebilir) {
                                 if (viewModel.isUploadingMedia) LkLoadingSpinner(size = 18.dp)
                                 else Icon(Icons.Outlined.Image, contentDescription = "Görsel / video / belge ekle", tint = LkTextSecondary)
                             }
-                            if (katkicilar.isNotEmpty()) {
-                                IconButton(onClick = { etiketAcik = !etiketAcik }) {
-                                    Icon(
-                                        Icons.Outlined.AlternateEmail,
-                                        contentDescription = "Etiketle",
-                                        tint = if (etiketAcik) LkPrimary else LkTextSecondary
-                                    )
-                                }
+                            /*
+                             * Etiket dugmesi HER ZAMAN gorunur (urun sahibi, 18.09.2026). Onceden
+                             * akista baskasi yoksa hic cizilmiyordu ve "etiket yok" saniliyordu.
+                             * Kisi listesi bossa metne "@" eklenir; kullanici adi kendisi yazar.
+                             */
+                            IconButton(onClick = {
+                                if (katkicilar.isNotEmpty()) etiketAcik = !etiketAcik
+                                else viewModel.onMetinChange(viewModel.metinInput.let { if (it.isEmpty() || it.endsWith(" ")) it + "@" else "$it @" })
+                            }) {
+                                Icon(
+                                    Icons.Outlined.AlternateEmail,
+                                    contentDescription = "Etiketle",
+                                    tint = if (etiketAcik) LkPrimary else LkTextSecondary
+                                )
                             }
                         }
 

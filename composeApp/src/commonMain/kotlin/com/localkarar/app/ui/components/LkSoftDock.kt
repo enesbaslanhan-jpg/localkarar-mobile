@@ -46,6 +46,16 @@ data class LkDockTab(
  */
 val LkDockHeight = 76.dp
 
+/*
+ * YUZEN DOCK ALT BOSLUGU (18.09.2026). Dock artik Scaffold'un alt cubugu
+ * DEGIL, icerigin USTUNDE yuzen bir katman: sayfa yuzeyi ekranin dibine
+ * kadar iner, pill onun uzerinde durur (Instagram/Threads gibi). Bunun bedeli:
+ * kaydirilan iceriklerin son satiri dock'un altinda kalmasin diye ekranlar
+ * alt bosluk vermeli. Kabuk bu degeri buradan saglar; dock gizliyken 0.
+ * LkHeroPage / LkPageLayout ve ozel hero'lu ekranlar bunu uygular.
+ */
+val LocalAltBosluk = androidx.compose.runtime.compositionLocalOf { androidx.compose.foundation.layout.PaddingValues(0.dp) }
+
 @Composable
 fun LkSoftDock(
     tabs: List<LkDockTab>,

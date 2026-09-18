@@ -123,7 +123,8 @@ fun LkHeroScaffold(
                 .fillMaxWidth()
                 .lkBinenYuzey(overlap)
                 .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-                .background(LkSurfaceCanvas),
+                .background(LkSurfaceCanvas)
+                .padding(LocalAltBosluk.current),
             verticalArrangement = Arrangement.spacedBy(LkSpacing.Space4)
         ) {
             Box(Modifier.padding(top = LkSpacing.Space5))
