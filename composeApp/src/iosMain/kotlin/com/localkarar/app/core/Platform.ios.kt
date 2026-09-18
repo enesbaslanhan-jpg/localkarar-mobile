@@ -187,11 +187,11 @@ actual fun rememberFilePicker(onFilePicked: (PickedFile?) -> Unit): () -> Unit {
                 val sayfa = UIAlertController.alertControllerWithTitle(
                     title = null,
                     message = null,
-                    preferredStyle = UIAlertControllerStyle.UIAlertControllerStyleActionSheet
+                    preferredStyle = UIAlertControllerStyleActionSheet
                 )
-                sayfa.addAction(UIAlertAction.actionWithTitle("Fotoğraflardan seç", style = UIAlertActionStyle.UIAlertActionStyleDefault) { galeriAc() })
-                sayfa.addAction(UIAlertAction.actionWithTitle("Dosyalardan seç", style = UIAlertActionStyle.UIAlertActionStyleDefault) { dosyaSeciciAc() })
-                sayfa.addAction(UIAlertAction.actionWithTitle("Vazgeç", style = UIAlertActionStyle.UIAlertActionStyleCancel) { onFilePicked(null) })
+                sayfa.addAction(UIAlertAction.actionWithTitle("Fotoğraflardan seç", style = UIAlertActionStyleDefault) { galeriAc() })
+                sayfa.addAction(UIAlertAction.actionWithTitle("Dosyalardan seç", style = UIAlertActionStyleDefault) { dosyaSeciciAc() })
+                sayfa.addAction(UIAlertAction.actionWithTitle("Vazgeç", style = UIAlertActionStyleCancel) { onFilePicked(null) })
                 /* iPad: popover kaynagi verilmezse cokuyor. */
                 sayfa.popoverPresentationController?.sourceView = ust.view
                 ust.presentViewController(sayfa, animated = true, completion = null)
