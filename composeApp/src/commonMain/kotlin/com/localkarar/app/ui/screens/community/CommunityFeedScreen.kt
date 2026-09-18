@@ -1,6 +1,7 @@
 package com.localkarar.app.ui.screens.community
 
 import com.localkarar.app.ui.components.LkLoadingSpinner
+import com.localkarar.app.ui.components.lkBinenYuzey
 import androidx.compose.material.icons.outlined.GridView
 import com.localkarar.app.ui.components.LkErrorState
 import com.localkarar.app.ui.components.LkEmptyState
@@ -213,7 +214,7 @@ fun CommunityFeedScreen(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
-                .offset(y = (-22).dp)
+                .lkBinenYuzey(22.dp)
                 .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
                 .background(LkSurfaceCanvas)
         ) {

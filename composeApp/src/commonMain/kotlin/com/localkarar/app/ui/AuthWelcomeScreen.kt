@@ -1,6 +1,7 @@
 package com.localkarar.app.ui
 
 import androidx.compose.animation.core.Animatable
+import com.localkarar.app.ui.components.lkBinenYuzey
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.WindowInsets
@@ -118,7 +119,7 @@ fun AuthWelcomeScreen(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .offset(y = (-22).dp)
+                .lkBinenYuzey(22.dp)
                 .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
                 .background(LkSurfaceCanvas)
                 .windowInsetsPadding(WindowInsets.navigationBars)

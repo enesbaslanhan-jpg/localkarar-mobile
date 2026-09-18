@@ -1,6 +1,7 @@
 package com.localkarar.app.ui.screens.calculations
 
 import androidx.compose.foundation.layout.offset
+import com.localkarar.app.ui.components.lkBinenYuzey
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.material.icons.outlined.Close
@@ -188,7 +189,7 @@ fun CalculationsScreen(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
-                .offset(y = (-22).dp)
+                .lkBinenYuzey(22.dp)
                 .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
                 .background(LkSurfaceCanvas)
         ) {

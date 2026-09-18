@@ -1,6 +1,7 @@
 package com.localkarar.app.ui
 
 import androidx.compose.foundation.layout.offset
+import com.localkarar.app.ui.components.lkBinenYuzey
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.WindowInsets
@@ -81,7 +82,7 @@ fun ResetPasswordScreen(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
-                .offset(y = (-22).dp)
+                .lkBinenYuzey(22.dp)
                 .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
                 /* Foy "Giris 2-5": panel acik (surface-1), alanlar beyaz ve 16dp koseli,
                    ana dugme hap (16.09.2026). Onceki hali canvas + sunken gri alanlardi. */

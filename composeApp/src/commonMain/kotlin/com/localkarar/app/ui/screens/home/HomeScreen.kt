@@ -1,6 +1,7 @@
 package com.localkarar.app.ui.screens.home
 
 import com.localkarar.app.ui.components.LkCard
+import com.localkarar.app.ui.components.lkBinenYuzey
 import com.localkarar.app.ui.components.LkIconTile
 import com.localkarar.app.ui.components.LkRowGroup
 import com.localkarar.app.ui.components.LkListRow
@@ -319,7 +320,7 @@ private fun DashboardContent(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
-                .offset(y = (-22).dp)
+                .lkBinenYuzey(22.dp)
                 .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
                 .background(LkSurfaceCanvas)
                 .verticalScroll(scrollState)

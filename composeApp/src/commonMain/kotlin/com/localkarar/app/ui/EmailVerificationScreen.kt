@@ -1,6 +1,7 @@
 package com.localkarar.app.ui
 
 import androidx.compose.foundation.background
+import com.localkarar.app.ui.components.lkBinenYuzey
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -94,7 +95,7 @@ fun EmailVerificationScreen(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
-                .offset(y = (-22).dp)
+                .lkBinenYuzey(22.dp)
                 .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
                 .background(LkSurfaceCanvas)
         ) {

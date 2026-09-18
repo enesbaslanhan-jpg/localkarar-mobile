@@ -58,8 +58,13 @@ fun LkSoftDock(
             // Prototipte `--dock-shadow: 0 16px 36px rgba(0,0,0,.08)`.
             // Dock sayfanin UZERINDE yuzuyor; golgesi olmadan zemine
             // yapisik duruyordu ve icerik altindan gectigi anlasilmiyordu.
-            .lkShadow(LkElevation.DOCK, LkShapes.FULL)
-            .background(LkSurfacePanel.copy(alpha = 0.96f), LkShapes.FULL)
+            /*
+             * Golge YOK (18.09.2026): 16dp'lik yayvan golge Skia'da pill'in
+             * arkasinda gri bir dikdortgen gibi okunuyordu ("arkasinda arka plan
+             * var"). Instagram/Threads dock'u gibi: yalniz yari saydam pill ve
+             * ince kenar.
+             */
+            .background(LkSurfacePanel.copy(alpha = 0.94f), LkShapes.FULL)
             .border(1.dp, LkLineSoft, LkShapes.FULL)
             .padding(horizontal = 6.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceAround,

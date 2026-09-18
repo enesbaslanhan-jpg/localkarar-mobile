@@ -1,6 +1,7 @@
 package com.localkarar.app.ui
 
 import androidx.compose.foundation.layout.offset
+import com.localkarar.app.ui.components.lkBinenYuzey
 import com.localkarar.app.ui.theme.LkTextMuted
 import com.localkarar.app.ui.components.LkYasalOnayPenceresi
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -62,15 +63,21 @@ fun RegisterScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     /*
-     * YASAL ONAY PENCEREDEN ALINIR (18.09.2026). Onay kutusu kalkti; "Hesabi
-     * olustur" ya da Google/Apple dokunusu once LkYasalOnayPenceresi'ni acar,
-     * bekleyen eylem onaydan sonra kosar. Bkz. LkYasalOnay.kt.
+     * YASAL ONAY (urun sahibi, 18.09.2026): kutucuk KALIR; kutucuga dokununca
+     * metinler pencerede acilir, onay orada verilir ve kutu isaretlenir.
+     * Kutu isaretli degilken "Hesabi olustur" ya da Google/Apple dokunusu da
+     * ayni pencereyi acar; onaydan sonra bekleyen eylem kosar.
      */
+    var legalAccepted by remember { mutableStateOf(false) }
+    var onayPenceresiAcik by remember { mutableStateOf(false) }
     var bekleyenOnayEylemi by remember { mutableStateOf<(() -> Unit)?>(null) }
     val sosyal = rememberSosyalGiris()
     val kapsam = rememberCoroutineScope()
+    fun onaylaVeyaSor(eylem: () -> Unit) {
+        if (legalAccepted) eylem() else { bekleyenOnayEylemi = eylem; onayPenceresiAcik = true }
+    }
     fun sosyalBaslat(saglayici: String) {
-        bekleyenOnayEylemi = {
+        onaylaVeyaSor {
             kapsam.launch {
                 val sonuc = if (saglayici == "google") sosyal.google() else sosyal.apple()
                 when (sonuc) {
@@ -82,12 +89,17 @@ fun RegisterScreen(
         }
     }
 
-    bekleyenOnayEylemi?.let { eylem ->
+    if (onayPenceresiAcik) {
         LkYasalOnayPenceresi(
             baslik = "Hesap açmadan önce",
-            onaylaMetni = "Okudum, onaylıyorum ve devam et",
-            onOnayla = { bekleyenOnayEylemi = null; eylem() },
-            onVazgec = { bekleyenOnayEylemi = null }
+            onaylaMetni = "Okudum, onaylıyorum",
+            onOnayla = {
+                legalAccepted = true
+                onayPenceresiAcik = false
+                val eylem = bekleyenOnayEylemi; bekleyenOnayEylemi = null
+                eylem?.invoke()
+            },
+            onVazgec = { onayPenceresiAcik = false; bekleyenOnayEylemi = null }
         )
     }
 
@@ -134,7 +146,7 @@ fun RegisterScreen(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
-                .offset(y = (-22).dp)
+                .lkBinenYuzey(22.dp)
                 .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
                 /* Foy "Giris 2-5": panel acik (surface-1), alanlar beyaz ve 16dp koseli,
                    ana dugme hap (16.09.2026). Onceki hali canvas + sunken gri alanlardi. */
@@ -200,17 +212,36 @@ fun RegisterScreen(
 
                 Spacer(modifier = Modifier.height(LkSpacing.Space4))
 
-                Text(
-                    "Devam ettiğinde Kullanım Koşulları ve Aydınlatma Metni onayın istenecek.",
-                    style = LkTypography.getMicro(),
-                    color = LkTextMuted
-                )
+                // Yasal onay kutusu: dokununca metinler acilir (isaretliyse kaldirir).
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { if (legalAccepted) legalAccepted = false else onayPenceresiAcik = true }
+                        .padding(vertical = 4.dp)
+                ) {
+                    Checkbox(
+                        checked = legalAccepted,
+                        onCheckedChange = { if (it) onayPenceresiAcik = true else legalAccepted = false },
+                        colors = CheckboxDefaults.colors(
+                            checkedColor = LkPrimary,
+                            uncheckedColor = LkTextSecondary,
+                            checkmarkColor = LkOnPrimary
+                        )
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        "Kullanım Koşulları ve Aydınlatma Metni'ni okudum, onaylıyorum.",
+                        style = LkTypography.getMicro(),
+                        color = LkTextSecondary
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(LkSpacing.Space6))
 
                 LkButton(
                     text = if (isLoading) "Hesap oluşturuluyor…" else "Hesabı oluştur",
-                    onClick = { bekleyenOnayEylemi = { viewModel.register(name, email, password, true, onRegistered) } },
+                    onClick = { onaylaVeyaSor { viewModel.register(name, email, password, true, onRegistered) } },
                     enabled = !isLoading,
                     modifier = Modifier.fillMaxWidth(),
                     size = LkButtonSize.LG,

@@ -1,6 +1,8 @@
 package com.localkarar.app.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.layout.layout
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.WindowInsets
@@ -119,7 +121,7 @@ fun LkHeroScaffold(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
-                .offset(y = -overlap)
+                .lkBinenYuzey(overlap)
                 .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
                 .background(LkSurfaceCanvas),
             verticalArrangement = Arrangement.spacedBy(LkSpacing.Space4)
@@ -127,5 +129,29 @@ fun LkHeroScaffold(
             Box(Modifier.padding(top = LkSpacing.Space5))
             content()
         }
+    }
+}
+
+/*
+ * 🔴 BINEN YUZEY: KAYDIR **VE UZAT** (18.09.2026, olculdu emulatorde).
+ *
+ * `offset(y = -22.dp)` yuzeyi hero'nun ustune bindiriyordu ama yuksekligini
+ * degistirmiyordu: her ekranin EN ALTINDA 22dp'lik zemin seridi acikta
+ * kaliyordu (#E1E7EB, panel #F0F3F6). Urun sahibi bunu "alt barin altinda
+ * ayri bir katman / tam ekran degil" olarak gordu; 12 ekranda ayni desen.
+ *
+ * Bu modifier cocugu `overlap` kadar DAHA UZUN olcer ve `-overlap`'a yerlestirir:
+ * ustte hero'ya biner, altta ekranin dibine kadar iner. `offset`in yerine
+ * gecer; siralama ayni (clip/background sonra gelir).
+ */
+fun Modifier.lkBinenYuzey(overlap: Dp): Modifier = this.layout { measurable, constraints ->
+    val ekstra = overlap.roundToPx()
+    val uzatilmis = constraints.copy(
+        minHeight = if (constraints.minHeight > 0) constraints.minHeight + ekstra else constraints.minHeight,
+        maxHeight = if (constraints.hasBoundedHeight) constraints.maxHeight + ekstra else constraints.maxHeight
+    )
+    val yerlesim = measurable.measure(uzatilmis)
+    layout(yerlesim.width, (yerlesim.height - ekstra).coerceAtLeast(0)) {
+        yerlesim.place(0, -ekstra)
     }
 }

@@ -1,6 +1,7 @@
 package com.localkarar.app.ui.components
 
 import androidx.compose.foundation.background
+import com.localkarar.app.ui.components.lkBinenYuzey
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -113,7 +114,7 @@ fun LkHeroPage(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
-                .offset(y = -overlap)
+                .lkBinenYuzey(overlap)
                 .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
                 .background(LkSurfaceCanvas)
         ) {
