@@ -134,7 +134,8 @@ fun LkDecisionInput(
                         }
                     },
                     label = question.label + if (question.required) " *" else "",
-                    placeholder = question.description,
+                    /* Aciklama alanin altinda (bkz. asagidaki Text); alanda kisa bir ornek kalir. */
+                    placeholder = if (question.type in listOf("days", "months", "count", "integer")) "Örn: 12" else "Örn: 25.000",
                     error = error,
                     enabled = !isUnknown,
                     keyboardOptions = KeyboardOptions(
@@ -151,6 +152,14 @@ fun LkDecisionInput(
                         }
                     }
                 )
+                if (!question.description.isNullOrBlank() && error == null) {
+                    Text(
+                        text = question.description,
+                        style = LkTypography.getMicro(),
+                        color = LkTextMuted,
+                        modifier = Modifier.padding(start = 2.dp, top = 4.dp)
+                    )
+                }
             }
         }
         if (question.allowUnknown) {

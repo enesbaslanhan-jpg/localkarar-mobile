@@ -82,6 +82,8 @@
 	<!-- Yalniz standart HTTPS; TestFlight her derlemede "Missing Compliance" sormasin (17.09.2026). -->
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>NSCameraUsageDescription</key>
+	<string>Fatura ve belgelerin fotoğrafını çekip kayıt olarak eklemek için.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Profil fotoğrafı ve topluluk paylaşımları için fotoğraf seçimi.</string>
 </dict>

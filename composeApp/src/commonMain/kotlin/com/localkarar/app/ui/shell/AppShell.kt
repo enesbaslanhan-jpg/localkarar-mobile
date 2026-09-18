@@ -233,6 +233,15 @@ fun AppShell(
             bottomSheetState.show()
         }
     }
+    /*
+     * Kullanici sayfayi asagi kaydirip ya da disina dokunup kapatirsa
+     * `sheetState` hala eski degerde kaliyordu; bir sonraki dokunus ayni
+     * degeri atadigi icin LaunchedEffect tetiklenmiyor ve sayfa "birkac
+     * acilis-kapanistan sonra acilmiyor"du. Gizlenince durum sifirlanir.
+     */
+    LaunchedEffect(bottomSheetState.isVisible) {
+        if (!bottomSheetState.isVisible && sheetState != ShellSheetState.Closed) sheetState = ShellSheetState.Closed
+    }
 
     val closeSheetAndNavigate = { dest: Destination ->
         coroutineScope.launch {
@@ -951,7 +960,11 @@ private fun ScreenContent(
             val viewModel = viewModel(key = "notifications:${destination.workspaceId}") {
                 NotificationsViewModel(destination.workspaceId, workspaceRepository)
             }
-            NotificationsScreen(viewModel = viewModel, onBack = onBack)
+            NotificationsScreen(
+                viewModel = viewModel,
+                onBack = onBack,
+                onOpenRecord = { recordId -> navController.navigateTo(Destination.RecordDetail(destination.workspaceId, recordId)) }
+            )
         }
         is Destination.Activity -> {
             val viewModel = viewModel(key = "activity:${destination.workspaceId}") {
@@ -1269,7 +1282,7 @@ private data class NavItem(
  */
 private val PRIMARY_NAV_ITEMS = listOf(
     NavItem("Hesaplamalar", Icons.Outlined.Calculate) { Destination.Calculations },
-    NavItem("İşletme Takibi", Icons.Outlined.Business) { activeId ->
+    NavItem("İşletme", Icons.Outlined.Business) { activeId ->
         if (activeId != null) Destination.WorkspaceHome(activeId) else Destination.Workspaces
     },
     NavItem("Ana Sayfa", Icons.Outlined.Home) { Destination.Home },

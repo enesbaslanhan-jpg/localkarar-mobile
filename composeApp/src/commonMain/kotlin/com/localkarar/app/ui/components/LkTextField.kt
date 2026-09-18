@@ -1,6 +1,7 @@
 package com.localkarar.app.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -159,9 +160,13 @@ fun LkTextField(
                     }
                     Box(modifier = Modifier.weight(1f)) {
                         if (value.isEmpty()) {
+                            /* Tek satirli alanda yer tutucu iki satira sarilip alttan
+                               kirpiliyordu (karar araclari, TestFlight 109). Tasarsa uc nokta. */
                             Text(
                                 text = placeholder,
-                                style = LkTypography.getBody().copy(color = LkTextMuted)
+                                style = LkTypography.getBody().copy(color = LkTextMuted),
+                                maxLines = if (singleLine) 1 else 3,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                         innerTextField()

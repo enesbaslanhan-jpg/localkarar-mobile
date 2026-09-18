@@ -127,10 +127,7 @@ class SafeApiClient(
      * olurdu.
      */
     suspend inline fun <reified T> post(path: String, body: Any? = null): Result<T> = try {
-        val response = httpClient.post(path) {
-            contentType(ContentType.Application.Json)
-            setBody(body ?: kotlinx.serialization.json.JsonObject(emptyMap()))
-        }
+        val response = httpClient.post(path) { lkGovde(body) }
         if (response.status.isSuccess()) {
             response.requireJson()
             Result.success(response.body())
@@ -142,12 +139,7 @@ class SafeApiClient(
     }
 
     suspend inline fun <reified T> patch(path: String, body: Any? = null): Result<T> = try {
-        val response = httpClient.patch(path) {
-            if (body != null) {
-                contentType(ContentType.Application.Json)
-                setBody(body)
-            }
-        }
+        val response = httpClient.patch(path) { lkGovde(body) }
         if (response.status.isSuccess()) {
             response.requireJson()
             Result.success(response.body())
@@ -159,12 +151,7 @@ class SafeApiClient(
     }
 
     suspend inline fun <reified T> put(path: String, body: Any? = null): Result<T> = try {
-        val response = httpClient.put(path) {
-            if (body != null) {
-                contentType(ContentType.Application.Json)
-                setBody(body)
-            }
-        }
+        val response = httpClient.put(path) { lkGovde(body) }
         if (response.status.isSuccess()) {
             response.requireJson()
             Result.success(response.body())
@@ -258,5 +245,43 @@ class SafeApiClient(
         }
     } catch (e: Exception) {
         Result.failure(mapException(e))
+    }
+}
+/*
+ * 🔴 GOVDE TURUNE GORE DOGRU SERILESTIRME (TestFlight 109, 18.09.2026).
+ *
+ * `post/put/patch(path, body: Any?)` govdeyi `Any` olarak veriyordu. Ktor,
+ * `Any` icin serilestirici bulamayinca DEGERDEN tahmin eder; `JsonObject`
+ * bir Map oldugu icin degerlerinin sinifina (`JsonLiteral`, kutuphane ici)
+ * bakar ve Kotlin/Native'de "Serializer for class 'JsonLiteral' is not found"
+ * ile duser — istek SUNUCUYA HIC GITMEZ. Kasa/kredi/calisan formlari (serbest
+ * JSON govde) iPhone'da bu yuzden "İşletme yüklenemedi" diyordu; sunucu
+ * gunlugunde tek POST yoktu. `putJson` ayni tuzagi 08.09'da TextContent ile
+ * cozmustu; ayni yol artik ortak.
+ *
+ * - JsonElement → ham metin (`TextContent`), null'lar oldugu gibi gider.
+ * - Map → JsonObject'e cevrilir (anahtar/deger metin), sonra ayni yol.
+ * - null → `{}` (Fastify bos govdeyi json basligiyla reddediyor; bkz. post).
+ * - @Serializable DTO → ContentNegotiation (degerin sinifi uzerinden).
+ */
+@PublishedApi
+internal fun io.ktor.client.request.HttpRequestBuilder.lkGovde(body: Any?) {
+    contentType(ContentType.Application.Json)
+    when (body) {
+        null -> setBody(TextContent("{}", ContentType.Application.Json))
+        is kotlinx.serialization.json.JsonElement -> setBody(TextContent(body.toString(), ContentType.Application.Json))
+        is Map<*, *> -> {
+            val nesne = JsonObject(body.entries.associate { (k, v) ->
+                k.toString() to when (v) {
+                    null -> kotlinx.serialization.json.JsonNull
+                    is kotlinx.serialization.json.JsonElement -> v
+                    is Number -> kotlinx.serialization.json.JsonPrimitive(v)
+                    is Boolean -> kotlinx.serialization.json.JsonPrimitive(v)
+                    else -> kotlinx.serialization.json.JsonPrimitive(v.toString())
+                }
+            })
+            setBody(TextContent(nesne.toString(), ContentType.Application.Json))
+        }
+        else -> setBody(body)
     }
 }

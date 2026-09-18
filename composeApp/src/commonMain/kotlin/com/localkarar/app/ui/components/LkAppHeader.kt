@@ -1,6 +1,7 @@
 package com.localkarar.app.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -10,7 +11,6 @@ import androidx.compose.material.IconButton
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
-import androidx.compose.material.icons.outlined.Apps
 import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -88,7 +88,7 @@ fun LkAppHeader(
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Outlined.Apps,
+                        imageVector = Icons.Outlined.GridView,
                         contentDescription = "Ürün Merkezi",
                         tint = LkPrimary,
                         modifier = Modifier.size(16.dp)

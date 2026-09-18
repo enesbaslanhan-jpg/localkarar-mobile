@@ -21,6 +21,72 @@ actual fun openExternalUrl(url: String) {
     }
 }
 
+/** En ustteki sunulmus denetleyici; sunum her zaman buradan yapilir. */
+private fun enUstDenetleyici(): UIViewController? {
+    val pencere = UIApplication.sharedApplication.keyWindow
+        ?: UIApplication.sharedApplication.windows.firstOrNull { (it as? UIWindow)?.isKeyWindow() == true } as? UIWindow
+        ?: UIApplication.sharedApplication.windows.firstOrNull() as? UIWindow
+    var ust = pencere?.rootViewController
+    while (ust?.presentedViewController != null) ust = ust.presentedViewController
+    return ust
+}
+
+@OptIn(ExperimentalForeignApi::class)
+private fun NSData.baytlar(): ByteArray {
+    val uzunluk = length.toInt()
+    val dizi = ByteArray(uzunluk)
+    if (uzunluk > 0) dizi.usePinned { memcpy(it.addressOf(0), bytes, length) }
+    return dizi
+}
+
+/*
+ * FOTOGRAF SECICI / KAMERA DELEGESI — UIImagePickerController (18.09.2026).
+ *
+ * Kamera ve galeri ayni siniftan sunulur; fark yalniz `sourceType`. Secilen
+ * gorsel JPEG (%85) olarak baytlara cevrilir; OCR ve sunucu yolu Android ile
+ * ayni (PickedFile). Delegate referansi cagri boyunca disarida tutulur, yoksa
+ * ARC erken serbest birakir ve geri cagrim hic gelmez.
+ */
+private class GorselSeciciDelegesi(
+    private val onResult: (PickedFile?) -> Unit,
+    private val onDismiss: () -> Unit
+) : NSObject(), UIImagePickerControllerDelegateProtocol, UINavigationControllerDelegateProtocol {
+
+    @OptIn(ExperimentalForeignApi::class)
+    override fun imagePickerController(picker: UIImagePickerController, didFinishPickingMediaWithInfo: Map<Any?, *>) {
+        picker.dismissViewControllerAnimated(true, completion = null)
+        val gorsel = didFinishPickingMediaWithInfo[UIImagePickerControllerOriginalImage] as? UIImage
+        val veri = gorsel?.let { UIImageJPEGRepresentation(it, 0.85) }
+        if (veri == null) {
+            onResult(null)
+        } else {
+            val ad = "fotograf-" + NSDate().timeIntervalSince1970.toLong().toString() + ".jpg"
+            onResult(PickedFile(name = ad, bytes = veri.baytlar()))
+        }
+        onDismiss()
+    }
+
+    override fun imagePickerControllerDidCancel(picker: UIImagePickerController) {
+        picker.dismissViewControllerAnimated(true, completion = null)
+        onResult(null)
+        onDismiss()
+    }
+}
+
+private fun gorselSeciciSun(
+    kaynak: UIImagePickerControllerSourceType,
+    delege: GorselSeciciDelegesi
+): Boolean {
+    val ust = enUstDenetleyici() ?: return false
+    val secici = UIImagePickerController().apply {
+        sourceType = kaynak
+        delegate = delege
+        allowsEditing = false
+    }
+    ust.presentViewController(secici, animated = true, completion = null)
+    return true
+}
+
 private class DocumentPickerDelegate(
     private val onResult: (PickedFile?) -> Unit,
     private val onDismiss: () -> Unit
@@ -73,56 +139,92 @@ private class DocumentPickerDelegate(
 
 @Composable
 actual fun rememberFilePicker(onFilePicked: (PickedFile?) -> Unit): () -> Unit {
-    var activeDelegate by remember { mutableStateOf<DocumentPickerDelegate?>(null) }
+    var aktifBelgeDelegesi by remember { mutableStateOf<DocumentPickerDelegate?>(null) }
+    var aktifGorselDelegesi by remember { mutableStateOf<GorselSeciciDelegesi?>(null) }
+
+    fun dosyaSeciciAc() {
+        val delegate = DocumentPickerDelegate(
+            onResult = onFilePicked,
+            onDismiss = { aktifBelgeDelegesi = null }
+        )
+        aktifBelgeDelegesi = delegate
+        val picker = UIDocumentPickerViewController(
+            documentTypes = listOf("public.item", "public.content", "public.data"),
+            inMode = UIDocumentPickerMode.UIDocumentPickerModeImport
+        ).apply {
+            this.delegate = delegate
+            this.allowsMultipleSelection = false
+        }
+        val ust = enUstDenetleyici()
+        if (ust != null) {
+            ust.presentViewController(picker, animated = true, completion = null)
+        } else {
+            AppLog.w("Platform", "No rootViewController found to present document picker")
+            onFilePicked(null)
+            aktifBelgeDelegesi = null
+        }
+    }
+
+    fun galeriAc() {
+        val delege = GorselSeciciDelegesi(onResult = onFilePicked, onDismiss = { aktifGorselDelegesi = null })
+        aktifGorselDelegesi = delege
+        if (!gorselSeciciSun(UIImagePickerControllerSourceType.UIImagePickerControllerSourceTypePhotoLibrary, delege)) {
+            onFilePicked(null); aktifGorselDelegesi = null
+        }
+    }
 
     return {
         try {
-            val delegate = DocumentPickerDelegate(
-                onResult = onFilePicked,
-                onDismiss = { activeDelegate = null }
-            )
-            activeDelegate = delegate
-
-            val picker = UIDocumentPickerViewController(
-                documentTypes = listOf("public.item", "public.content", "public.data"),
-                inMode = UIDocumentPickerMode.UIDocumentPickerModeImport
-            ).apply {
-                this.delegate = delegate
-                this.allowsMultipleSelection = false
-            }
-
-            val window = UIApplication.sharedApplication.keyWindow
-                ?: UIApplication.sharedApplication.windows.firstOrNull { (it as? UIWindow)?.isKeyWindow() == true } as? UIWindow
-                ?: UIApplication.sharedApplication.windows.firstOrNull() as? UIWindow
-
-            var topVc = window?.rootViewController
-            while (topVc?.presentedViewController != null) {
-                topVc = topVc.presentedViewController
-            }
-
-            if (topVc != null) {
-                topVc.presentViewController(picker, animated = true, completion = null)
-            } else {
-                AppLog.w("Platform", "No rootViewController found to present document picker")
+            /*
+             * "Dosya veya fotograf sec" iOS'ta ONCE bir secim sayfasi acar:
+             * Dosyalar uygulamasi fotograf kutuphanesini gostermez, o yuzden
+             * galeri ayri bir yol (TestFlight 109, 18.09.2026).
+             */
+            val ust = enUstDenetleyici()
+            if (ust == null) {
                 onFilePicked(null)
-                activeDelegate = null
+            } else {
+                val sayfa = UIAlertController.alertControllerWithTitle(
+                    title = null,
+                    message = null,
+                    preferredStyle = UIAlertControllerStyle.UIAlertControllerStyleActionSheet
+                )
+                sayfa.addAction(UIAlertAction.actionWithTitle("Fotoğraflardan seç", style = UIAlertActionStyle.UIAlertActionStyleDefault) { galeriAc() })
+                sayfa.addAction(UIAlertAction.actionWithTitle("Dosyalardan seç", style = UIAlertActionStyle.UIAlertActionStyleDefault) { dosyaSeciciAc() })
+                sayfa.addAction(UIAlertAction.actionWithTitle("Vazgeç", style = UIAlertActionStyle.UIAlertActionStyleCancel) { onFilePicked(null) })
+                /* iPad: popover kaynagi verilmezse cokuyor. */
+                sayfa.popoverPresentationController?.sourceView = ust.view
+                ust.presentViewController(sayfa, animated = true, completion = null)
             }
         } catch (e: Exception) {
             AppLog.e("Platform", "rememberFilePicker error", e)
             onFilePicked(null)
-            activeDelegate = null
         }
     }
 }
+
 /**
- * iOS'ta kamera yolu HENUZ YOK.
- *
- * `UIImagePickerController` sarmalayicisi yazilmadi; `null` donerek
- * arayuze "bu platformda bu dugmeyi cizme" deniyor. Yanlis calisan bir
- * dugme yerine olmayan bir dugme.
+ * KAMERA — UIImagePickerController(camera). Info.plist'te NSCameraUsageDescription
+ * var; sistem ilk kullanimda izin sorar. Kamerasi olmayan cihazda (simulator)
+ * `null` doner ve dugme cizilmez.
  */
 @Composable
-actual fun rememberCameraCapture(onPhotoTaken: (PickedFile?) -> Unit): (() -> Unit)? = null
+actual fun rememberCameraCapture(onPhotoTaken: (PickedFile?) -> Unit): (() -> Unit)? {
+    if (!UIImagePickerController.isSourceTypeAvailable(UIImagePickerControllerSourceType.UIImagePickerControllerSourceTypeCamera)) return null
+    var aktifDelege by remember { mutableStateOf<GorselSeciciDelegesi?>(null) }
+    return {
+        try {
+            val delege = GorselSeciciDelegesi(onResult = onPhotoTaken, onDismiss = { aktifDelege = null })
+            aktifDelege = delege
+            if (!gorselSeciciSun(UIImagePickerControllerSourceType.UIImagePickerControllerSourceTypeCamera, delege)) {
+                onPhotoTaken(null); aktifDelege = null
+            }
+        } catch (e: Exception) {
+            AppLog.e("Platform", "rememberCameraCapture error", e)
+            onPhotoTaken(null)
+        }
+    }
+}
 
 /**
  * iOS PAYLASIM SAYFASI — `UIActivityViewController`.

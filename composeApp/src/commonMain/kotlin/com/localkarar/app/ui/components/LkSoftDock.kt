@@ -1,6 +1,8 @@
 package com.localkarar.app.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.border
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.ui.semantics.Role
@@ -52,14 +54,14 @@ fun LkSoftDock(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp)
+            .padding(horizontal = 16.dp)
             // Prototipte `--dock-shadow: 0 16px 36px rgba(0,0,0,.08)`.
             // Dock sayfanin UZERINDE yuzuyor; golgesi olmadan zemine
             // yapisik duruyordu ve icerik altindan gectigi anlasilmiyordu.
             .lkShadow(LkElevation.DOCK, LkShapes.FULL)
             .background(LkSurfacePanel.copy(alpha = 0.96f), LkShapes.FULL)
             .border(1.dp, LkLineSoft, LkShapes.FULL)
-            .padding(horizontal = 10.dp, vertical = 8.dp),
+            .padding(horizontal = 6.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceAround,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -93,8 +95,13 @@ fun LkSoftDock(
                         role = Role.Tab,
                         onClick = tab.onClick
                     )
-                    .padding(horizontal = 8.dp, vertical = 6.dp)
-                    .widthIn(min = 48.dp)
+                    /*
+                     * 🔴 SEKMELER ESIT PAY ALIR (TestFlight 109, 18.09.2026): iPhone
+                     * genisliginde besinci sekme ("Ayarlar") dock'un disina tasip
+                     * yalniz "A" gorunuyordu. weight(1f) + tek satir + kisaltma.
+                     */
+                    .weight(1f)
+                    .padding(horizontal = 2.dp, vertical = 6.dp)
             ) {
                 Icon(
                     imageVector = tab.icon,
@@ -110,7 +117,9 @@ fun LkSoftDock(
                     color = if (tab.selected) LkPrimary else LkTextMuted,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
-                    softWrap = false
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center
                 )
             }
         }

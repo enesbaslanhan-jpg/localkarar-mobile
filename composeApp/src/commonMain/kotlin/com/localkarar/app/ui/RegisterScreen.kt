@@ -1,6 +1,8 @@
 package com.localkarar.app.ui
 
 import androidx.compose.foundation.layout.offset
+import com.localkarar.app.ui.theme.LkTextMuted
+import com.localkarar.app.ui.components.LkYasalOnayPenceresi
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.WindowInsets
@@ -59,23 +61,34 @@ fun RegisterScreen(
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var legalAccepted by remember { mutableStateOf(false) }
-    /* Sosyal giris (16.09.2026): platform koprusu; onay kutusu isaretli olmali. */
+    /*
+     * YASAL ONAY PENCEREDEN ALINIR (18.09.2026). Onay kutusu kalkti; "Hesabi
+     * olustur" ya da Google/Apple dokunusu once LkYasalOnayPenceresi'ni acar,
+     * bekleyen eylem onaydan sonra kosar. Bkz. LkYasalOnay.kt.
+     */
+    var bekleyenOnayEylemi by remember { mutableStateOf<(() -> Unit)?>(null) }
     val sosyal = rememberSosyalGiris()
     val kapsam = rememberCoroutineScope()
     fun sosyalBaslat(saglayici: String) {
-        if (!legalAccepted) {
-            viewModel.registerHata("Devam etmek için Kullanım Koşulları ve Gizlilik Politikası'nı onaylayın.")
-            return
-        }
-        kapsam.launch {
-            val sonuc = if (saglayici == "google") sosyal.google() else sosyal.apple()
-            when (sonuc) {
-                is SosyalGirisSonucu.Basarili -> viewModel.sosyalGiris(sonuc.kimlik, acceptedLegal = true)
-                is SosyalGirisSonucu.Hata -> viewModel.registerHata(sonuc.mesaj)
-                SosyalGirisSonucu.Iptal -> {}
+        bekleyenOnayEylemi = {
+            kapsam.launch {
+                val sonuc = if (saglayici == "google") sosyal.google() else sosyal.apple()
+                when (sonuc) {
+                    is SosyalGirisSonucu.Basarili -> viewModel.sosyalGiris(sonuc.kimlik, acceptedLegal = true)
+                    is SosyalGirisSonucu.Hata -> viewModel.registerHata(sonuc.mesaj)
+                    SosyalGirisSonucu.Iptal -> {}
+                }
             }
         }
+    }
+
+    bekleyenOnayEylemi?.let { eylem ->
+        LkYasalOnayPenceresi(
+            baslik = "Hesap açmadan önce",
+            onaylaMetni = "Okudum, onaylıyorum ve devam et",
+            onOnayla = { bekleyenOnayEylemi = null; eylem() },
+            onVazgec = { bekleyenOnayEylemi = null }
+        )
     }
 
     val isLoading by viewModel.isLoading.collectAsState()
@@ -187,64 +200,17 @@ fun RegisterScreen(
 
                 Spacer(modifier = Modifier.height(LkSpacing.Space4))
 
-                // Legal Checkbox
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { legalAccepted = !legalAccepted }
-                        .padding(vertical = 4.dp)
-                ) {
-                    Checkbox(
-                        checked = legalAccepted,
-                        onCheckedChange = { legalAccepted = it },
-                        colors = CheckboxDefaults.colors(
-                            checkedColor = LkPrimary,
-                            uncheckedColor = LkTextSecondary,
-                            checkmarkColor = LkOnPrimary
-                        )
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    /*
-                     * 🔴 BELGE ADLARI TIKLANABILIR. Onceden duz metindi; kullanici
-                     * "okudum" kutusunu isaretliyordu ama okuyacak bir yol yoktu
-                     * (urun sahibi, 13.09.2026). Onay, okunabilen bir metne
-                     * verilir; foy "Giris 2" notu da bunu soyluyor: "yasal onay
-                     * kayit aninda ve okunabilir".
-                     *
-                     * Webdeki ayni belgeler aciliyor (/terms, /privacy); mobil
-                     * Hakkinda ekrani da oraya bagli. Tek kaynak, iki kopya yok.
-                     */
-                    val onayMetni = buildAnnotatedString {
-                        withLink(
-                            LinkAnnotation.Url(
-                                url = ApiConfig.baseUrl + "/terms",
-                                styles = TextLinkStyles(SpanStyle(color = LkPrimary, textDecoration = TextDecoration.Underline)),
-                                linkInteractionListener = { openExternalUrl(ApiConfig.baseUrl + "/terms") }
-                            )
-                        ) { append("Kullanım Koşulları") }
-                        append(" ve ")
-                        withLink(
-                            LinkAnnotation.Url(
-                                url = ApiConfig.baseUrl + "/privacy",
-                                styles = TextLinkStyles(SpanStyle(color = LkPrimary, textDecoration = TextDecoration.Underline)),
-                                linkInteractionListener = { openExternalUrl(ApiConfig.baseUrl + "/privacy") }
-                            )
-                        ) { append("Gizlilik Politikası") }
-                        append("'nı okudum, onaylıyorum.")
-                    }
-                    Text(
-                        text = onayMetni,
-                        style = LkTypography.getMicro(),
-                        color = LkTextSecondary
-                    )
-                }
+                Text(
+                    "Devam ettiğinde Kullanım Koşulları ve Aydınlatma Metni onayın istenecek.",
+                    style = LkTypography.getMicro(),
+                    color = LkTextMuted
+                )
 
                 Spacer(modifier = Modifier.height(LkSpacing.Space6))
 
                 LkButton(
                     text = if (isLoading) "Hesap oluşturuluyor…" else "Hesabı oluştur",
-                    onClick = { viewModel.register(name, email, password, legalAccepted, onRegistered) },
+                    onClick = { bekleyenOnayEylemi = { viewModel.register(name, email, password, true, onRegistered) } },
                     enabled = !isLoading,
                     modifier = Modifier.fillMaxWidth(),
                     size = LkButtonSize.LG,

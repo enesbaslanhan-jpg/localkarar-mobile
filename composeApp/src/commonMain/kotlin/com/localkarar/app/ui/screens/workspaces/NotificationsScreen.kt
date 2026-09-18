@@ -33,7 +33,9 @@ import com.localkarar.app.workspaces.NotificationsViewModel
 @Composable
 fun NotificationsScreen(
     viewModel: NotificationsViewModel,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    /** Bildirim bir kayda bagliysa dokununca o kayit acilir (18.09.2026; onceden yalniz okundu isaretleniyordu). */
+    onOpenRecord: (recordId: String) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -88,6 +90,7 @@ fun NotificationsScreen(
                                             if (notification.readAt == null) {
                                                 viewModel.markRead(notification.id)
                                             }
+                                            notification.record?.id?.let(onOpenRecord)
                                         }
                                     )
                                     if (i != state.notifications.lastIndex) LkHairline()

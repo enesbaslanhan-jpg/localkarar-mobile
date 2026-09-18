@@ -1,6 +1,7 @@
 package com.localkarar.app.ui
 
 import androidx.compose.foundation.layout.offset
+import com.localkarar.app.ui.components.LkYasalOnayPenceresi
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.WindowInsets
@@ -72,7 +73,6 @@ fun LoginScreen(
     val sosyal = rememberSosyalGiris()
     val kapsam = rememberCoroutineScope()
     val onayBekleyen by viewModel.onayBekleyenSosyal.collectAsState()
-    var sosyalOnay by remember { mutableStateOf(false) }
     fun sosyalBaslat(saglayici: String) {
         kapsam.launch {
             val sonuc = if (saglayici == "google") sosyal.google() else sosyal.apple()
@@ -244,60 +244,16 @@ fun LoginScreen(
                     }
                     Spacer(modifier = Modifier.height(LkSpacing.Space4))
                     if (onayBekleyen != null) {
-                        /* Ilk sosyal giris: kayittaki yasal onayin aynisi. */
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(LkSurfacePanel, LkShapes.MD)
-                                .padding(LkSpacing.Space4)
-                        ) {
-                            Text(
-                                "Yeni hesap oluşturuluyor — devam etmek için onayla",
-                                style = LkTypography.getBodyStrong(),
-                                color = LkTextPrimary
-                            )
-                            Spacer(Modifier.height(LkSpacing.Space2))
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Checkbox(
-                                    checked = sosyalOnay,
-                                    onCheckedChange = { sosyalOnay = it },
-                                    colors = CheckboxDefaults.colors(checkedColor = LkPrimary)
-                                )
-                                Text(
-                                    buildString {
-                                        append("Kullanım Koşulları'nı ve Aydınlatma Metni'ni okudum, onaylıyorum.")
-                                    },
-                                    style = LkTypography.getBodySmall(),
-                                    color = LkTextSecondary,
-                                    modifier = Modifier.clickable { sosyalOnay = !sosyalOnay }
-                                )
-                            }
-                            Row(horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
-                                Text(
-                                    "Kullanım Koşulları",
-                                    style = LkTypography.getMicro(), color = LkPrimary,
-                                    modifier = Modifier.clickable { openExternalUrl("https://localkarar.com/terms") }
-                                )
-                                Text(
-                                    "Aydınlatma Metni",
-                                    style = LkTypography.getMicro(), color = LkPrimary,
-                                    modifier = Modifier.clickable { openExternalUrl("https://localkarar.com/privacy") }
-                                )
-                            }
-                            Spacer(Modifier.height(LkSpacing.Space3))
-                            LkButton(
-                                text = if (isLoading) "Hesap açılıyor..." else "Onayla ve devam et",
-                                onClick = { viewModel.sosyalOnayla() },
-                                enabled = sosyalOnay && !isLoading,
-                                modifier = Modifier.fillMaxWidth(),
-                                size = LkButtonSize.LG,
-                                shape = LkShapes.FULL
-                            )
-                            TextButton(onClick = { viewModel.sosyalOnayiVazgec(); sosyalOnay = false }) {
-                                Text("Vazgeç", color = LkTextSecondary)
-                            }
-                        }
-                    } else {
+                        /* Ilk sosyal giris: yasal onay ayni pencereden (LkYasalOnay.kt). */
+                        LkYasalOnayPenceresi(
+                            baslik = "Yeni hesap açılıyor",
+                            onaylaMetni = "Okudum, onaylıyorum ve devam et",
+                            yukleniyor = isLoading,
+                            onOnayla = { viewModel.sosyalOnayla() },
+                            onVazgec = { viewModel.sosyalOnayiVazgec() }
+                        )
+                    }
+                    run {
                         Row(horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space3), modifier = Modifier.fillMaxWidth()) {
                             if (sosyal.googleVar) {
                                 LkButton(

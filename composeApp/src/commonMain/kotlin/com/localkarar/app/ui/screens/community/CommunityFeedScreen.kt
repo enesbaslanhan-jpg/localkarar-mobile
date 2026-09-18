@@ -1,6 +1,7 @@
 package com.localkarar.app.ui.screens.community
 
 import com.localkarar.app.ui.components.LkLoadingSpinner
+import androidx.compose.material.icons.outlined.GridView
 import com.localkarar.app.ui.components.LkErrorState
 import com.localkarar.app.ui.components.LkEmptyState
 import com.localkarar.app.ui.components.LkLoadingDesen
@@ -199,7 +200,7 @@ fun CommunityFeedScreen(
                 if (onOpenProductCenter != null) {
                     IconButton(onClick = onOpenProductCenter) {
                         Icon(
-                            Icons.Outlined.Apps,
+                            Icons.Outlined.GridView,
                             contentDescription = "Ürünler",
                             tint = LkHero.OnHero
                         )
