@@ -1,6 +1,8 @@
 package com.localkarar.app.workspaces
 
 import com.localkarar.app.network.ApiConfig
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
 import io.ktor.client.HttpClient
 import io.ktor.client.request.forms.MultiPartFormDataContent
 import io.ktor.client.request.forms.formData
@@ -102,7 +104,16 @@ class DocumentUploadRepository(private val client: HttpClient) {
         val yerelHata = dosyaHatasi(dosyaAdi, icerik.size)
         if (yerelHata != null) return Result.failure(Exception(yerelHata))
 
-        return try {
+        /*
+         * 🔴 YUKLEME ARKA PLAN DAGITICISINDA (TestFlight 112 cokme kaydi, 18.09.2026).
+         * Ktor'un Darwin motoru multipart govdeyi NSOutputStream'e yazarken
+         * `while (!hasSpaceAvailable) yield()` dongusune giriyor. Cagri ana
+         * dagiticidan (viewModelScope) gelince yield ana kuyruga geri dusuyor, akis
+         * hic yer acmiyor → ana is parcacigi acliga dusuyor, arayuz donuyor, sistem
+         * 5 sn sonra olduruyor (0x8BADF00D). Default dagiticida ayni dongu arka planda
+         * doner; arayuz etkilenmez. Android'de fark yok, guvenli.
+         */
+        return withContext(Dispatchers.Default) { try {
             val yanit = client.post("${ApiConfig.baseUrl}/documents/upload") {
                 setBody(
                     MultiPartFormDataContent(
@@ -132,7 +143,7 @@ class DocumentUploadRepository(private val client: HttpClient) {
                 } catch (e: Exception) {
                     null
                 }
-                return Result.failure(Exception(mesaj ?: "Belge yüklenemedi."))
+                return@withContext Result.failure(Exception(mesaj ?: "Belge yüklenemedi."))
             }
 
             val govde = yanit.bodyAsText()
@@ -148,7 +159,7 @@ class DocumentUploadRepository(private val client: HttpClient) {
             else Result.success(belgeId)
         } catch (e: Exception) {
             Result.failure(e)
-        }
+        } }
     }
 
     /**

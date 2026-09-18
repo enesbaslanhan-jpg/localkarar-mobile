@@ -194,12 +194,18 @@ fun DocumentsScreen(
         )
     }
 
-    if (notice != null) {
+    /*
+     * 🔴 COKME (TestFlight 109, 18.09.2026, kayit cozumlendi): `text` slotu
+     * `notice!!` okuyordu; "Tamam"a basilinca notice null oluyor, pencere
+     * kapanmadan slot yeniden kompoze ediliyor → NullPointerException → abort.
+     * Deger bir kez yerel degiskene alinir; slot ona bakar.
+     */
+    notice?.let { mesaj ->
         androidx.compose.material.AlertDialog(
             onDismissRequest = { notice = null },
             backgroundColor = LkSurfacePanel,
             title = { Text(text = "Bilgi", style = LkTypography.getBodyStrong(), color = LkTextPrimary) },
-            text = { Text(text = notice!!, style = LkTypography.getBodySmall(), color = LkTextSecondary) },
+            text = { Text(text = mesaj, style = LkTypography.getBodySmall(), color = LkTextSecondary) },
             confirmButton = { LkButton(text = "Tamam", onClick = { notice = null }) }
         )
     }

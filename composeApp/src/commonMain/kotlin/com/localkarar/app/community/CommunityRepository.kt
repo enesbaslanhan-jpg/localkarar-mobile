@@ -1,6 +1,8 @@
 package com.localkarar.app.community
 
 import com.localkarar.app.network.ApiConfig
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
 import com.localkarar.app.network.bosJsonGovde
 import com.localkarar.app.network.dto.*
 import io.ktor.client.HttpClient
@@ -178,8 +180,17 @@ class CommunityRepository(
         bytes: ByteArray,
         mimeType: String,
         onProgress: (Float) -> Unit = {}
-    ): Result<MediaUploadResponseDto> {
-        return try {
+    ): Result<MediaUploadResponseDto> = withContext(Dispatchers.Default) {
+        /*
+         * 🔴 YUKLEME ARKA PLAN DAGITICISINDA (TestFlight 112 cokme kaydi, 18.09.2026).
+         * Ktor'un Darwin motoru multipart govdeyi NSOutputStream'e yazarken
+         * `while (!hasSpaceAvailable) yield()` dongusune giriyor. Cagri ana
+         * dagiticidan (viewModelScope) gelince yield ana kuyruga geri dusuyor, akis
+         * hic yer acmiyor → ana is parcacigi acliga dusuyor, arayuz donuyor, sistem
+         * 5 sn sonra olduruyor (0x8BADF00D). Default dagiticida ayni dongu arka planda
+         * doner; arayuz etkilenmez. Android'de fark yok, guvenli.
+         */
+        try {
             val response = client.submitFormWithBinaryData(
                 url = "$communityBase/media",
                 formData = formData {

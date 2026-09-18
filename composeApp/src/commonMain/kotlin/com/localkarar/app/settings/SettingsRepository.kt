@@ -1,6 +1,8 @@
 package com.localkarar.app.settings
 
 import com.localkarar.app.auth.ConsentsResponseDto
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
 import com.localkarar.app.auth.LegalDocumentDto
 import com.localkarar.app.auth.LegalDocumentsResponseDto
 import com.localkarar.app.auth.ProfileUpdateDto
@@ -188,8 +190,17 @@ class SettingsRepository(
         }
     }
 
-    suspend fun uploadAvatar(name: String, bytes: ByteArray): Result<String> {
-        return try {
+    suspend fun uploadAvatar(name: String, bytes: ByteArray): Result<String> = withContext(Dispatchers.Default) {
+        /*
+         * 🔴 YUKLEME ARKA PLAN DAGITICISINDA (TestFlight 112 cokme kaydi, 18.09.2026).
+         * Ktor'un Darwin motoru multipart govdeyi NSOutputStream'e yazarken
+         * `while (!hasSpaceAvailable) yield()` dongusune giriyor. Cagri ana
+         * dagiticidan (viewModelScope) gelince yield ana kuyruga geri dusuyor, akis
+         * hic yer acmiyor → ana is parcacigi acliga dusuyor, arayuz donuyor, sistem
+         * 5 sn sonra olduruyor (0x8BADF00D). Default dagiticida ayni dongu arka planda
+         * doner; arayuz etkilenmez. Android'de fark yok, guvenli.
+         */
+        try {
             val extension = if (name.endsWith(".png", ignoreCase = true)) "png" else "jpg"
             val mimeType = if (extension == "png") "image/png" else "image/jpeg"
             val response = client.post("/auth/avatar") {
@@ -233,8 +244,8 @@ class SettingsRepository(
      * yanitinda geliyor; mobilde kapagi degistirmenin yolu yoktu.
      * Mockup "Ayar 2"nin ilk ogesi bu.
      */
-    suspend fun uploadCover(name: String, bytes: ByteArray): Result<String> {
-        return try {
+    suspend fun uploadCover(name: String, bytes: ByteArray): Result<String> = withContext(Dispatchers.Default) {
+        try {
             val extension = if (name.endsWith(".png", ignoreCase = true)) "png" else "jpg"
             val mimeType = if (extension == "png") "image/png" else "image/jpeg"
             val response = client.post("/auth/cover") {
