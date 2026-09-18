@@ -345,7 +345,7 @@ fun CommunityFeedScreen(
     }
 
     if (communityViewModel.composing) {
-        ComposePostSheet(viewModel = communityViewModel)
+        ComposePostSheet(viewModel = communityViewModel, currentUser = currentUser)
     }
 }
 

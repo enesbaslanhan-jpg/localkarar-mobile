@@ -1,6 +1,9 @@
 package com.localkarar.app.ui.shell
 
 import androidx.compose.animation.Crossfade
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.WindowInsets
@@ -383,10 +386,38 @@ fun AppShell(
                 backgroundColor = LkSurfaceCanvas,
                 modifier = Modifier.fillMaxSize()
             ) { paddingValues ->
+                /*
+                 * 🔴 SOL KENARDAN KAYDIRARAK GERI (iOS aliskanligi; urun sahibi
+                 * 18.09.2026: "soldan kaydirinca geri gitme calismiyor").
+                 * Gezinme kendi yiginimiz oldugu icin UIKit'in kenar jesti yok;
+                 * burada yeniden kurulur: dokunus sol 28dp icinde baslar, saga
+                 * 72dp'den fazla surüklenirse bir sayfa geri. Yatay kaydirilan
+                 * cocuklar (sekmeler, slaytlar) jesti once tuketir; onlarla
+                 * catisma yok. Alt sayfa acikken ya da yiginda tek ekran varken
+                 * jest kapali.
+                 */
+                val yogunluk = LocalDensity.current
+                val geriJestiAktif = backStack.size > 1 && !bottomSheetState.isVisible
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues)
+                        .pointerInput(geriJestiAktif) {
+                            if (!geriJestiAktif) return@pointerInput
+                            val kenarPx = with(yogunluk) { 28.dp.toPx() }
+                            val esikPx = with(yogunluk) { 72.dp.toPx() }
+                            var baslangicX = -1f
+                            var toplam = 0f
+                            detectHorizontalDragGestures(
+                                onDragStart = { baslangicX = it.x; toplam = 0f },
+                                onHorizontalDrag = { _, fark -> toplam += fark },
+                                onDragCancel = { baslangicX = -1f },
+                                onDragEnd = {
+                                    if (baslangicX in 0f..kenarPx && toplam > esikPx) navController.popBackStack()
+                                    baslangicX = -1f
+                                }
+                            )
+                        }
                 ) {
                     // Seritler TUM ekranlarin ustunde, TEK yerde. Ekran ekran
                     // tekrarlansalardi birbirinden farkli gorunmeleri ve
