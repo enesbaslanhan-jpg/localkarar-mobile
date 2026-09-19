@@ -1,6 +1,9 @@
 package com.localkarar.app.ui.screens.calculations
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.material.icons.outlined.ExpandMore
+import androidx.compose.material.icons.outlined.ExpandLess
+import androidx.compose.material.icons.outlined.Functions
 import androidx.compose.foundation.layout.padding
 import com.localkarar.app.ui.components.altBoslukla
 import com.localkarar.app.ui.components.LocalAltBosluk
@@ -136,9 +139,28 @@ fun FinancialModelScreen(
                             }
                         }
                         if (!model.formula.isNullOrBlank()) {
+                            /* Formül KAPALI başlar (ürün sahibi, 19.09.2026): esnaf için
+                               formül ikinci plandır; küçük düğme, dokununca açılır. */
+                            var formulAcik by remember { mutableStateOf(false) }
                             Spacer(modifier = Modifier.height(LkSpacing.Space3))
-                            LkInfoPanel(title = "Formül") {
-                                Text(text = model.formula, style = LkTypography.getBody(), color = LkTextPrimary)
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .clip(LkShapes.FULL)
+                                    .background(LkSurfaceTile)
+                                    .clickable { formulAcik = !formulAcik }
+                                    .padding(horizontal = LkSpacing.Space3, vertical = 6.dp)
+                            ) {
+                                Icon(Icons.Outlined.Functions, contentDescription = null, tint = LkTileInk, modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text(if (formulAcik) "Formülü gizle" else "Formülü gör", style = LkTypography.getLabel(), color = LkTileInk)
+                                Icon(if (formulAcik) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, contentDescription = null, tint = LkTileInk, modifier = Modifier.size(16.dp))
+                            }
+                            if (formulAcik) {
+                                Spacer(modifier = Modifier.height(LkSpacing.Space2))
+                                LkInfoPanel(title = "Formül") {
+                                    Text(text = model.formula, style = LkTypography.getBody(), color = LkTextPrimary)
+                                }
                             }
                         }
                     }
@@ -190,11 +212,15 @@ fun FinancialModelScreen(
                                  * Sekme kendi genisligi kadar yer kaplamali --
                                  * zaten istenen de bu.
                                  */
+                                /* 🔴 Dolgu zeminden ÖNCE geliyordu: kenarlık yazıya yapışık,
+                                   "kesilmiş" görünüyordu (TestFlight 118). Sıra: şekil → zemin →
+                                   kenarlık → dokunma → iç dolgu. */
                                 modifier = Modifier
-                                    .padding(horizontal = LkSpacing.Space3, vertical = LkSpacing.Space2)
-                                    .background(if (selected) LkPrimary.copy(alpha = 0.1f) else LkSurfacePanel, LkShapes.MD)
-                                    .border(1.dp, if (selected) LkPrimary else LkLineStrong, LkShapes.MD)
+                                    .clip(LkShapes.FULL)
+                                    .background(if (selected) LkPrimary.copy(alpha = 0.12f) else LkSurfacePanel)
+                                    .border(1.dp, if (selected) LkPrimary else LkLineSoft, LkShapes.FULL)
                                     .clickable { selectedTab = index }
+                                    .padding(horizontal = LkSpacing.Space4, vertical = LkSpacing.Space2)
                             )
                         }
                     }
@@ -541,29 +567,26 @@ private fun ScenariosTab(
         LkSectionHeader(title = "Senaryo Laboratuvarı", subtitle = "Aynı modelin farklı varsayımlarını ayrı çalışma olarak kaydedin")
 
         // Scenario selector
+        /* Beş senaryo tek satıra weight ile sıkışıp harf harf kırılıyordu ("İ-yi-ms-er",
+           TestFlight 118). Yatay kaydırılan, kendi genişliğinde haplar. */
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(LkSpacing.Space2)
         ) {
             SCENARIOS.forEach { (id, label) ->
                 val count = if (scenarioRuns[id] != null) 1 else 0
                 val selected = scenarioName == id
-                Box(
+                Column(
                     modifier = Modifier
-                        .weight(1f)
-                        .padding(LkSpacing.Space2)
-                        .background(if (selected) LkPrimary.copy(alpha = 0.1f) else LkSurfacePanel, LkShapes.MD)
-                        .border(1.dp, if (selected) LkPrimary else LkLineStrong, LkShapes.MD)
-                        .padding(LkSpacing.Space3)
+                        .clip(LkShapes.MD)
+                        .background(if (selected) LkPrimary.copy(alpha = 0.12f) else LkSurfacePanel)
+                        .border(1.dp, if (selected) LkPrimary else LkLineSoft, LkShapes.MD)
                         .clickable { onScenarioSelected(id) }
+                        .padding(horizontal = LkSpacing.Space4, vertical = LkSpacing.Space3),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(text = label, style = LkTypography.getBodySmall(), color = if (selected) LkPrimary else LkTextPrimary)
-                        Text(text = "$count kayıt", style = LkTypography.getMicro(), color = LkTextMuted)
-                    }
+                    Text(text = label, style = LkTypography.getBodySmall(), color = if (selected) LkPrimary else LkTextPrimary, maxLines = 1, softWrap = false)
+                    Text(text = "$count kayıt", style = LkTypography.getMicro(), color = LkTextMuted, maxLines = 1, softWrap = false)
                 }
             }
         }
