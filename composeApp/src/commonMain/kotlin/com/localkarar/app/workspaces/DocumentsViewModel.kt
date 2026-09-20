@@ -161,10 +161,27 @@ class DocumentsViewModel(
     private val _yukleniyor = MutableStateFlow(false)
     val yukleniyor: StateFlow<Boolean> = _yukleniyor.asStateFlow()
 
+    /** Yukleme karti icin: dosya adi, gorsel onizleme ve asama (0 gonderiliyor, 1 okunuyor, 2 oneri). */
+    data class YuklemeDurumu(val dosyaAdi: String, val onizleme: androidx.compose.ui.graphics.ImageBitmap?, val asama: Int)
+    private val _yuklemeDurumu = MutableStateFlow<YuklemeDurumu?>(null)
+    val yuklemeDurumu: StateFlow<YuklemeDurumu?> = _yuklemeDurumu.asStateFlow()
+
     fun belgeYukle(dosyaAdi: String, icerik: ByteArray, kategori: String? = null) {
         if (_yukleniyor.value) return
         _yukleniyor.value = true
+        val gorsel = dosyaAdi.substringAfterLast('.', "").lowercase() in setOf("jpg", "jpeg", "png")
+        _yuklemeDurumu.value = YuklemeDurumu(dosyaAdi, if (gorsel) com.localkarar.app.core.gorseliCoz(icerik) else null, 0)
         viewModelScope.launch {
+            /*
+             * Asamalar sunucudan gelmiyor (tek istek); sureye gore ilerletilir:
+             * ~1.5 sn sonra "okunuyor", ~6 sn sonra "oneri hazirlaniyor".
+             * Yanit gelince kart kapanir. Amac dogru sure degil, bir seyin
+             * oldugunu gostermek (urun sahibi, 20.09.2026).
+             */
+            val asamaIsi = launch {
+                kotlinx.coroutines.delay(1500); _yuklemeDurumu.value = _yuklemeDurumu.value?.copy(asama = 1)
+                kotlinx.coroutines.delay(4500); _yuklemeDurumu.value = _yuklemeDurumu.value?.copy(asama = 2)
+            }
             /*
              * TEK CAGRI ICINDE IKI ADIM: yukle + calisma alanina bagla.
              * Ikincisi atlanirsa belge kullanicinin kisisel listesine girer
@@ -173,13 +190,17 @@ class DocumentsViewModel(
              */
             uploadRepository.yukleVeBagla(workspaceId, dosyaAdi, icerik, kategori)
                 .onSuccess {
+                    asamaIsi.cancel()
                     AppMessages.bilgi("Belge yüklendi.")
                     _yukleniyor.value = false
+                    _yuklemeDurumu.value = null
                     load()
                 }
                 .onFailure { hata ->
+                    asamaIsi.cancel()
                     AppMessages.hata(hata.message ?: "Belge yüklenemedi.")
                     _yukleniyor.value = false
+                    _yuklemeDurumu.value = null
                 }
         }
     }

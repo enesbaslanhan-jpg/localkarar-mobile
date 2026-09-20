@@ -1,6 +1,13 @@
 package com.localkarar.app.ui.screens.workspaces
 
 import com.localkarar.app.ui.components.LkHairline
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.ui.zIndex
 import androidx.compose.foundation.layout.padding
 import com.localkarar.app.ui.components.altBoslukla
@@ -59,6 +66,7 @@ fun DocumentsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val yukleniyor by viewModel.yukleniyor.collectAsState()
+    val yuklemeDurumu by viewModel.yuklemeDurumu.collectAsState()
     val islenenOneri by viewModel.islenenOneri.collectAsState()
     val modelOnerileri by viewModel.modelOnerileri.collectAsState()
     val modelAraniyor by viewModel.modelAraniyor.collectAsState()
@@ -121,22 +129,61 @@ fun DocumentsScreen(
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             /*
-             * YUKLEME SERIDI (20.09.2026): fotograf yuklemesi OCR yuzunden 6-7 sn
-             * suruyor; kullanici bu surede "calismiyor" sandi. Liste ustunde
-             * ilerleme cubugu ve ne oldugu yazisi.
+             * YUKLEME KARTI (20.09.2026): duz serit "kotu" bulundu. Simdi listenin
+             * ustunde gercek bir belge karti gibi: kucuk onizleme, dosya adi,
+             * uc asamali durum (Gonderiliyor → Okunuyor → Oneri hazirlaniyor)
+             * ve ince belirsiz ilerleme. Yanit gelince kaybolur, liste yenilenir.
              */
-            if (yukleniyor) {
-                androidx.compose.foundation.layout.Column(
+            yuklemeDurumu?.let { yd ->
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .align(androidx.compose.ui.Alignment.TopCenter)
+                        .align(Alignment.TopCenter)
                         .zIndex(2f)
-                        .background(LkSurfacePanel)
                         .padding(horizontal = LkSpacing.Space4, vertical = LkSpacing.Space3)
+                        .clip(LkShapes.MD)
+                        .background(LkSurfacePanel)
+                        .border(1.dp, LkLineSoft, LkShapes.MD)
+                        .padding(LkSpacing.Space3),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Belge yükleniyor ve okunuyor… Fotoğraflarda bu 5–10 saniye sürebilir.", style = LkTypography.getBodySmall(), color = LkTextSecondary)
-                    androidx.compose.foundation.layout.Spacer(Modifier.height(6.dp))
-                    androidx.compose.material.LinearProgressIndicator(modifier = Modifier.fillMaxWidth(), color = LkPrimary, backgroundColor = LkLineSoft)
+                    Box(
+                        modifier = Modifier.size(52.dp).clip(LkShapes.SM).background(LkSurfaceSunken),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (yd.onizleme != null) {
+                            androidx.compose.foundation.Image(
+                                bitmap = yd.onizleme,
+                                contentDescription = null,
+                                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        } else {
+                            Icon(Icons.Outlined.Description, contentDescription = null, tint = LkTextMuted, modifier = Modifier.size(24.dp))
+                        }
+                    }
+                    Spacer(Modifier.width(LkSpacing.Space3))
+                    Column(Modifier.weight(1f)) {
+                        Text(yd.dosyaAdi, style = LkTypography.getBodyStrong(), color = LkTextPrimary, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                        Spacer(Modifier.height(4.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            listOf("Gönderiliyor", "Okunuyor", "Öneri hazırlanıyor").forEachIndexed { i, ad ->
+                                val etkin = i <= yd.asama
+                                Text(
+                                    ad,
+                                    style = LkTypography.getMicro(),
+                                    color = if (etkin) LkPrimary else LkTextMuted
+                                )
+                                if (i < 2) Text("  ›  ", style = LkTypography.getMicro(), color = LkTextMuted)
+                            }
+                        }
+                        Spacer(Modifier.height(6.dp))
+                        androidx.compose.material.LinearProgressIndicator(
+                            modifier = Modifier.fillMaxWidth().height(3.dp).clip(LkShapes.FULL),
+                            color = LkPrimary,
+                            backgroundColor = LkLineSoft
+                        )
+                    }
                 }
             }
             when (val state = uiState) {
