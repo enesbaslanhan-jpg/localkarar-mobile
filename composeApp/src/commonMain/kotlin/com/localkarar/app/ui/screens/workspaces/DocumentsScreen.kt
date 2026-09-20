@@ -1,6 +1,7 @@
 package com.localkarar.app.ui.screens.workspaces
 
 import com.localkarar.app.ui.components.LkHairline
+import androidx.compose.ui.zIndex
 import androidx.compose.foundation.layout.padding
 import com.localkarar.app.ui.components.altBoslukla
 import com.localkarar.app.ui.components.LocalAltBosluk
@@ -119,6 +120,25 @@ fun DocumentsScreen(
         }
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
+            /*
+             * YUKLEME SERIDI (20.09.2026): fotograf yuklemesi OCR yuzunden 6-7 sn
+             * suruyor; kullanici bu surede "calismiyor" sandi. Liste ustunde
+             * ilerleme cubugu ve ne oldugu yazisi.
+             */
+            if (yukleniyor) {
+                androidx.compose.foundation.layout.Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(androidx.compose.ui.Alignment.TopCenter)
+                        .zIndex(2f)
+                        .background(LkSurfacePanel)
+                        .padding(horizontal = LkSpacing.Space4, vertical = LkSpacing.Space3)
+                ) {
+                    Text("Belge yükleniyor ve okunuyor… Fotoğraflarda bu 5–10 saniye sürebilir.", style = LkTypography.getBodySmall(), color = LkTextSecondary)
+                    androidx.compose.foundation.layout.Spacer(Modifier.height(6.dp))
+                    androidx.compose.material.LinearProgressIndicator(modifier = Modifier.fillMaxWidth(), color = LkPrimary, backgroundColor = LkLineSoft)
+                }
+            }
             when (val state = uiState) {
                 is DocumentsUiState.Loading -> LkLoadingState()
                 is DocumentsUiState.Error -> LkErrorState(
@@ -133,7 +153,7 @@ fun DocumentsScreen(
                             icon = Icons.Outlined.AttachFile,
                             action = {
                                 LkButton(
-                                    text = if (yukleniyor) "Yükleniyor..." else "Belge yükle",
+                                    text = if (yukleniyor) "Yükleniyor ve okunuyor…" else "Belge yükle",
                                     onClick = { yuklemeAcik = true },
                                     enabled = !yukleniyor
                                 )
@@ -423,7 +443,15 @@ private fun ModelOnerisiBolumu(
             )
         }
 
-        if (oneriler.models.isEmpty()) return@Column
+        if (oneriler.models.isEmpty()) {
+            /* Bos sonuc "hic bir sey olmadi" gibi gorunuyordu (20.09.2026). */
+            Text(
+                text = "Bu belge için önerilecek hesaplama bulunamadı. Tutar ve tarih içeren daha net bir fatura fotoğrafı ya da e-Fatura XML dosyası daha iyi sonuç verir.",
+                style = LkTypography.getBodySmall(),
+                color = LkTextSecondary
+            )
+            return@Column
+        }
 
         Text(
             text = "ÖNERİLEN HESAPLAMALAR",

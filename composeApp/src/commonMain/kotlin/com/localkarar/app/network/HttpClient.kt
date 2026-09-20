@@ -251,7 +251,20 @@ fun createHttpClient(
                      */
                     contentType.match(ContentType.Application.Pdf) ||
                     contentType.match(ContentType.Text.CSV) ||
-                    contentType.match(IKILI_CIZELGE)
+                    contentType.match(IKILI_CIZELGE) ||
+                    /*
+                     * 🔴 BELGE PAYLASIMI (TestFlight 119, 20.09.2026): fotografla
+                     * eklenen fatura image/jpeg olarak iniyor; yalniz PDF/CSV/XLSX
+                     * gecince "Beklenmeyen yanıt formatı" ile dusuyordu. Kullanici
+                     * belge olarak ne yukleyebiliyorsa (DocumentUploadRepository
+                     * IZINLI_UZANTILAR) onu indirebilmeli.
+                     */
+                    contentType.match(ContentType.Image.Any) ||
+                    contentType.match(ContentType.Text.Plain) ||
+                    contentType.match(ContentType.Application.Xml) ||
+                    contentType.match(ContentType.Text.Xml) ||
+                    contentType.match(ContentType.Application.OctetStream) ||
+                    contentType.match(IKILI_BELGE)
                 if (!isSupportedResponse) {
                     AppLog.e("Api", "Expected JSON but got ${contentType.contentType}/${contentType.contentSubtype} for ${response.request.url}")
                     throw ApiError.ServerError("Beklenmeyen yanıt formatı alındı. (Sunucu Hatası)")
@@ -315,6 +328,12 @@ fun createHttpClient(
  * `HttpResponseValidator` disa aktarma indirmelerini gecirirken
  * kullaniyor; bkz. oradaki gerekce.
  */
+/** Word (docx) — Ktor sabitleri arasinda yok. */
+private val IKILI_BELGE = ContentType(
+    "application",
+    "vnd.openxmlformats-officedocument.wordprocessingml.document"
+)
+
 private val IKILI_CIZELGE = ContentType(
     "application",
     "vnd.openxmlformats-officedocument.spreadsheetml.sheet"
