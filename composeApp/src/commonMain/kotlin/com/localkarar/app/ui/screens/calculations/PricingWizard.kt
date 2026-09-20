@@ -166,7 +166,7 @@ fun PricingWizardSection(
         // Eksik girdiler ACIKCA soyleniyor; sessizce 0 kabul etmek yanlis
         // fiyata yol acardi.
         Text(
-            "Komisyon, kargo, sabit gider ve iade riski bu önizlemede sıfır kabul edilir.",
+            "Bu bir önizlemedir, Geçmiş'e kaydedilmez. Komisyon, kargo, sabit gider ve iade riski sıfır kabul edilir; kaydetmek için tüm alanlarla hesapla.",
             style = LkTypography.getMetadata(),
             color = LkTextMuted
         )

@@ -1,6 +1,19 @@
 package com.localkarar.app.ui.screens.calculations
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Row
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
+import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.outlined.ExpandMore
+import androidx.compose.material.icons.outlined.ExpandLess
+import androidx.compose.material.icons.outlined.Functions
 import androidx.compose.foundation.layout.padding
 import com.localkarar.app.ui.components.altBoslukla
 import com.localkarar.app.ui.components.LocalAltBosluk
@@ -330,13 +343,23 @@ fun FormulaDetailScreen(
  */
 @Composable
 private fun FormulBlogu(ifade: FormulaExpression) {
+    /* Kapali baslar (urun sahibi, 20.09.2026): esnaf icin formul ikinci plan. */
+    var acik by remember { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(LkSpacing.Space2)) {
-        Text(
-            text = "FORMÜL",
-            style = LkTypography.getMicro(),
-            color = LkTextSecondary
-        )
-        Box(
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .clip(LkShapes.FULL)
+                .background(LkSurfaceTile)
+                .clickable { acik = !acik }
+                .padding(horizontal = LkSpacing.Space3, vertical = 6.dp)
+        ) {
+            Icon(Icons.Outlined.Functions, contentDescription = null, tint = LkTileInk, modifier = Modifier.size(16.dp))
+            Spacer(Modifier.width(6.dp))
+            Text(if (acik) "Formülü gizle" else "Formülü gör", style = LkTypography.getLabel(), color = LkTileInk)
+            Icon(if (acik) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, contentDescription = null, tint = LkTileInk, modifier = Modifier.size(16.dp))
+        }
+        if (acik) Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(LkShapes.MD)
@@ -359,7 +382,7 @@ private fun FormulBlogu(ifade: FormulaExpression) {
                 }
             }
         }
-        if (ifade.not != null) {
+        if (acik && ifade.not != null) {
             Text(
                 text = ifade.not,
                 style = LkTypography.getMetadata(),

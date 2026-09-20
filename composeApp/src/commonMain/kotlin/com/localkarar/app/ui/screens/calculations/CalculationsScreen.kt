@@ -125,9 +125,16 @@ fun CalculationsScreen(
      */
     var aramaAcik by remember { mutableStateOf(false) }
 
+    /*
+     * Gecmis: sekmeye her gecildiginde VE ekrana her donuldugunde yenilenir.
+     * Onceden yalniz sekme index'i degisince yenileniyordu; araçtan hesaplayip
+     * geri gelen kullanici eski listeyi goruyordu ("gecmise dusmuyor",
+     * ürün sahibi 20.09.2026).
+     */
     LaunchedEffect(selectedTab) {
         if (selectedTab == 1) viewModel.refresh()
     }
+    LaunchedEffect(Unit) { viewModel.refresh() }
 
     /*
      * §24.6 — hero baslik blogu + binen yuzey.
