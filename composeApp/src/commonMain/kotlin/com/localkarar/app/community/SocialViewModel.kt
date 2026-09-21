@@ -33,6 +33,13 @@ class SocialViewModel(
         private set
     var blockedIds by mutableStateOf<Set<Int>>(emptySet())
         private set
+
+    /**
+     * Engel degisince akisin haberi olsun (AppShell baglar). Iki ViewModel
+     * birbirini tanimiyor; bu geri cagri, engellenen kisinin gonderilerinin
+     * akista kalmasi hatasini kapatir (bkz. CommunityViewModel.yazariGizle).
+     */
+    var engelDegisti: ((personId: Int, engellendi: Boolean) -> Unit)? = null
     var searchQuery by mutableStateOf("")
         private set
 
@@ -184,6 +191,7 @@ class SocialViewModel(
                 blockedIds = if (res) blockedIds + personId else blockedIds - personId
                 if (res) followingIds = followingIds - personId
                 notice = if (res) "Kullanıcı engellendi" else "Engel kaldırıldı"
+                engelDegisti?.invoke(personId, res)
             }.onFailure {
                 // Rollback
                 blockedIds = if (isBlocked) blockedIds + personId else blockedIds - personId

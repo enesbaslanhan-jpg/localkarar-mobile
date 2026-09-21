@@ -363,6 +363,28 @@ class CommunityViewModel(
     // HELPERS
     // ==========================================
 
+    /**
+     * Engellenen yazarin gonderilerini akistan ve acik detaydan HEMEN cikarir.
+     *
+     * 🔴 Canli (21.09.2026, App Store inceleme videosu cekilirken): kullanici
+     * profilde "Engelle"ye basti, akisa dondu, gonderi hala duruyordu. Sunucu
+     * akisi zaten filtreliyor (community.ts, authorId notIn) ama uygulama
+     * akisi yeniden cekmiyordu; yeni istek atilana kadar eski liste kaliyordu.
+     * Yeniden yukleme yerine yerel silme: aninda, beyaz ekran yok.
+     */
+    fun yazariGizle(authorId: Int) {
+        (_feedState.value as? FeedUiState.Content)?.let { current ->
+            _feedState.value = current.copy(
+                posts = current.posts.filterNot { (it.authorId ?: it.author?.id) == authorId }
+            )
+        }
+        (_detailState.value as? DetailUiState.Content)?.let { current ->
+            if ((current.post.authorId ?: current.post.author?.id) == authorId) {
+                _detailState.value = DetailUiState.Error("Bu kullanıcıyı engellediniz.")
+            }
+        }
+    }
+
     private fun updatePostInFeed(postId: String, transform: (CommunityPostDto) -> CommunityPostDto) {
         val current = _feedState.value as? FeedUiState.Content ?: return
         _feedState.value = current.copy(

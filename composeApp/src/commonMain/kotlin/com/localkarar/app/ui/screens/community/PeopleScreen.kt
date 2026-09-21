@@ -29,6 +29,7 @@ import com.localkarar.app.community.SocialViewModel
 import com.localkarar.app.network.dto.PersonDto
 import com.localkarar.app.ui.components.LkButton
 import com.localkarar.app.ui.components.LkButtonVariant
+import com.localkarar.app.ui.components.LkPillChip
 import com.localkarar.app.ui.theme.*
 
 @Composable
@@ -38,8 +39,24 @@ fun PeopleScreen(
 ) {
     val peopleState by viewModel.peopleState.collectAsState()
     var reportingPersonId by remember { mutableStateOf<Int?>(null) }
+    /*
+     * Filtre (21.09.2026): "engellediklerimi gorecegim bir yer yok" (urun
+     * sahibi, inceleme videosu cekerken). Liste herkesi gosteriyordu;
+     * engellenenler yalniz satir icinde soluk isaretliydi. Uc hap: Herkes /
+     * Takip ettiklerim / Engellediklerim. Sunucudan ayrica cekilmez; eldeki
+     * followingIds/blockedIds ile yerel suzulur.
+     */
+    var filtre by remember { mutableStateOf(0) }
 
     Column(Modifier.fillMaxSize()) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            listOf("Herkes", "Takip ettiklerim", "Engellediklerim").forEachIndexed { i, ad ->
+                LkPillChip(label = ad, selected = filtre == i, onClick = { filtre = i })
+            }
+        }
         // Search bar
         Box(
             modifier = Modifier
@@ -84,13 +101,23 @@ fun PeopleScreen(
                 }
             }
             is SocialViewModel.PeopleUiState.Content -> {
-                if (s.people.isEmpty()) {
+                val kisiler = when (filtre) {
+                    1 -> s.people.filter { viewModel.followingIds.contains(it.id) }
+                    2 -> s.people.filter { viewModel.blockedIds.contains(it.id) }
+                    else -> s.people
+                }
+                if (kisiler.isEmpty()) {
                     Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Icon(Icons.Outlined.PeopleOutline, contentDescription = null, tint = LkTextMuted, modifier = Modifier.size(48.dp))
                             Spacer(Modifier.height(12.dp))
                             Text(
-                                if (viewModel.searchQuery.isNotEmpty()) "Kullanıcı bulunamadı" else "Henüz kimse bulunmuyor",
+                                when {
+                                    viewModel.searchQuery.isNotEmpty() -> "Kullanıcı bulunamadı"
+                                    filtre == 1 -> "Henüz kimseyi takip etmiyorsunuz"
+                                    filtre == 2 -> "Engellediğiniz kullanıcı yok"
+                                    else -> "Henüz kimse bulunmuyor"
+                                },
                                 style = LkTypography.getBodyStrong(),
                                 color = LkTextPrimary
                             )
@@ -102,7 +129,7 @@ fun PeopleScreen(
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp).altBoslukla(),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        items(s.people, key = { it.id }) { person ->
+                        items(kisiler, key = { it.id }) { person ->
                             PersonRowItem(
                                 person = person,
                                 isFollowing = viewModel.followingIds.contains(person.id),

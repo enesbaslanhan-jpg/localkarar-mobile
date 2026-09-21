@@ -514,6 +514,10 @@ private fun ScreenContent(
 
     val communityViewModel = viewModel(key = "community_main") { CommunityViewModel(communityRepository) }
     val socialViewModel = viewModel(key = "community_social") { SocialViewModel(communityRepository) }
+    /* Engelle → gonderileri aninda akistan dus; engeli kaldir → akisi yeniden cek. */
+    socialViewModel.engelDegisti = { personId, engellendi ->
+        if (engellendi) communityViewModel.yazariGizle(personId) else communityViewModel.refreshFeed()
+    }
     val threadsViewModel = viewModel(key = "community_threads") { ThreadsViewModel(communityRepository) }
     val notificationsViewModel = viewModel(key = "community_notifs") { CommunityNotificationsViewModel(communityRepository) }
     val newsViewModel = viewModel(key = "news_main") { NewsViewModel(newsRepository) }
