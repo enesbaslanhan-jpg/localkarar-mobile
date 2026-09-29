@@ -1,6 +1,8 @@
 package com.localkarar.app.core
 
 import platform.UIKit.UIApplication
+/* `registerForRemoteNotifications` bir Objective-C KATEGORİ yöntemi: Kotlin/Native onu uzantı fonksiyonu olarak sunar ve AYRICA içe aktarılmayı ister (ilk iOS derlemesi, 30.09.2026: "Unresolved reference"). */
+import platform.UIKit.registerForRemoteNotifications
 import platform.UserNotifications.UNAuthorizationOptionAlert
 import platform.UserNotifications.UNAuthorizationOptionBadge
 import platform.UserNotifications.UNAuthorizationOptionSound
