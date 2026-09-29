@@ -186,7 +186,9 @@ fun HomeScreen(
     /** Gerçekleşen kartındaki "Rapor" → Destination.Rapor(isletmeId). */
     onNavigateToRapor: (String) -> Unit = {},
     onOpenProductCenter: () -> Unit = {},
-    onOpenSearch: () -> Unit = {}
+    onOpenSearch: () -> Unit = {},
+    /** Tek seferlik "görüşünüzü paylaşın" kartı için gönderim; null ise kart çizilmez. */
+    onGeriBildirim: ((String, String, (Boolean) -> Unit) -> Unit)? = null
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
@@ -220,7 +222,8 @@ fun HomeScreen(
                         onQuickAction = onQuickAction,
                         onKisayol = onKisayol,
                         onOpenProductCenter = onOpenProductCenter,
-                        onOpenSearch = onOpenSearch
+                        onOpenSearch = onOpenSearch,
+                        onGeriBildirim = onGeriBildirim
                     )
                 }
             }
@@ -247,7 +250,8 @@ private fun DashboardContent(
     onQuickAction: (String, String, String) -> Unit,
     onKisayol: (String, String) -> Unit,
     onOpenProductCenter: () -> Unit,
-    onOpenSearch: () -> Unit
+    onOpenSearch: () -> Unit,
+    onGeriBildirim: ((String, String, (Boolean) -> Unit) -> Unit)? = null
 ) {
     val scrollState = rememberScrollState()
 
@@ -338,6 +342,9 @@ private fun DashboardContent(
             tracker = state.trackerSummary,
             onNavigateToWorkspaces = onNavigateToWorkspaces
         )
+
+        /* Tek seferlik geri bildirim kartı (ilk açılıştan 3 gün sonra, bir kez). */
+        if (onGeriBildirim != null) GeriBildirimKarti(onGonder = onGeriBildirim)
 
         /*
          * GERÇEKLEŞEN (15.09.2026): Bugün / Bu hafta / Bu ay — web Ana Sayfa'daki

@@ -618,7 +618,8 @@ private fun ScreenContent(
                 navController.navigateTo(hedef)
             },
             onOpenProductCenter = onOpenProductCenter,
-            onOpenSearch = { navController.navigateTo(Destination.Search) }
+            onOpenSearch = { navController.navigateTo(Destination.Search) },
+            onGeriBildirim = { kategori, mesaj, sonuc -> settingsViewModel.geriBildirimGonder(kategori, mesaj, sonuc) }
         )
         Destination.Search -> {
             val viewModel = viewModel(key = "global_search") {
