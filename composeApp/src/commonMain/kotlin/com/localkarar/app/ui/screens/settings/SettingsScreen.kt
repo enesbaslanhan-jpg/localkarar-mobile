@@ -358,6 +358,31 @@ fun SettingsScreen(
                         onClick = { showFeedbackDialog = true }
                     )
                 }
+                if (com.localkarar.app.core.TelefonBildirimi.desteklenir) {
+                    SettingItem(
+                        label = "Telefon bildirimleri",
+                        description = "Vade, stok, kargo ve topluluk uyarıları",
+                        icon = Icons.Outlined.NotificationsActive,
+                        onClick = {
+                            com.localkarar.app.core.TelefonBildirimi.durum { izin ->
+                                when (izin) {
+                                    com.localkarar.app.core.BildirimIzni.SORULMADI ->
+                                        com.localkarar.app.core.TelefonBildirimi.izinIste { verildi ->
+                                            com.localkarar.app.core.AppMessages.bilgi(
+                                                if (verildi) "Telefon bildirimleri açıldı." else "Bildirim izni verilmedi."
+                                            )
+                                        }
+                                    com.localkarar.app.core.BildirimIzni.REDDEDILDI ->
+                                        com.localkarar.app.core.openExternalUrl("app-settings:")
+                                    else ->
+                                        com.localkarar.app.core.AppMessages.bilgi(
+                                            "Açık. Kapatmak için iOS Ayarları > LocalKarar > Bildirimler."
+                                        )
+                                }
+                            }
+                        }
+                    )
+                }
                 SettingItem(
                     label = "Destek",
                     description = "Sorun bildirin, bize yazın",

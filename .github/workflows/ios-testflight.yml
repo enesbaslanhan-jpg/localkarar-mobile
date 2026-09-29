@@ -18,6 +18,10 @@ on:
         description: "Test notu (TestFlight 'What to Test')"
         default: "LocalKarar iç test sürümü"
         required: false
+      match_force:
+        description: "Sertifika/profili YENİDEN üret (App ID'ye yeni yetenek, ör. Push, eklendiyse true)"
+        type: boolean
+        default: false
 
 permissions:
   contents: write   # match: ios-certs dalına şifreli sertifika yazar
@@ -41,6 +45,7 @@ jobs:
       MATCH_KEYCHAIN_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
       IOS_MARKETING_VERSION: ${{ inputs.marketing_version }}
       IOS_CHANGELOG: ${{ inputs.changelog }}
+      MATCH_FORCE: ${{ inputs.match_force }}
       FASTLANE_SKIP_UPDATE_CHECK: "1"
       FASTLANE_HIDE_CHANGELOG: "1"
       LC_ALL: en_US.UTF-8

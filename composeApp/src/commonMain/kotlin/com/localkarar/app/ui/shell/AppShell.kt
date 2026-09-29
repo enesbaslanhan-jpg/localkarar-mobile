@@ -1,6 +1,11 @@
 package com.localkarar.app.ui.shell
 
 import androidx.compose.animation.Crossfade
+import com.localkarar.app.core.BildirimIzni
+import com.localkarar.app.core.LocalAppPreferences
+import com.localkarar.app.core.PrefKeys
+import com.localkarar.app.core.PushKaydi
+import com.localkarar.app.core.TelefonBildirimi
 import androidx.compose.ui.Alignment
 import com.localkarar.app.ui.components.LkDockHeight
 import com.localkarar.app.ui.components.LocalAltBosluk
@@ -198,6 +203,48 @@ fun AppShell(
     val navController = rememberNavController(Destination.Home)
     val backStack by navController.backStack.collectAsState()
     val currentDestination = backStack.last()
+
+    /*
+     * TELEFON BİLDİRİMİ (iOS, 29.09.2026).
+     *  1. Zaten izinliyse cihaz kodu her açılışta tazelenir (sessiz, soru yok).
+     *  2. Apple'ın verdiği kod değişince sunucuya bildirilir (giriş açıkken).
+     *  3. İzin sorusu YALNIZ BİR KEZ, açılıştan birkaç saniye sonra, kendi
+     *     açıklamamızla sorulur; iOS'un kendi penceresi tek atışlık olduğu için
+     *     önce ne için istediğimizi söyleriz. "Şimdi değil" dersen bir daha
+     *     sorulmaz; Ayarlar → Telefon bildirimleri her zaman açıktır.
+     *  4. Çıkışta cihaz kaydı silinir ki bu telefona bu hesabın bildirimi gelmesin.
+     */
+    val pushKodu by PushKaydi.kod.collectAsState()
+    val pushKapsam = rememberCoroutineScope()
+    val tercihler = LocalAppPreferences.current
+    var pushSorusuAcik by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { TelefonBildirimi.sessizKayit() }
+    LaunchedEffect(pushKodu) { pushKodu?.let { settingsRepository.cihazKaydet(it) } }
+    LaunchedEffect(Unit) {
+        if (TelefonBildirimi.desteklenir && tercihler?.getString(PrefKeys.PUSH_SORULDU) == null) {
+            kotlinx.coroutines.delay(6000)
+            TelefonBildirimi.durum { if (it == BildirimIzni.SORULMADI) pushSorusuAcik = true }
+        }
+    }
+    val cikisYap: () -> Unit = {
+        pushKapsam.launch {
+            pushKodu?.let { runCatching { settingsRepository.cihazSil(it) } }
+            onLogout()
+        }
+    }
+    if (pushSorusuAcik) {
+        PushIzinSorusu(
+            onAc = {
+                tercihler?.putString(PrefKeys.PUSH_SORULDU, "1")
+                pushSorusuAcik = false
+                TelefonBildirimi.izinIste { }
+            },
+            onSonra = {
+                tercihler?.putString(PrefKeys.PUSH_SORULDU, "1")
+                pushSorusuAcik = false
+            }
+        )
+    }
     val activeWorkspaceId by activeWorkspaceStore.activeWorkspaceId.collectAsState()
     val activeWorkspaceName by activeWorkspaceStore.activeWorkspaceName.collectAsState()
 
@@ -424,7 +471,7 @@ fun AppShell(
                         onOpenProductCenter = { openProductCenter() },
                         onOpenWorkspaceSections = { wsId, secId -> openWorkspaceSections(wsId, secId) },
                         onNewSession = onNewSession,
-                        onLogout = onLogout
+                        onLogout = cikisYap
                     )
                     }
                     }

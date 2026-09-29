@@ -348,6 +348,40 @@ class SettingsRepository(
      * Giris gerektirmiyor; sunucuda saatte 5 istekle sinirli.
      */
     /**
+     * Telefon bildirimi cihaz kaydi (iOS APNs kodu). Ayni kod baska hesaba
+     * gecerse sunucu satiri yeni kullaniciya tasir.
+     */
+    suspend fun cihazKaydet(token: String): Result<Unit> {
+        return try {
+            val response = client.post("/account/devices") {
+                contentType(ContentType.Application.Json)
+                setBody(
+                    CihazKaydiRequest(
+                        platform = "ios",
+                        token = token,
+                        appVersion = com.localkarar.app.network.AppEnvironmentProvider.versionLabel.take(30)
+                    )
+                )
+            }
+            if (response.status.isSuccess()) Result.success(Unit)
+            else Result.failure(Exception(errorMessage(response)))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /** Cikista: bu cihaza bu hesabin bildirimi gelmesin. */
+    suspend fun cihazSil(token: String): Result<Unit> {
+        return try {
+            val response = client.delete("/account/devices/$token")
+            if (response.status.isSuccess()) Result.success(Unit)
+            else Result.failure(Exception(errorMessage(response)))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
      * Kisa geri bildirim (giris gerekli). Sunucu isletmeciye e-postayla
      * iletir; kimlik jetondan, surum burada eklenir. Bkz. GeriBildirimDialog.
      */
@@ -398,6 +432,13 @@ class SettingsRepository(
         }
     }
 }
+
+@kotlinx.serialization.Serializable
+private data class CihazKaydiRequest(
+    val platform: String,
+    val token: String,
+    val appVersion: String
+)
 
 @kotlinx.serialization.Serializable
 private data class GeriBildirimRequest(

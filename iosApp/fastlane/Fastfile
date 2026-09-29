@@ -31,6 +31,9 @@ platform :ios do
       git_url: ENV.fetch("MATCH_GIT_URL"),
       git_branch: "ios-certs",
       readonly: false,
+      # App ID'ye yeni yetenek (Push vb.) eklenince eski profil o yetkiyi tasimaz;
+      # workflow'da match_force=true ile bir kez yeniden uretilir.
+      force: ENV["MATCH_FORCE"] == "true",
       api_key: api_key,
       keychain_name: ENV.fetch("MATCH_KEYCHAIN_NAME", "login.keychain"),
       keychain_password: ENV["MATCH_KEYCHAIN_PASSWORD"]

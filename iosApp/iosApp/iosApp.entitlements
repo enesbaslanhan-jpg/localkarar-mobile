@@ -24,5 +24,14 @@
 	<array>
 		<string>Default</string>
 	</array>
+	<!--
+	  TELEFON BILDIRIMI (push), 29.09.2026. App ID'de "Push Notifications" acik
+	  olmali; yoksa match'in urettigi profil bu yetkiyi tasimaz ve imza
+	  "profile doesn't include the aps-environment entitlement" ile duser.
+	  App Store ve TestFlight derlemeleri PRODUCTION APNs kullanir; "development"
+	  yalniz Xcode'dan dogrudan yuklenen derlemelerde gecerli (bizde yok).
+	-->
+	<key>aps-environment</key>
+	<string>production</string>
 </dict>
 </plist>

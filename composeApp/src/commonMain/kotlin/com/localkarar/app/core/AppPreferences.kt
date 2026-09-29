@@ -23,6 +23,8 @@ object PrefKeys {
     const val THEME_MODE = "theme_mode"
     /** AI Mentor veri isleme bilgilendirmesi onaylandi (deger: onay tarihi, ISO). Cihaz basina. */
     const val AI_MENTOR_ONAY = "ai_mentor_onay"
+    /** Telefon bildirimi izin sorusu gösterildi (bir kez; cihaz başına). */
+    const val PUSH_SORULDU = "push_sorulan"
 }
 
 /** Kabukta saglanir; ekranlar tercih deposuna buradan ulasir. */
