@@ -22,6 +22,8 @@ fun LkNumericField(
         placeholder = placeholder,
         error = error,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+        /* Ekranda "10.000"; alttaki metin "10000" kalır (bkz. BinlikAyiracDonusumu). */
+        visualTransformation = BinlikAyiracDonusumu(),
         trailingContent = if (suffix != null) {
             {
                 androidx.compose.material.Text(

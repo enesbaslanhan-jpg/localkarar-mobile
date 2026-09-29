@@ -113,24 +113,42 @@ fun LkDecisionInput(
             }
             else -> {
                 // money, percentage, number, days, months
-                val textValue = value?.jsonPrimitive?.doubleOrNull?.let { 
-                    if (it % 1.0 == 0.0) it.toInt().toString() else it.toString() 
-                } ?: ""
-                
+                /*
+                 * 🔴 YEREL METİN (29.09.2026). Eskiden alan doğrudan Double'dan
+                 * çiziliyordu: "12," ya da "12." yazınca değer 12.0 olup nokta
+                 * siliniyor, ondalık HİÇ yazılamıyordu; ayrıca yer tutucudaki
+                 * "25.000" Türkçede yirmi beş bin demekken burada nokta
+                 * ondalık sayılıyordu. Şimdi kullanıcının yazdığı metin
+                 * tutulur (rakamlar + en fazla bir virgül; yazılan nokta
+                 * ondalık ayracı sayılır), ekranda binlik noktası görünür
+                 * ("25.000"), sunucuya Double gider.
+                 */
+                fun metne(d: Double?): String = when {
+                    d == null -> ""
+                    d % 1.0 == 0.0 && kotlin.math.abs(d) < 1e15 -> d.toLong().toString()
+                    else -> d.toString().replace('.', ',')
+                }
+                fun sayiya(metin: String): Double? = metin.replace(',', '.').toDoubleOrNull()
+                val disaridanGelen = value?.jsonPrimitive?.doubleOrNull
+                var metin by remember(question.code) { mutableStateOf(metne(disaridanGelen)) }
+                /* Dışarıdan farklı bir değer gelirse (sıfırlama, geri dönüş) metni eşitle. */
+                LaunchedEffect(disaridanGelen) {
+                    if (sayiya(metin) != disaridanGelen) metin = metne(disaridanGelen)
+                }
+                val textValue = if (isUnknown) "" else metin
+
                 LkTextField(
                     value = textValue,
+                    visualTransformation = com.localkarar.app.ui.components.BinlikAyiracDonusumu(),
                     onValueChange = { input ->
-                        if (input.isBlank()) {
+                        val temiz = input.replace('.', ',').filter { it.isDigit() || it == ',' }
+                        if (temiz.isBlank()) {
+                            metin = ""
                             onValueChange(null)
-                        } else {
-                            // Ensure only numbers and a single decimal point
-                            val filtered = input.filter { it.isDigit() || it == '.' }
-                            if (filtered.count { it == '.' } <= 1) {
-                                val d = filtered.toDoubleOrNull()
-                                if (d != null) {
-                                    onValueChange(JsonPrimitive(d))
-                                }
-                            }
+                        } else if (temiz.count { it == ',' } <= 1) {
+                            metin = temiz
+                            /* "12," gibi yarım yazımda değer 12 kalır; metin virgülü korur. */
+                            sayiya(temiz.trimEnd(','))?.let { onValueChange(JsonPrimitive(it)) }
                         }
                     },
                     label = question.label + if (question.required) " *" else "",

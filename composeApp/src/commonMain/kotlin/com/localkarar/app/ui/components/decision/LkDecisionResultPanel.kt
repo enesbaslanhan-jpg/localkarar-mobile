@@ -438,12 +438,17 @@ private fun MetricRow(label: String, formattedValue: String, showDivider: Boolea
     }
 }
 
+/*
+ * 🔴 Binlik ayracı ve ondalık (29.09.2026): eskiden para `value.toInt()` ile
+ * "10000 ₺", yüzde ham Double ile "%12.345678", diğerleri `toString()` ile
+ * yazılıyordu. Tüm uygulamadaki gibi "10.000 ₺" / "%12,35".
+ */
 private fun formatMetricValue(value: Double, format: String): String {
     return when (format) {
-        "money" -> "${value.toInt()} ₺" // For now, simplified
-        "percent" -> "%${value}"
-        "months" -> "${value.toInt()} ay"
-        "days" -> "${value.toInt()} gün"
-        else -> value.toString()
+        "money" -> "${com.localkarar.app.core.LkFormatting.formatNumber(value)} ₺"
+        "percent" -> "%${com.localkarar.app.core.LkFormatting.formatNumber(value)}"
+        "months" -> "${com.localkarar.app.core.LkFormatting.formatNumber(kotlin.math.round(value))} ay"
+        "days" -> "${com.localkarar.app.core.LkFormatting.formatNumber(kotlin.math.round(value))} gün"
+        else -> com.localkarar.app.core.LkFormatting.formatNumber(value)
     }
 }

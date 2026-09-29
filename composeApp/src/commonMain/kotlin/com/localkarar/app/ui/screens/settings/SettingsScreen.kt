@@ -72,6 +72,13 @@ fun SettingsScreen(
     onLogout: () -> Unit
 ) {
     var showLogoutAllDialog by remember { mutableStateOf(false) }
+    var showFeedbackDialog by remember { mutableStateOf(false) }
+    if (showFeedbackDialog && viewModel != null) {
+        GeriBildirimDialog(
+            onVazgec = { showFeedbackDialog = false },
+            onGonder = { kategori, mesaj, sonuc -> viewModel.geriBildirimGonder(kategori, mesaj, sonuc) }
+        )
+    }
 
     if (showLogoutAllDialog) {
         AlertDialog(
@@ -343,6 +350,14 @@ fun SettingsScreen(
                     icon = Icons.Outlined.Info,
                     onClick = onOpenAbout
                 )
+                if (viewModel != null) {
+                    SettingItem(
+                        label = "Geri bildirim gönder",
+                        description = "Önerinizi ya da sorunu kısaca yazın",
+                        icon = Icons.Outlined.ChatBubbleOutline,
+                        onClick = { showFeedbackDialog = true }
+                    )
+                }
                 SettingItem(
                     label = "Destek",
                     description = "Sorun bildirin, bize yazın",

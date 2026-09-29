@@ -34,6 +34,21 @@ class SettingsViewModel(
     var noticeIsError by mutableStateOf(false)
         private set
 
+    /** Kisa geri bildirim (bkz. GeriBildirimDialog). [sonuc] basari bayragini dialoga dondurur. */
+    fun geriBildirimGonder(kategori: String, mesaj: String, sonuc: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            repository.geriBildirimGonder(kategori, mesaj)
+                .onSuccess {
+                    com.localkarar.app.core.AppMessages.bilgi("Teşekkürler, geri bildiriminiz bize ulaştı.")
+                    sonuc(true)
+                }
+                .onFailure { e ->
+                    com.localkarar.app.core.AppMessages.hata(e.message ?: "Geri bildirim gönderilemedi.")
+                    sonuc(false)
+                }
+        }
+    }
+
     // Display Name editing
     var editName by mutableStateOf("")
         private set

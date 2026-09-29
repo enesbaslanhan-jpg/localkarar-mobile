@@ -347,6 +347,29 @@ class SettingsRepository(
      *
      * Giris gerektirmiyor; sunucuda saatte 5 istekle sinirli.
      */
+    /**
+     * Kisa geri bildirim (giris gerekli). Sunucu isletmeciye e-postayla
+     * iletir; kimlik jetondan, surum burada eklenir. Bkz. GeriBildirimDialog.
+     */
+    suspend fun geriBildirimGonder(kategori: String, mesaj: String): Result<Unit> {
+        return try {
+            val response = client.post("/support/feedback") {
+                contentType(ContentType.Application.Json)
+                setBody(
+                    GeriBildirimRequest(
+                        kategori = kategori,
+                        mesaj = mesaj.trim(),
+                        surum = com.localkarar.app.network.AppEnvironmentProvider.versionLabel.take(20)
+                    )
+                )
+            }
+            if (response.status.isSuccess()) Result.success(Unit)
+            else Result.failure(Exception(errorMessage(response)))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     suspend fun destekTalebiGonder(
         ad: String,
         eposta: String,
@@ -375,6 +398,13 @@ class SettingsRepository(
         }
     }
 }
+
+@kotlinx.serialization.Serializable
+private data class GeriBildirimRequest(
+    val kategori: String,
+    val mesaj: String,
+    val surum: String
+)
 
 @kotlinx.serialization.Serializable
 private data class DestekTalebiRequest(

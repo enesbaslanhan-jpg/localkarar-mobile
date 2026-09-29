@@ -569,7 +569,13 @@ private fun ChatInputBar(
             onValueChange = onValueChange,
             placeholder = "Mentora sorun…",
             enabled = enabled,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f),
+            /* Enter alt satıra geçer, kutu içerikle büyür (29.09.2026). */
+            singleLine = false,
+            otoBuyuyen = true,
+            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                capitalization = androidx.compose.ui.text.input.KeyboardCapitalization.Sentences
+            )
         )
         Spacer(Modifier.width(8.dp))
         if (isStreaming) {

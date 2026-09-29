@@ -82,7 +82,16 @@ fun LkTextField(
      * cagiran tarafin `modifier`ina birakiliyor.
      */
     singleLine: Boolean = true,
-    size: LkFieldSize = LkFieldSize.MD
+    size: LkFieldSize = LkFieldSize.MD,
+    /**
+     * Sohbet yazma kutusu gibi ALT ALTA BÜYÜYEN çok satırlı giriş (29.09.2026).
+     * Tek satırlı kutu uzun soruyu yatay kaydırıyordu, Enter alt satıra
+     * geçmiyordu ve metnin tamamı görünmüyordu. `true`: en az tek satır
+     * boyunda (48dp), içerik uzadıkça büyür, `enFazlaSatir`da kayar;
+     * Enter yeni satır ekler. `singleLine = false` ile birlikte kullanılır.
+     */
+    otoBuyuyen: Boolean = false,
+    enFazlaSatir: Int = 6
 ) {
     var isFocused by remember { mutableStateOf(false) }
 
@@ -121,7 +130,7 @@ fun LkTextField(
         BasicTextField(
             value = value,
             onValueChange = onValueChange,
-            modifier = (if (singleLine) Modifier.height(size.height + 6.dp) else Modifier.heightIn(min = 102.dp))
+            modifier = (if (singleLine) Modifier.height(size.height + 6.dp) else Modifier.heightIn(min = if (otoBuyuyen) 48.dp else 102.dp))
                 .fillMaxWidth()
                 .border(3.dp, halkaRengi, shape ?: LkShapes.SM)
                 .padding(3.dp)
@@ -130,6 +139,7 @@ fun LkTextField(
                 .onFocusChanged { isFocused = it.isFocused },
             enabled = enabled,
             singleLine = singleLine,
+            maxLines = if (singleLine) 1 else if (otoBuyuyen) enFazlaSatir else Int.MAX_VALUE,
             // §7.1: control-md yazi tipi `body` (14sp), `body-sm` degil.
             textStyle = LkTypography.getBody().copy(color = if (enabled) LkTextPrimary else LkTextMuted),
             keyboardOptions = keyboardOptions,
@@ -140,7 +150,7 @@ fun LkTextField(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = size.horizontalPadding, vertical = if (singleLine) 0.dp else 10.dp),
+                        .padding(horizontal = size.horizontalPadding, vertical = if (singleLine) 0.dp else if (otoBuyuyen) 13.dp else 10.dp),
                     // Cok satirlida metin USTTEN baslamali; ortalamak, uzun
                     // mesajda imleci kutunun ortasinda birakirdi.
                     verticalAlignment = if (singleLine) Alignment.CenterVertically else Alignment.Top
