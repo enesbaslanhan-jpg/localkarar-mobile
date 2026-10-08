@@ -54,7 +54,6 @@ fun SettingsScreen(
      * satiriydi. Ait oldugu yer Ayarlar — takip ettiklerin ve
      * engellediklerin HESABINA ait.
      */
-    onOpenFollowBlock: (() -> Unit)? = null,
     onOpenWorkspaces: () -> Unit,
     /** Kurulum ve degerlendirme — `null` ise satir cizilmiyor. */
     onOpenOnboarding: (() -> Unit)? = null,
@@ -224,14 +223,6 @@ fun SettingsScreen(
                     icon = Icons.Outlined.Person,
                     onClick = onOpenProfile
                 )
-                if (onOpenFollowBlock != null) {
-                    SettingItem(
-                        label = "Takip ve engelleme",
-                        description = "Takip ettiklerin ve engellediklerin",
-                        icon = Icons.Outlined.PeopleOutline,
-                        onClick = onOpenFollowBlock
-                    )
-                }
                 SettingItem(
                     label = "E-posta Değiştir",
                     description = "Hesabınıza bağlı e-posta adresini güncelleyin",
@@ -375,9 +366,7 @@ fun SettingsScreen(
                                     com.localkarar.app.core.BildirimIzni.REDDEDILDI ->
                                         com.localkarar.app.core.openExternalUrl("app-settings:")
                                     else ->
-                                        com.localkarar.app.core.AppMessages.bilgi(
-                                            "Açık. Kapatmak için iOS Ayarları > LocalKarar > Bildirimler."
-                                        )
+                                        com.localkarar.app.core.openExternalUrl("app-settings:")
                                 }
                             }
                         }

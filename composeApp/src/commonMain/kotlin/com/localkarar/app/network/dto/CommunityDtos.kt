@@ -125,7 +125,8 @@ data class PersonDto(
     val name: String,
     val role: String? = null,
     val bio: String? = null,
-    val avatarUrl: String? = null
+    val avatarUrl: String? = null,
+    val mutualCount: Int = 0
 )
 
 @Serializable

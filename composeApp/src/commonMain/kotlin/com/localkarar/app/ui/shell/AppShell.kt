@@ -1142,6 +1142,7 @@ private fun ScreenContent(
                 onOpenThread = { threadId -> navController.navigateTo(Destination.CommunityThreadDetail(threadId)) },
                 onOpenNotifications = { navController.navigateTo(Destination.CommunityNotifications) },
                 onOpenFollowers = { userId, mode -> navController.navigateTo(Destination.CommunityFollowers(userId, mode)) },
+                onOpenBlockedPeople = { navController.navigateTo(Destination.CommunityBlocked) },
                 onOpenProductCenter = onOpenProductCenter
             )
         }
@@ -1201,9 +1202,19 @@ private fun ScreenContent(
         }
         Destination.CommunityPeople -> {
             /* Takip ve engelleme — Ayarlar > Hesap altindan aciliyor. */
-            LkPageLayout(title = "Takip ve engelleme", onBack = onBack) {
+            LkPageLayout(title = "Kişileri keşfet", onBack = onBack) {
                 PeopleScreen(
                     viewModel = socialViewModel,
+                    onOpenProfile = { userId -> navController.navigateTo(Destination.CommunityProfile(userId)) }
+                )
+            }
+        }
+        Destination.CommunityBlocked -> {
+            LaunchedEffect(Unit) { socialViewModel.loadBlockedPeople() }
+            LkPageLayout(title = "Engellenenler", onBack = onBack) {
+                PeopleScreen(
+                    viewModel = socialViewModel,
+                    blockedOnly = true,
                     onOpenProfile = { userId -> navController.navigateTo(Destination.CommunityProfile(userId)) }
                 )
             }
@@ -1249,7 +1260,6 @@ private fun ScreenContent(
                 activeWorkspaceId = activeWorkspaceId,
                 viewModel = settingsViewModel,
                 onOpenProfile = { navController.navigateTo(Destination.Profile) },
-                onOpenFollowBlock = { navController.navigateTo(Destination.CommunityPeople) },
                 onOpenWorkspaces = { navController.navigateTo(Destination.Workspaces) },
                 onOpenOnboarding = { navController.navigateTo(Destination.Onboarding) },
                 onOpenAssessment = { navController.navigateTo(Destination.Assessment) },

@@ -133,6 +133,7 @@ sealed interface Destination {
     object Assessment : Destination
 
     object CommunityPeople : Destination
+    object CommunityBlocked : Destination
 
     /**
      * Ekip davetini kabul etme — `/davet?token=` baglantisindan gelir.

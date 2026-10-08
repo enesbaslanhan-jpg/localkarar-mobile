@@ -13,7 +13,9 @@ actual fun openExternalUrl(url: String) {
         if (trimmed.isBlank()) return
         val nsUrl = NSURL.URLWithString(trimmed) ?: return
         val app = UIApplication.sharedApplication
-        if (app.canOpenURL(nsUrl)) {
+        // iOS uygulama ayarları kendi URL şemasıdır; canOpenURL kontrolü
+        // bazı iOS sürümlerinde false döndürüp tıklamayı sessizce yutabiliyor.
+        if (trimmed == "app-settings:" || app.canOpenURL(nsUrl)) {
             app.openURL(nsUrl, options = emptyMap<Any?, Any?>(), completionHandler = null)
         }
     } catch (e: Exception) {

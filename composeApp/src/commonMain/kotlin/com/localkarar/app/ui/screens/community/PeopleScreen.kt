@@ -35,7 +35,8 @@ import com.localkarar.app.ui.theme.*
 @Composable
 fun PeopleScreen(
     viewModel: SocialViewModel,
-    onOpenProfile: (Int) -> Unit
+    onOpenProfile: (Int) -> Unit,
+    blockedOnly: Boolean = false
 ) {
     val peopleState by viewModel.peopleState.collectAsState()
     var reportingPersonId by remember { mutableStateOf<Int?>(null) }
@@ -46,19 +47,12 @@ fun PeopleScreen(
      * Takip ettiklerim / Engellediklerim. Sunucudan ayrica cekilmez; eldeki
      * followingIds/blockedIds ile yerel suzulur.
      */
-    var filtre by remember { mutableStateOf(0) }
-
     Column(Modifier.fillMaxSize()) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            listOf("Herkes", "Takip ettiklerim", "Engellediklerim").forEachIndexed { i, ad ->
-                LkPillChip(label = ad, selected = filtre == i, onClick = { filtre = i })
-            }
-        }
+        if (!blockedOnly) Text("Takip ettiklerin ve ortak ilgi alanların üzerinden öneriler.",
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+            style = LkTypography.getBodySmall(), color = LkTextSecondary)
         // Search bar
-        Box(
+        if (!blockedOnly) Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp)
@@ -101,11 +95,7 @@ fun PeopleScreen(
                 }
             }
             is SocialViewModel.PeopleUiState.Content -> {
-                val kisiler = when (filtre) {
-                    1 -> s.people.filter { viewModel.followingIds.contains(it.id) }
-                    2 -> s.people.filter { viewModel.blockedIds.contains(it.id) }
-                    else -> s.people
-                }
+                val kisiler = s.people
                 if (kisiler.isEmpty()) {
                     Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -114,8 +104,7 @@ fun PeopleScreen(
                             Text(
                                 when {
                                     viewModel.searchQuery.isNotEmpty() -> "Kullanıcı bulunamadı"
-                                    filtre == 1 -> "Henüz kimseyi takip etmiyorsunuz"
-                                    filtre == 2 -> "Engellediğiniz kullanıcı yok"
+                                    blockedOnly -> "Engellediğiniz kullanıcı yok"
                                     else -> "Henüz kimse bulunmuyor"
                                 },
                                 style = LkTypography.getBodyStrong(),
@@ -132,8 +121,8 @@ fun PeopleScreen(
                         items(kisiler, key = { it.id }) { person ->
                             PersonRowItem(
                                 person = person,
-                                isFollowing = viewModel.followingIds.contains(person.id),
-                                isBlocked = viewModel.blockedIds.contains(person.id),
+                                isFollowing = !blockedOnly && viewModel.followingIds.contains(person.id),
+                                isBlocked = blockedOnly || viewModel.blockedIds.contains(person.id),
                                 onClick = { onOpenProfile(person.id) },
                                 onToggleFollow = { viewModel.toggleFollow(person.id) },
                                 onToggleBlock = { viewModel.toggleBlock(person.id) },
@@ -215,6 +204,9 @@ fun PersonRowItem(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
+                }
+                if (!isBlocked && person.mutualCount > 0) {
+                    Text("${person.mutualCount} ortak takip", style = LkTypography.getMicro(), color = LkTextSecondary)
                 }
             }
 

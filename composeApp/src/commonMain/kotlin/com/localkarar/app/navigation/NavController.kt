@@ -62,6 +62,7 @@ object DestinationCodec {
             Destination.Onboarding -> "onboarding"
             Destination.Assessment -> "assessment"
             Destination.CommunityPeople -> "community_people"
+            Destination.CommunityBlocked -> "community_blocked"
             is Destination.InvitationAccept -> "invitation_accept:${destination.token}"
             Destination.Settings -> "settings"
             Destination.Search -> "search"
@@ -133,6 +134,7 @@ object DestinationCodec {
                 "onboarding" -> Destination.Onboarding
                 "assessment" -> Destination.Assessment
                 "community_people" -> Destination.CommunityPeople
+                "community_blocked" -> Destination.CommunityBlocked
                 "invitation_accept" -> Destination.InvitationAccept(parts[1])
                 "settings" -> Destination.Settings
                 "search" -> Destination.Search

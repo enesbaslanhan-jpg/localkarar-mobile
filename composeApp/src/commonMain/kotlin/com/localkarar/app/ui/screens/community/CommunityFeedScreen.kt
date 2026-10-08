@@ -135,6 +135,7 @@ fun CommunityFeedScreen(
     onOpenThread: (String) -> Unit,
     onOpenNotifications: () -> Unit,
     onOpenFollowers: (Int, String) -> Unit,
+    onOpenBlockedPeople: () -> Unit = {},
     onOpenProductCenter: (() -> Unit)? = null
 ) {
     val startingTab = CommunityInternalTab.fromDeepLink(initialTab)
@@ -316,7 +317,7 @@ fun CommunityFeedScreen(
                                     )
                                 }
                                 Text(
-                                    "Takip ve engelleme",
+                                    "Kişileri keşfet",
                                     style = LkTypography.getTitleS(),
                                     color = LkTextPrimary
                                 )
@@ -345,7 +346,14 @@ fun CommunityFeedScreen(
                             onOpenFollowers = onOpenFollowers,
                             onOpenPost = onOpenPost,
                             onOpenProfile = onOpenProfile,
-                            onEditProfile = onEditProfile
+                            onEditProfile = onEditProfile,
+                            altBlok = {
+                                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    LkButton("Kişileri keşfet", onClick = { kisilerAcik = true }, modifier = Modifier.weight(1f))
+                                    LkButton("Engellenenler", variant = LkButtonVariant.SECONDARY,
+                                        onClick = onOpenBlockedPeople, modifier = Modifier.weight(1f))
+                                }
+                            }
                         )
                     }
                 }

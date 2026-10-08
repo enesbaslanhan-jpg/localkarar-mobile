@@ -142,6 +142,18 @@ class SocialViewModel(
         }
     }
 
+    fun loadBlockedPeople() {
+        viewModelScope.launch {
+            _peopleState.value = PeopleUiState.Loading
+            repository.getBlockedPeople().onSuccess { res ->
+                blockedIds = res.blockedIds.toSet()
+                _peopleState.value = PeopleUiState.Content(res.people)
+            }.onFailure { e ->
+                _peopleState.value = PeopleUiState.Error(e.message ?: "Engellenenler yüklenemedi")
+            }
+        }
+    }
+
     fun toggleFollow(personId: Int) {
         val isFollowing = followingIds.contains(personId)
         val isBlocked = blockedIds.contains(personId)
@@ -191,6 +203,10 @@ class SocialViewModel(
                 blockedIds = if (res) blockedIds + personId else blockedIds - personId
                 if (res) followingIds = followingIds - personId
                 notice = if (res) "Kullanıcı engellendi" else "Engel kaldırıldı"
+                if (!res) {
+                    val current = _peopleState.value as? PeopleUiState.Content
+                    if (current != null) _peopleState.value = current.copy(people = current.people.filterNot { it.id == personId })
+                }
                 engelDegisti?.invoke(personId, res)
             }.onFailure {
                 // Rollback

@@ -283,7 +283,7 @@ class CommunityRepository(
 
     suspend fun getPeople(q: String = ""): Result<PeopleResponseDto> {
         return try {
-            val response = client.get("$socialBase/people") {
+            val response = client.get("$socialBase/people" + if (q.isBlank()) "/suggestions" else "") {
                 if (q.isNotBlank()) parameter("q", q)
             }
             if (response.status.isSuccess()) {
@@ -291,6 +291,16 @@ class CommunityRepository(
             } else {
                 Result.failure(Exception(errorMessage(response, "Kişiler yüklenemedi")))
             }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getBlockedPeople(): Result<PeopleResponseDto> {
+        return try {
+            val response = client.get("$socialBase/people/blocked")
+            if (response.status.isSuccess()) Result.success(response.body<PeopleResponseDto>())
+            else Result.failure(Exception(errorMessage(response, "Engellenenler yüklenemedi")))
         } catch (e: Exception) {
             Result.failure(e)
         }
